@@ -2,10 +2,9 @@
 set -euo pipefail
 
 ENV_FILE="${PWD}/.env.local"
-SSL_CERT="${PWD}/certs/localhost.pem"
-SSL_KEY="${PWD}/certs/localhost-key.pem"
 HOSTS_SCRIPT="./scripts/remove-etc-hosts-entry.sh"
-DEEP_UNINSTALL_CA="${1:-}"
+DEEP_UNINSTALL_CA="${1:-}" # Pass --deep if you want to also undo mkcert -install
+INFRA_DIR="${PWD}/.local-infra"
 
 if [[ ! -f "$ENV_FILE" ]]; then
   echo "ERROR: .env.local doesn't exist" >&2
@@ -19,7 +18,7 @@ source "$ENV_FILE"
 set +a
 
 # Required domain vars
-required_vars=(API_DOMAIN WEB_DOMAIN DOZZLE_DOMAIN LOGTO_DOMAIN LOGTO_ADMIN_DOMAIN)
+required_vars=(API_DOMAIN WEB_DOMAIN DOZZLE_DOMAIN LOGTO_DOMAIN LOGTO_ADMIN_DOMAIN TRAEFIK_DASHBOARD_DOMAIN)
 missing=()
 for v in "${required_vars[@]}"; do
   if [[ -z "${!v:-}" ]]; then
@@ -31,21 +30,8 @@ if (( ${#missing[@]} > 0 )); then
   exit 1
 fi
 
-# Remove cert files (if present)
-if [[ -f "$SSL_CERT" ]]; then
-  rm -f -- "$SSL_CERT"
-  echo "Removed $(basename "$SSL_CERT")"
-fi
-if [[ -f "$SSL_KEY" ]]; then
-  rm -f -- "$SSL_KEY"
-  echo "Removed $(basename "$SSL_KEY")"
-fi
-
-# Remove empty certs dir if applicable
-if [[ -d "${PWD}/certs" ]] && [[ -z "$(ls -A "${PWD}/certs")" ]]; then
-  rmdir -- "${PWD}/certs" || true
-  echo "Removed empty certs/ directory"
-fi
+rm -rf -- "${INFRA_DIR}"
+echo "Removed .local-infra"
 
 # Ensure hosts helper exists and is executable
 if [[ ! -x "$HOSTS_SCRIPT" ]]; then
@@ -58,7 +44,7 @@ if [[ ! -x "$HOSTS_SCRIPT" ]]; then
 fi
 
 echo "Removing /etc/hosts entries (may prompt for sudo)"
-for domain in "${API_DOMAIN}" "${WEB_DOMAIN}" "${DOZZLE_DOMAIN}" "${LOGTO_DOMAIN}" "${LOGTO_ADMIN_DOMAIN}"; do
+for domain in "${API_DOMAIN}" "${WEB_DOMAIN}" "${DOZZLE_DOMAIN}" "${LOGTO_DOMAIN}" "${LOGTO_ADMIN_DOMAIN}" "${TRAEFIK_DASHBOARD_DOMAIN}"; do
   "$HOSTS_SCRIPT" "$domain"
 done
 

@@ -10,6 +10,9 @@ mkcert -install
 # Paths
 ENV_EXAMPLE_FILE="${PWD}/.env.sample"
 ENV_FILE="${PWD}/.env.local"
+INFRA_DIR="${PWD}/.local-infra"
+CERT_DIR="${INFRA_DIR}/certs"
+TRAEFIK_DIR="${INFRA_DIR}/traefik/dynamic"
 
 # Ensure .env.local exists (from sample if needed)
 if [[ ! -f "$ENV_FILE" ]]; then
@@ -30,7 +33,7 @@ source "$ENV_FILE"
 set +a
 
 # Required domain vars
-required_vars=(API_DOMAIN WEB_DOMAIN DOZZLE_DOMAIN LOGTO_DOMAIN LOGTO_ADMIN_DOMAIN)
+required_vars=(API_DOMAIN WEB_DOMAIN DOZZLE_DOMAIN LOGTO_DOMAIN LOGTO_ADMIN_DOMAIN TRAEFIK_DASHBOARD_DOMAIN)
 
 missing=()
 for v in "${required_vars[@]}"; do
@@ -46,11 +49,19 @@ if (( ${#missing[@]} > 0 )); then
 fi
 
 # Create certs directory if needed
-mkdir -p certs
+mkdir -p "$CERT_DIR" "$TRAEFIK_DIR"
 
 echo "Generating mkcert certificate for local HTTPS domains"
-mkcert -cert-file certs/localhost.pem -key-file certs/localhost-key.pem \
-  "${API_DOMAIN}" "${WEB_DOMAIN}" "${DOZZLE_DOMAIN}" "${LOGTO_DOMAIN}" "${LOGTO_ADMIN_DOMAIN}"
+mkcert -cert-file "${CERT_DIR}/localhost.pem" -key-file "${CERT_DIR}/localhost-key.pem" \
+  "${API_DOMAIN}" "${WEB_DOMAIN}" "${DOZZLE_DOMAIN}" "${LOGTO_DOMAIN}" "${LOGTO_ADMIN_DOMAIN}" "${TRAEFIK_DASHBOARD_DOMAIN}"
+
+echo "Generating tls.yml local Traefik config"
+cat > "${TRAEFIK_DIR}/tls.yml" <<'YAML'
+tls:
+  certificates:
+    - certFile: /certs/localhost.pem
+      keyFile: /certs/localhost-key.pem
+YAML
 
 # Ensure hosts helper exists and is executable
 HOSTS_SCRIPT="./scripts/create-etc-hosts-entry.sh"
@@ -64,7 +75,7 @@ if [[ ! -x "$HOSTS_SCRIPT" ]]; then
 fi
 
 echo "Adding /etc/hosts entries (may prompt for sudo)"
-for domain in "${API_DOMAIN}" "${WEB_DOMAIN}" "${DOZZLE_DOMAIN}" "${LOGTO_DOMAIN}" "${LOGTO_ADMIN_DOMAIN}"; do
+for domain in "${API_DOMAIN}" "${WEB_DOMAIN}" "${DOZZLE_DOMAIN}" "${LOGTO_DOMAIN}" "${LOGTO_ADMIN_DOMAIN}" "${TRAEFIK_DASHBOARD_DOMAIN}"; do
   "$HOSTS_SCRIPT" "$domain"
 done
 

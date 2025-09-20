@@ -4,6 +4,9 @@ encore.gen.go
 encore.gen.cue
 /encore.gen
 
+# Local development
+.local-infra
+
 # Dependency directories
 node_modules/
 
