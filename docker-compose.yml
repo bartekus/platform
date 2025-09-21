@@ -1,18 +1,39 @@
 services:
   traefik:
-    image: traefik:v3.1.2
+    image: traefik:latest
     command:
-      - "--api.insecure=true"  # Enable dashboard for local dev
+      - "--api.dashboard=true"  # enable dashboard (no insecure)
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
       - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entryPoint.scheme=https"
+      - "--entrypoints.web.http.redirections.entrypoint.permanent=true"
+      - "--providers.file.directory=/etc/traefik/dynamic"
+      - "--providers.file.watch=true"
     ports:
       - "80:80"
-      - "8080:8080"  # Traefik dashboard
+      - "443:443"
+      - "8080:8080"
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - "./.local-infra/traefik/dynamic:/etc/traefik/dynamic:ro"
+      - "./.local-infra/certs:/certs:ro"
     networks:
       - net
+    env_file:
+      - .env.local
+    labels:
+      - "traefik.enable=true"
+      # basic auth middleware
+      - "traefik.http.middlewares.tkd-basicauth.basicauth.users=${TRAEFIK_DASHBOARD_AUTH}"
+      # router for dashboard
+      - "traefik.http.routers.tkd.rule=Host(`${LOGTO_DOMAIN}`)"
+      - "traefik.http.routers.tkd.entrypoints=websecure"
+      - "traefik.http.routers.tkd.tls=true"
+      - "traefik.http.routers.tkd.service=api@internal"
+      - "traefik.http.routers.tkd.middlewares=tkd-basicauth"
     logging:
       driver: json-file
       options:
@@ -20,7 +41,7 @@ services:
         max-file: "6"
 
   redis:
-    image: redis
+    image: redis:latest
     container_name: redis
     ports:
       - "6379:6379"
@@ -40,20 +61,23 @@ services:
         max-file: "6"
 
   db:
-    image: ankane/pgvector
+    image: encoredotdev/postgres:latest
+    container_name: db
     ports:
       - "5433:5432"  # Expose PostgreSQL port to host
     volumes:
       - postgres_db:/var/lib/postgresql/data
+      - ${PWD}/scripts/db/pg-init-scripts:/docker-entrypoint-initdb.d  # Mount initialization scripts
     environment:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - POSTGRES_DB=${POSTGRES_DB}
       - POSTGRES_HOST_AUTH_METHOD=trust
+      - POSTGRES_MULTIPLE_DATABASES=${POSTGRES_MULTIPLE_DATABASES}
     networks:
       - net
     env_file:
-      - .env
+      - .env.local
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s
@@ -64,82 +88,133 @@ services:
       options:
         max-size: "50m"
         max-file: "6"
-    command: >
-      bash -c "
-        docker-entrypoint.sh postgres &
-        sleep 10
-        psql -U $${POSTGRES_USER:-postgres} -d $${POSTGRES_DB:-postgres} -c 'CREATE EXTENSION IF NOT EXISTS vector;'
-        wait
-      "
 
-  api:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
+  logto:
+    image: ghcr.io/logto-io/logto:latest
     depends_on:
       - db
-      - redis
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    entrypoint: [ "sh", "-c", "./packages/cli/custom-setup/entrypoint.sh" ]
+    #    entrypoint: ["sh", "-c", "npm run cli db seed -- --swe && npm start"]
+    environment:
+      - TRUST_PROXY_HEADER=1
+      - ENDPOINT=https://${LOGTO_DOMAIN}
+      - ADMIN_ENDPOINT=https://${LOGTO_ADMIN_DOMAIN}
+      - DB_URL=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/logto
+      # App Specific
+      - APP_NAME=platform
+      - APP_DESCRIPTION="Baseline for organization workflows automation"
+      - APP_URI=web.localhost
+      - APP_URL=https://web.localhost
+      # Logto Specific
+      - LOGTO_APP_ID=${LOGTO_APP_ID}
+      - LOGTO_APP_SECRET=${LOGTO_APP_SECRET}
+      - LOGTO_APP_API_RESOURCE=https://api.localhost
+      - LOGTO_APP_API_EVENT_WEBHOOK_URL=https://api.localhost/stripe/logto/webhook
+      - LOGTO_APP_API_EVENT_WEBHOOK_SIGNING_KEY=${LOGTO_APP_API_EVENT_WEBHOOK_SIGNING_KEY}
+      - LOGTO_MANAGEMENT_API_RESOURCE=https://default.logto.app/api
+      - LOGTO_MANAGEMENT_API_APPLICATION_ID=${LOGTO_MANAGEMENT_API_APPLICATION_ID}
+      - LOGTO_MANAGEMENT_API_APPLICATION_SECRET=${LOGTO_MANAGEMENT_API_APPLICATION_SECRET}
+    volumes:
+      - ${PWD}/scripts/logto/custom-setup:/etc/logto/packages/cli/custom-setup
+    networks:
+      net:
+        aliases:
+          - "${LOGTO_DOMAIN}"
+          - "${LOGTO_ADMIN_DOMAIN}"
     env_file:
-      - .env
-    environment:
-      - DATABASE_URL=postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
-      - REDIS_HOST=queue
-      - REDIS_PORT=6379
-    networks:
-      - net
-    deploy:
-      replicas: 1
+      - .env.local
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.app.rule=Host(`${API_DOMAIN}`)"
-      - "traefik.http.services.app.loadbalancer.server.port=8000"
+      # Core app (port 3001)
+      - "traefik.http.routers.logto-core.rule=Host(`${LOGTO_DOMAIN}`)"
+      - "traefik.http.routers.logto-core.entrypoints=websecure"
+      - "traefik.http.routers.logto-core.tls=true"
+      - "traefik.http.services.logto-core.loadbalancer.server.port=3001"
+      # Admin app (port 3002)
+      - "traefik.http.routers.logto-admin.rule=Host(`${LOGTO_ADMIN_DOMAIN}`)"
+      - "traefik.http.routers.logto-admin.entrypoints=websecure"
+      - "traefik.http.routers.logto-admin.tls=true"
+      - "traefik.http.services.logto-admin.loadbalancer.server.port=3002"
     logging:
       driver: json-file
       options:
         max-size: "50m"
         max-file: "6"
 
-  background:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile.background
-    depends_on:
-      - db
-      - redis
-    environment:
-      - DATABASE_URL=postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-    networks:
-      - net
-    deploy:
-      replicas: 2
-    restart: always
-
-  web:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    depends_on:
-      - api
-    networks:
-      - net
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.web.rule=Host(`${WEB_DOMAIN}`)"
-      - "traefik.http.services.web.loadbalancer.server.port=3001"
-    logging:
-      driver: json-file
-      options:
-        max-size: "50m"
-        max-file: "6"
+#  api:
+#    build:
+#      context: ./backend
+#      dockerfile: Dockerfile
+#    depends_on:
+#      - db
+#      - redis
+#    env_file:
+#      - .env.local
+#    environment:
+#      - DATABASE_URL=postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+#      - REDIS_HOST=queue
+#      - REDIS_PORT=6379
+#    networks:
+#      - net
+#    deploy:
+#      replicas: 1
+#    labels:
+#      - "traefik.enable=true"
+#      - "traefik.http.routers.app.rule=Host(`${API_DOMAIN}`)"
+#      - "traefik.http.routers.app.entrypoints=websecure"
+#      - "traefik.http.routers.app.tls=true"
+#      - "traefik.http.services.app.loadbalancer.server.port=8000"
+#    logging:
+#      driver: json-file
+#      options:
+#        max-size: "50m"
+#        max-file: "6"
+#
+#  background:
+#    build:
+#      context: ./backend
+#      dockerfile: Dockerfile.background
+#    depends_on:
+#      - db
+#      - redis
+#    environment:
+#      - DATABASE_URL=postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+#      - REDIS_HOST=redis
+#      - REDIS_PORT=6379
+#    networks:
+#      - net
+#    deploy:
+#      replicas: 2
+#    restart: always
+#
+#  web:
+#    build:
+#      context: ./frontend
+#      dockerfile: Dockerfile
+#    depends_on:
+#      - api
+#    networks:
+#      - net
+#    labels:
+#      - "traefik.enable=true"
+#      - "traefik.http.routers.web.rule=Host(`${WEB_DOMAIN}`)"
+#      - "traefik.http.routers.web.entrypoints=websecure"
+#      - "traefik.http.routers.web.tls=true"
+#      - "traefik.http.services.web.loadbalancer.server.port=3001"
+#    logging:
+#      driver: json-file
+#      options:
+#        max-size: "50m"
+#        max-file: "6"
 
   dozzle:
     image: amir20/dozzle:latest
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       # - /path/to/dozzle/data:/data
-      - ./dozzle/data:/data
+      - ${PWD}/scripts/dozzle/data:/data
     networks:
       - net
     environment:
