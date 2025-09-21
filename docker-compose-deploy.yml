@@ -1,6 +1,7 @@
 services:
   traefik:
     image: traefik:latest
+    restart: always
     command:
       - "--api.dashboard=true"
       - "--providers.docker=true"
@@ -21,32 +22,74 @@ services:
       - "./letsencrypt:/letsencrypt"
     networks:
       - net
-    restart: always
+    env_file:
+      - .env
+    labels:
+      - "traefik.enable=true"
+      # basic auth middleware
+      - "traefik.http.middlewares.tkd-basicauth.basicauth.users=${TRAEFIK_DASHBOARD_AUTH}"
+      # router for dashboard
+      - "traefik.http.routers.tkd.rule=Host(`${TRAEFIK_DASHBOARD_DOMAIN}`)"
+      - "traefik.http.routers.tkd.entrypoints=websecure"
+      - "traefik.http.routers.tkd.tls=true"
+      - "traefik.http.routers.tkd.service=api@internal"
+      - "traefik.http.routers.tkd.middlewares=tkd-basicauth"
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "6"
 
   logto:
     image: ghcr.io/logto-io/logto:latest
+    restart: always
     depends_on:
       - db
     environment:
       - TRUST_PROXY_HEADER=1
       - ENDPOINT=https://${LOGTO_DOMAIN}
       - ADMIN_ENDPOINT=https://${LOGTO_ADMIN_DOMAIN}
-      - DB_URL=postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/logto
+      - DB_URL=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/logto
+      # App Specific
+      - APP_NAME=platform
+      - APP_DESCRIPTION="Baseline for organization workflows automation"
+      - APP_URI=${WEB_DOMAIN}
+      - APP_URL=https://${WEB_DOMAIN}
+      # Logto Specific
+      - LOGTO_APP_ID=${LOGTO_APP_ID}
+      - LOGTO_APP_SECRET=${LOGTO_APP_SECRET}
+      - LOGTO_APP_API_RESOURCE=https://${API_DOMAIN}
+      - LOGTO_APP_API_EVENT_WEBHOOK_URL=https://${API_DOMAIN}/stripe/logto/webhook
+      - LOGTO_APP_API_EVENT_WEBHOOK_SIGNING_KEY=${LOGTO_APP_API_EVENT_WEBHOOK_SIGNING_KEY}
+      - LOGTO_MANAGEMENT_API_RESOURCE=https://${LOGTO_DOMAIN}/api
+      - LOGTO_MANAGEMENT_API_APPLICATION_ID=${LOGTO_MANAGEMENT_API_APPLICATION_ID}
+      - LOGTO_MANAGEMENT_API_APPLICATION_SECRET=${LOGTO_MANAGEMENT_API_APPLICATION_SECRET}
     networks:
       - net
-    restart: always
+    env_file:
+      - .env
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.logto-core.rule=Host(`${LOGTO_DOMAIN}`)"
-      - "traefik.http.routers.logto-core.entrypoints=websecure"
-      - "traefik.http.routers.logto-core.tls=true"
-      - "traefik.http.routers.logto-core.tls.certresolver=myresolver"
-      - "traefik.http.services.logto-core.loadbalancer.server.port=3001"
+      # Core (port 3001)
+      - "traefik.http.routers.logto.rule=Host(`${LOGTO_DOMAIN}`)"
+      - "traefik.http.routers.logto.entrypoints=websecure"
+      - "traefik.http.routers.logto.tls=true"
+      - "traefik.http.routers.logto.tls.certresolver=myresolver"
+      - "traefik.http.routers.logto.service=logto"
+      - "traefik.http.services.logto.loadbalancer.server.port=3001"
+      # Admin (port 3002)
       - "traefik.http.routers.logto-admin.rule=Host(`${LOGTO_ADMIN_DOMAIN}`)"
       - "traefik.http.routers.logto-admin.entrypoints=websecure"
       - "traefik.http.routers.logto-admin.tls=true"
       - "traefik.http.routers.logto-admin.tls.certresolver=myresolver"
+      - "traefik.http.routers.logto-admin.service=logto-admin"
       - "traefik.http.services.logto-admin.loadbalancer.server.port=3002"
+    healthcheck:
+      test: [ "CMD-SHELL", "wget -qO- https://${LOGTO_DOMAIN}/api/health || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 8
+      start_period: 30s
 
   redis:
     image: redis:latest
@@ -83,6 +126,8 @@ services:
       - POSTGRES_HOST_AUTH_METHOD=trust
     networks:
       - net
+    env_file:
+      - .env
     restart: always
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-postgres}"]
@@ -174,16 +219,23 @@ services:
       - ./dozzle/data:/data
     networks:
       - net
+    env_file:
+      - .env
     environment:
       DOZZLE_NO_ANALYTICS: true
       DOZZLE_AUTH_PROVIDER: simple
     restart: always
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.dozzle.rule=Host(`${DOZZLE_DOMAIN:-dozzle.localhost}`)"
-      - "traefik.http.routers.dozzle.tls=${USE_SSL:-false}"
+      - "traefik.http.routers.dozzle.rule=Host(`${DOZZLE_DOMAIN}`)"
+      - "traefik.http.routers.dozzle.entrypoints=websecure"
+      - "traefik.http.routers.dozzle.tls=true"
       - "traefik.http.routers.dozzle.tls.certresolver=myresolver"
+      - "traefik.http.routers.dozzle.service=dozzle"
       - "traefik.http.services.dozzle.loadbalancer.server.port=8080"
+      # optional: protect
+      - "traefik.http.middlewares.dozzle-auth.basicauth.users=${DOZZLE_AUTH}"
+      - "traefik.http.routers.dozzle.middlewares=dozzle-auth"
     healthcheck:
       test: ["CMD", "/dozzle", "healthcheck"]
       interval: 3s
