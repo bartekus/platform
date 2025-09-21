@@ -89,12 +89,32 @@ services:
         max-size: "50m"
         max-file: "6"
 
+  pgweb:
+    container_name: pgweb
+    restart: always
+    image: sosedoff/pgweb
+    ports:
+      - "127.0.0.1:8081:8081"
+    environment:
+      - DATABASE_URL=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/logto?sslmode=disable
+    depends_on:
+      - db
+    networks:
+      - net
+    env_file:
+      - .env.local
+
   logto:
     image: ghcr.io/logto-io/logto:latest
     depends_on:
       - db
     extra_hosts:
       - "host.docker.internal:host-gateway"
+      - "logto.localhost:host-gateway"
+      - "logto-admin.localhost:host-gateway"
+      - "api.localhost:host-gateway"          # optional if calling it server-side
+      - "web.localhost:host-gateway"          # optional
+      - "dozzle.localhost:host-gateway"       # optional
     entrypoint: [ "sh", "-c", "./packages/cli/custom-setup/entrypoint.sh" ]
     #    entrypoint: ["sh", "-c", "npm run cli db seed -- --swe && npm start"]
     environment:
@@ -113,29 +133,46 @@ services:
       - LOGTO_APP_API_RESOURCE=https://api.localhost
       - LOGTO_APP_API_EVENT_WEBHOOK_URL=https://api.localhost/stripe/logto/webhook
       - LOGTO_APP_API_EVENT_WEBHOOK_SIGNING_KEY=${LOGTO_APP_API_EVENT_WEBHOOK_SIGNING_KEY}
-      - LOGTO_MANAGEMENT_API_RESOURCE=https://default.logto.app/api
+      - LOGTO_MANAGEMENT_API_RESOURCE=https://logto.localhost/api
       - LOGTO_MANAGEMENT_API_APPLICATION_ID=${LOGTO_MANAGEMENT_API_APPLICATION_ID}
       - LOGTO_MANAGEMENT_API_APPLICATION_SECRET=${LOGTO_MANAGEMENT_API_APPLICATION_SECRET}
+      - NODE_EXTRA_CA_CERTS=/etc/ssl/certs/mkcert-rootCA.pem
     volumes:
       - ${PWD}/scripts/logto/custom-setup:/etc/logto/packages/cli/custom-setup
+      - ${PWD}/.local-infra/certs/mkcert-rootCA.pem:/etc/ssl/certs/mkcert-rootCA.pem:ro
     networks:
-      net:
-        aliases:
-          - "${LOGTO_DOMAIN}"
-          - "${LOGTO_ADMIN_DOMAIN}"
+      - net
     env_file:
       - .env.local
     labels:
       - "traefik.enable=true"
-      # Core app (port 3001)
-      - "traefik.http.routers.logto-core.rule=Host(`${LOGTO_DOMAIN}`)"
-      - "traefik.http.routers.logto-core.entrypoints=websecure"
-      - "traefik.http.routers.logto-core.tls=true"
-      - "traefik.http.services.logto-core.loadbalancer.server.port=3001"
-      # Admin app (port 3002)
+      # Core (port 3001)
+      - "traefik.http.routers.logto.rule=Host(`${LOGTO_DOMAIN}`)"
+      - "traefik.http.routers.logto.entrypoints=websecure"
+      - "traefik.http.routers.logto.tls=true"
+      - "traefik.http.routers.logto.service=logto"
+      - "traefik.http.routers.logto.middlewares=logto-cors"
+      - "traefik.http.services.logto.loadbalancer.server.port=3001"
+      # CORS middleware allowing the admin UI origin
+      - "traefik.http.middlewares.logto-cors.headers.accessControlAllowOriginList=https://${LOGTO_ADMIN_DOMAIN}"
+      - "traefik.http.middlewares.logto-cors.headers.accessControlAllowMethods=GET,POST,PUT,PATCH,DELETE,OPTIONS"
+      - "traefik.http.middlewares.logto-cors.headers.accessControlAllowHeaders=Authorization,Content-Type,X-Requested-With"
+      - "traefik.http.middlewares.logto-cors.headers.accessControlAllowCredentials=true"
+      - "traefik.http.middlewares.logto-cors.headers.addVaryHeader=true"
+      - "traefik.http.middlewares.logto-cors.headers.accessControlMaxAge=86400"
+      # force header on all responses (incl. 401)
+      - "traefik.http.middlewares.logto-cors.headers.customResponseHeaders.Access-Control-Allow-Origin=https://${LOGTO_ADMIN_DOMAIN}"
+      # Preflight short-circuit
+      - "traefik.http.routers.logto-preflight.rule=Host(`${LOGTO_DOMAIN}`) && Method(`OPTIONS`)"
+      - "traefik.http.routers.logto-preflight.entrypoints=websecure"
+      - "traefik.http.routers.logto-preflight.tls=true"
+      - "traefik.http.routers.logto-preflight.service=noop@internal"
+      - "traefik.http.routers.logto-preflight.middlewares=logto-cors"
+      # Admin (port 3002)
       - "traefik.http.routers.logto-admin.rule=Host(`${LOGTO_ADMIN_DOMAIN}`)"
       - "traefik.http.routers.logto-admin.entrypoints=websecure"
       - "traefik.http.routers.logto-admin.tls=true"
+      - "traefik.http.routers.logto-admin.service=logto-admin"
       - "traefik.http.services.logto-admin.loadbalancer.server.port=3002"
     logging:
       driver: json-file
@@ -223,6 +260,9 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.dozzle.rule=Host(`${DOZZLE_DOMAIN}`)"
+      - "traefik.http.routers.dozzle.entrypoints=websecure"
+      - "traefik.http.routers.dozzle.tls=true"
+      - "traefik.http.routers.dozzle.service=dozzle"
       - "traefik.http.services.dozzle.loadbalancer.server.port=8080"
     healthcheck:
       test: ["CMD", "/dozzle", "healthcheck"]

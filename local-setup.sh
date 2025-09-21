@@ -51,6 +51,10 @@ fi
 # Create certs directory if needed
 mkdir -p "$CERT_DIR" "$TRAEFIK_DIR"
 
+#echo "Copying rootCA to cert folder"
+CAROOT="$(mkcert -CAROOT)"
+cp -f "$CAROOT/rootCA.pem" "${CERT_DIR}/mkcert-rootCA.pem"
+
 echo "Generating mkcert certificate for local HTTPS domains"
 mkcert -cert-file "${CERT_DIR}/localhost.pem" -key-file "${CERT_DIR}/localhost-key.pem" \
   "${API_DOMAIN}" "${WEB_DOMAIN}" "${DOZZLE_DOMAIN}" "${LOGTO_DOMAIN}" "${LOGTO_ADMIN_DOMAIN}" "${TRAEFIK_DASHBOARD_DOMAIN}"
