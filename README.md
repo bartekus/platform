@@ -1,8 +1,9 @@
-# Logto React SDK + Encore App Example
+# Logto React SDK + Encore.ts API
 
-This is an example of how to do user authentication using [Logto](https://logto.io) together with an Encore app.
+This is an example of how to do user authentication using [Logto](https://logto.io) together with an Encore.ts backend api.
 
-For this example the sign in / sing out flow is abstracted away by the Logto React SDK, then in the Encore auth handler the JWT token is verified and the user is authenticated.
+For this example the sign in / sing out flow is abstracted away by the Logto React SDK, </br>
+then in the Encore auth handler the JWT token is verified and the user is authenticated.
 
 ## Prerequisites 
 
@@ -19,7 +20,7 @@ Before we begin integrating with Encore, you'll need to set up a few things in L
 
 2. Create an API Resource in Logto Console, this represents your Encore API service
    - Go to "API Resources" in Logto Console and create a new API
-   - Set a name and API identifier (e.g., `https://api.encoreapp.com`)
+   - Set a name and API identifier (e.g., `https://backend.localdev.online/api`)
    - Note down the API identifier on the API resource details page as we'll need it later
   
 3. Create an application for your frontend application

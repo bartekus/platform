@@ -8,12 +8,12 @@ export const config: LogtoConfig = {
     appId: 'q33loirfmp83n55u4l8k',   // comes from Logto Admin UI
 
     // Match the API resource you registered in Logto for Encore
-    resources: ['https://api.localdev.online/api'],
+    resources: ['https://backend.localdev.online/api'],
 }
 
 export const appConfig = {
     // Same API resource as above, just reused by your frontend code
-    apiResourceIndicator: 'https://api.localdev.online/api',
+    apiResourceIndicator: 'https://backend.localdev.online/api',
 
     // Where Logto should send the browser back after sign-in
     // Must match the redirect URI registered in your Logto app config
@@ -24,4 +24,4 @@ export const appConfig = {
 }
 
 // Encore dev server proxied through Traefik
-export const encoreApiEndpoint = 'https://api.localdev.online'
+export const encoreApiEndpoint = 'https://backend.localdev.online'
