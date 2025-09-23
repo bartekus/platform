@@ -47,3 +47,31 @@ if ! check_containers_running; then
 else
     echo "Docker containers are already running. Skipping Docker setup..."
 fi
+
+# Function to set encore-dev local a secret if the environment variable exists
+set_secret() {
+    local secret_name=$1
+    local env_value=${!secret_name}
+
+    if [ -n "$env_value" ]; then
+        echo "Setting secret: $secret_name"
+        encore secret set --type dev,preview,local "$secret_name" <<< "$env_value"
+    else
+        echo "Warning: $secret_name not found in .env"
+    fi
+}
+
+# List of secrets to set
+secrets=(
+    "API_DOMAIN"
+    "LOGTO_DOMAIN"
+    "LOGTO_APP_ID"
+)
+
+# Set each secret
+for secret in "${secrets[@]}"; do
+    set_secret "$secret"
+done
+
+export DISABLE_ENCORE_TELEMETRY=1
+exec encore run --debug --verbose --watch --listen 0.0.0.0:4000
