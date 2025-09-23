@@ -237,19 +237,24 @@ services:
     image: amir20/dozzle:latest
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-      - ./scripts/dozzle/data:/data
     networks:
       - net
+    env_file:
+      - .env.local
     environment:
       DOZZLE_NO_ANALYTICS: true
-      DOZZLE_AUTH_PROVIDER: simple
+      DOZZLE_AUTH_PROVIDER: "none"
     labels:
       - "traefik.enable=true"
+      # basic auth middleware
+      - "traefik.http.middlewares.dozzle-basicauth.basicauth.users=${DOZZLE_DASHBOARD_AUTH}"
+      # router for dozzle dashboard
       - "traefik.http.routers.dozzle.rule=Host(`${DOZZLE_DOMAIN}`)"
       - "traefik.http.routers.dozzle.entrypoints=websecure"
       - "traefik.http.routers.dozzle.tls=true"
       - "traefik.http.routers.dozzle.service=dozzle"
       - "traefik.http.services.dozzle.loadbalancer.server.port=8080"
+      - "traefik.http.routers.dozzle.middlewares=dozzle-basicauth@docker"
     healthcheck:
       test: ["CMD", "/dozzle", "healthcheck"]
       interval: 3s
