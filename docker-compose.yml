@@ -110,10 +110,10 @@ services:
       - db
     extra_hosts:
       - "host.docker.internal:host-gateway"
-      - "logto.localhost:host-gateway"
-      - "logto-admin.localhost:host-gateway"
-      - "api.localhost:host-gateway"          # optional if calling it server-side
-      - "web.localhost:host-gateway"          # optional
+      - "logto.localdev.online:host-gateway"
+      - "logto-admin.localdev.online:host-gateway"
+      - "api.localdev.online:host-gateway"          # optional if calling it server-side
+      - "web.localdev.online:host-gateway"          # optional
     entrypoint: [ "sh", "-c", "./packages/cli/custom-setup/entrypoint.sh" ]
     #    entrypoint: ["sh", "-c", "npm run cli db seed -- --swe && npm start"]
     environment:
@@ -129,12 +129,16 @@ services:
       # Logto Specific
       - LOGTO_APP_ID=${LOGTO_APP_ID}
       - LOGTO_APP_SECRET=${LOGTO_APP_SECRET}
-      - LOGTO_APP_API_RESOURCE=https://${API_DOMAIN}
+      - LOGTO_APP_API_RESOURCE=https://${API_DOMAIN}/api
       - LOGTO_APP_API_EVENT_WEBHOOK_URL=https://${API_DOMAIN}/stripe/logto/webhook
       - LOGTO_APP_API_EVENT_WEBHOOK_SIGNING_KEY=${LOGTO_APP_API_EVENT_WEBHOOK_SIGNING_KEY}
       - LOGTO_MANAGEMENT_API_RESOURCE=https://${LOGTO_DOMAIN}/api
       - LOGTO_MANAGEMENT_API_APPLICATION_ID=${LOGTO_MANAGEMENT_API_APPLICATION_ID}
       - LOGTO_MANAGEMENT_API_APPLICATION_SECRET=${LOGTO_MANAGEMENT_API_APPLICATION_SECRET}
+
+
+      - LOGTO_GOOGLE_CLIENT_ID
+      - LOGTO_GOOGLE_CLIENT_SECRET
       - NODE_EXTRA_CA_CERTS=/etc/ssl/certs/mkcert-rootCA.pem
     volumes:
       - ./scripts/logto/custom-setup:/etc/logto/packages/cli/custom-setup

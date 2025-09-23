@@ -18,7 +18,7 @@ source "$ENV_FILE"
 set +a
 
 # Required domain vars
-required_vars=(API_DOMAIN WEB_DOMAIN DOZZLE_DOMAIN LOGTO_DOMAIN LOGTO_ADMIN_DOMAIN TRAEFIK_DASHBOARD_DOMAIN)
+required_vars=(DOMAIN API_DOMAIN WEB_DOMAIN DOZZLE_DOMAIN LOGTO_DOMAIN LOGTO_ADMIN_DOMAIN TRAEFIK_DASHBOARD_DOMAIN)
 missing=()
 for v in "${required_vars[@]}"; do
   if [[ -z "${!v:-}" ]]; then

@@ -1,4 +1,4 @@
-Issuer: "<your-logto-issuer-url>"
-JwksUri: "<your-logto-issuer-url>/jwks"
-ApiResourceIndicator: "<your-api-resource-indicator>"
-ClientId: "<your-client-id>"
+Issuer: "https://logto.localdev.online/oidc"
+JwksUri: "https://logto.localdev.online/oidc/jwks"
+ApiResourceIndicator: "https://api.localdev.online/api"
+ClientId: "q33loirfmp83n55u4l8k"

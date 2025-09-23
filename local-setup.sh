@@ -2,7 +2,8 @@
 set -euo pipefail
 
 echo "Installing/Updating brew dependencies"
-brew install encoredev/tap/encore mkcert nss stripe/stripe-cli/stripe
+brew install encoredev/tap/encore mkcert nss stripe/stripe-cli/stripe gettext
+brew link --force gettext
 
 echo "Setting up mkcert local CA (idempotent)"
 mkcert -install
@@ -33,7 +34,7 @@ source "$ENV_FILE"
 set +a
 
 # Required domain vars
-required_vars=(API_DOMAIN WEB_DOMAIN DOZZLE_DOMAIN LOGTO_DOMAIN LOGTO_ADMIN_DOMAIN TRAEFIK_DASHBOARD_DOMAIN)
+required_vars=(DOMAIN API_DOMAIN WEB_DOMAIN DOZZLE_DOMAIN LOGTO_DOMAIN LOGTO_ADMIN_DOMAIN TRAEFIK_DASHBOARD_DOMAIN)
 
 missing=()
 for v in "${required_vars[@]}"; do
@@ -56,16 +57,52 @@ CAROOT="$(mkcert -CAROOT)"
 cp -f "$CAROOT/rootCA.pem" "${CERT_DIR}/mkcert-rootCA.pem"
 
 echo "Generating mkcert certificate for local HTTPS domains"
-mkcert -cert-file "${CERT_DIR}/localhost.pem" -key-file "${CERT_DIR}/localhost-key.pem" \
+mkcert -cert-file "${CERT_DIR}/${DOMAIN}.pem" -key-file "${CERT_DIR}/${DOMAIN}-key.pem" \
   "${API_DOMAIN}" "${WEB_DOMAIN}" "${DOZZLE_DOMAIN}" "${LOGTO_DOMAIN}" "${LOGTO_ADMIN_DOMAIN}" "${TRAEFIK_DASHBOARD_DOMAIN}"
 
 echo "Generating tls.yml local Traefik config"
-cat > "${TRAEFIK_DIR}/tls.yml" <<'YAML'
+
+# Write a template with literal ${VARS} (no expansion here)
+cat > "${TRAEFIK_DIR}/tls.tmpl.yml" <<'YAML'
 tls:
   certificates:
-    - certFile: /certs/localhost.pem
-      keyFile: /certs/localhost-key.pem
+    - certFile: /certs/${DOMAIN}.pem
+      keyFile: /certs/${DOMAIN}-key.pem
+
+http:
+  services:
+    encore:
+      loadBalancer:
+        servers:
+          - url: http://host.docker.internal:4000
+    vite:
+      loadBalancer:
+        servers:
+          - url: http://host.docker.internal:5173
+
+  routers:
+    # API
+    encore:
+      rule: Host(`${API_DOMAIN}`)
+      entryPoints: [websecure]
+      tls: true
+      service: encore
+
+    # Client
+    vite:
+      rule: Host(`${WEB_DOMAIN}`)
+      entryPoints: [websecure]
+      tls: true
+      service: vite
 YAML
+
+# Expand only the vars we need and then write the real file
+export DOMAIN API_DOMAIN WEB_DOMAIN
+envsubst '${DOMAIN} ${API_DOMAIN} ${WEB_DOMAIN}' \
+  < "${TRAEFIK_DIR}/tls.tmpl.yml" \
+  > "${TRAEFIK_DIR}/tls.yml"
+# lastly remove the tmpl file
+rm -f "${TRAEFIK_DIR}/tls.tmpl.yml"
 
 # Ensure hosts helper exists and is executable
 HOSTS_SCRIPT="./scripts/create-etc-hosts-entry.sh"

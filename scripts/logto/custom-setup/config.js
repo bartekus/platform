@@ -77,8 +77,8 @@ export const config = {
       description: `${process.env.APP_DESCRIPTION}`,
       type: 'SPA',
       oidcClientMetadata: {
-        redirectUris: [`https://${process.env.APP_URI}/callback`, `https://${process.env.APP_URI}`, `${process.env.APP_URL}/callback`, `${process.env.APP_URL}`],
-        postLogoutRedirectUris: [`https://${process.env.APP_URI}`, `${process.env.APP_URL}`],
+        redirectUris: [`${process.env.APP_URL}/callback`],
+        postLogoutRedirectUris: [`${process.env.APP_URL}`],
       },
       customClientMetadata: {
         idTokenTtl: 3600,
@@ -93,41 +93,45 @@ export const config = {
     },
   ],
 
-  connectors: [
-    // {
-    //   tenantId: TENANT_ID,
-    //   id: `${process.env.CONNECTOR_ID_GOOGLE}`,
-    //   connectorId: 'google-universal',
-    //   config: {
-    //     scope: 'openid profile email',
-    //     clientId: `${process.env.LOGTO_GOOGLE_CLIENT_ID}`,
-    //     clientSecret: `${process.env.LOGTO_GOOGLE_CLIENT_SECRET}`
-    //   },
-    //   syncProfile: false,
-    //   metadata: {},
-    //   createdAt: formatDate(now),
-    // }
-  ],
+  connectors: process.env.LOGTO_GOOGLE_CONNECTOR_ID &&
+      process.env.LOGTO_GOOGLE_CLIENT_ID &&
+      process.env.LOGTO_GOOGLE_CLIENT_SECRET ? [
+        {
+          tenantId: TENANT_ID,
+          id: `${process.env.LOGTO_GOOGLE_CONNECTOR_ID}`,
+          connectorId: 'google-universal',
+          config: {
+            scope: 'openid profile email',
+            clientId: `${process.env.LOGTO_GOOGLE_CLIENT_ID}`,
+            clientSecret: `${process.env.LOGTO_GOOGLE_CLIENT_SECRET}`
+          },
+          syncProfile: false,
+          metadata: {},
+          createdAt: formatDate(now),
+        }
+      ] : [],
 
-  sso_connectors: [
-    // {
-    //   tenantId: TENANT_ID,
-    //   id: `${process.env.SSO_CONNECTOR_ID_GOOGLE}`,
-    //   provider_name: 'GoogleWorkspace',
-    //   connector_name: `${process.env.APP_NAME} google workspace connector`,
-    //   config: {
-    //     scope: 'openid profile email',
-    //     clientId: `${process.env.LOGTO_GOOGLE_WORKSPACE_CLIENT_ID}`,
-    //     clientSecret: `${process.env.LOGTO_GOOGLE_WORKSPACE_CLIENT_SECRET}`,
-    //   },
-    //   domains: JSON.parse(process.env.SSO_CONNECTOR_APPROVED_DOMAINS || '[]'),
-    //   branding: {
-    //     displayName: `${process.env.APP_NAME} workspace`,
-    //   },
-    //   sync_profile: false,
-    //   created_at: formatDate(now),
-    // },
-  ],
+    sso_connectors: process.env.LOGTO_GOOGLE_WORKSPACE_CONNECTOR_ID &&
+        process.env.LOGTO_GOOGLE_WORKSPACE_CLIENT_ID &&
+        process.env.LOGTO_GOOGLE_WORKSPACE_CLIENT_SECRET ? [
+        {
+            tenantId: TENANT_ID,
+            id: `${process.env.LOGTO_GOOGLE_WORKSPACE_CONNECTOR_ID}`,
+            provider_name: 'GoogleWorkspace',
+            connector_name: `${process.env.APP_NAME} google workspace connector`,
+            config: {
+                scope: 'openid profile email',
+                clientId: `${process.env.LOGTO_GOOGLE_WORKSPACE_CLIENT_ID}`,
+                clientSecret: `${process.env.LOGTO_GOOGLE_WORKSPACE_CLIENT_SECRET}`,
+            },
+            domains: JSON.parse(process.env.LOGTO_GOOGLE_WORKSPACE_CONNECTOR_APPROVED_DOMAINS || '[]'),
+            branding: {
+                displayName: `${process.env.APP_NAME} workspace`,
+            },
+            sync_profile: false,
+            created_at: formatDate(now),
+        }
+    ] : [],
 
   sign_in_experiences: [
     {
@@ -153,10 +157,10 @@ export const config = {
       },
       sign_up: {
         verify: false,
-        password: true, // false if using social_sign_in_connector_targets
+        password: false,
         identifiers: [],
       },
-      social_sign_in_connector_targets: [""], // social_sign_in_connector_targets: ["google"], if using google connector
+      social_sign_in_connector_targets: ["google"],
       sign_in_mode: 'SignInAndRegister',
       custom_css: `[aria-label*="Logto"] { display: none; }`,
       custom_content: {},
@@ -179,7 +183,7 @@ export const config = {
         policy: 'UserControlled',
         factors: [],
       },
-      single_sign_on_enabled: true,
+      single_sign_on_enabled: !!process.env.LOGTO_GOOGLE_WORKSPACE_CLIENT_ID,
     },
   ],
   roles: [

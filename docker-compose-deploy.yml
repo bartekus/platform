@@ -161,7 +161,7 @@ services:
 #    restart: always
 #    labels:
 #      - "traefik.enable=true"
-#      - "traefik.http.routers.app.rule=Host(`${API_DOMAIN:-api.localhost}`)"
+#      - "traefik.http.routers.app.rule=Host(`${API_DOMAIN:-api.localdev.online}`)"
 #      - "traefik.http.routers.app.tls=${USE_SSL:-false}"
 #      - "traefik.http.routers.app.tls.certresolver=myresolver"
 #      - "traefik.http.services.app.loadbalancer.server.port=8000"
@@ -202,7 +202,7 @@ services:
 #    restart: always
 #    labels:
 #      - "traefik.enable=true"
-#      - "traefik.http.routers.web.rule=Host(`${WEB_DOMAIN:-app.localhost}`)"
+#      - "traefik.http.routers.web.rule=Host(`${WEB_DOMAIN:-app.localdev.online}`)"
 #      - "traefik.http.routers.web.tls=${USE_SSL:-false}"
 #      - "traefik.http.routers.web.tls.certresolver=myresolver"
 #      - "traefik.http.services.web.loadbalancer.server.port=3001"

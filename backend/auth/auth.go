@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"encore.dev/beta/auth"
@@ -28,18 +29,23 @@ var authConfig *LogtoAuthConfig = config.Load[*LogtoAuthConfig]()
 // RequiredClaims defines the expected structure of JWT claims
 // Extends the standard JWT claims with a custom ClientID field
 type RequiredClaims struct {
-	ClientID string `json:"client_id"`
+    ClientID string `json:"client_id,omitempty"`
+    AZP      string `json:"azp,omitempty"`
 	jwt.RegisteredClaims
 }
 
-// AuthHandler validates JWT tokens and extracts the user ID
-// Implements Encore's authentication handler interface
-//
 //encore:authhandler
 func AuthHandler(ctx context.Context, token string) (auth.UID, error) {
+    fmt.Println("🔑 Starting AuthHandler")
+//     fmt.Printf("Expected Issuer: %s\n", authConfig.Issuer())
+//     fmt.Printf("Expected Audience: %s\n", authConfig.ApiResourceIndicator())
+//     fmt.Printf("Expected ClientID: %s\n", authConfig.ClientId())
+//     fmt.Printf("JWKS URI: %s\n", authConfig.JwksUri())
+
 	// Fetch and parse the JWKS (JSON Web Key Set) from the identity provider
 	jwks, err := keyfunc.NewDefaultCtx(ctx, []string{authConfig.JwksUri()})
 	if err != nil {
+	    fmt.Printf("❌ Failed to fetch JWKS: %v\n", err)
 		return "", &errs.Error{
 			Code:    errs.Internal,
 			Message: "failed to fetch JWKS",
@@ -61,11 +67,19 @@ func AuthHandler(ctx context.Context, token string) (auth.UID, error) {
 
 	// Check if there were any errors during token parsing
 	if err != nil {
+	    fmt.Printf("❌ Token parse/validation error: %v\n", err)
 		return "", &errs.Error{
 			Code:    errs.Unauthenticated,
 			Message: "invalid token",
 		}
 	}
+
+	// Debug log claims
+// 	fmt.Printf("Token Issuer: %s\n", claims.Issuer)
+// 	fmt.Printf("Token Audience: %v\n", claims.Audience)
+// 	fmt.Printf("Token Subject (sub): %s\n", claims.Subject)
+// 	fmt.Printf("Token ClientID: %s\n", claims.ClientID)
+// 	fmt.Printf("Token AZP: %s\n", claims.AZP)
 
 	// Verify that the client ID in the token matches the expected client ID
 	if parsedToken.Claims.(*RequiredClaims).ClientID != authConfig.ClientId() {
@@ -78,12 +92,14 @@ func AuthHandler(ctx context.Context, token string) (auth.UID, error) {
 	// Extract the user ID (subject) from the token claims
 	userId, err := parsedToken.Claims.GetSubject()
 	if err != nil {
+	    fmt.Printf("❌ Failed to get subject: %v\n", err)
 		return "", &errs.Error{
 			Code:    errs.Unauthenticated,
 			Message: "invalid token",
 		}
 	}
 
+	fmt.Printf("✅ Auth success. UserID: %s\n", userId)
 	// Return the user ID as an Encore auth.UID
 	return auth.UID(userId), nil
 }
