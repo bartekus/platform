@@ -28,34 +28,55 @@ function getBearer(tokenHeader?: string): string | null {
 }
 
 export const AuthHandler = authHandler<AuthParams, AuthData>(async ({ authorization }) => {
-    const raw = getBearer(authorization);
-    if (!raw) throw APIError.unauthenticated("Missing bearer token");
+    console.log("🔑 Starting AuthHandler");
 
-    // Build remote JWKS fetcher (jose caches keys)
-    const jwks = createRemoteJWKSet(new URL(`https://${LOGTO_DOMAIN()}/oidc/jwks`));
+    const raw = getBearer(authorization);
+    if (!raw) {
+        console.error("❌ Missing or malformed Authorization header");
+        throw APIError.unauthenticated("Missing bearer token");
+    }
+    console.log("📦 Got bearer token, length:", raw.length);
+
+    // Build remote JWKS fetcher (caches keys)
+    const jwksUrl = `https://${LOGTO_DOMAIN()}/oidc/jwks`;
+    console.log("🌐 Fetching JWKS from:", jwksUrl);
+    const jwks = createRemoteJWKSet(new URL(jwksUrl));
 
     // Verify JWT
-    const { payload } = await jwtVerify(raw, jwks, {
-        issuer: `https://${LOGTO_DOMAIN()}/oidc`,
-        audience: `https://${API_DOMAIN()}/api`,
-        // Allow for a small clock skew (10 minutes)
-        clockTolerance: 600,
-    }).catch(() => {
+    try {
+        const { payload } = await jwtVerify(raw, jwks, {
+            issuer: `https://${LOGTO_DOMAIN()}/oidc`,
+            audience: `https://${API_DOMAIN()}/api`,
+            // Allow for a small clock skew (600 = 10 minutes)
+            clockTolerance: 600,
+        });
+
+        console.log("✅ Token verified");
+        console.log("   iss:", payload.iss);
+        console.log("   aud:", payload.aud);
+        console.log("   sub:", payload.sub);
+        console.log("   client_id:", (payload as any).client_id);
+        console.log("   azp:", (payload as any).azp);
+
+        // Enforce client id (`client_id` or `azp`) like your Go version
+        const clientId = (payload as JWTPayload & { client_id?: string; azp?: string }).client_id ?? payload.azp;
+        if (clientId !== LOGTO_APP_ID()) {
+            console.error("❌ Client ID mismatch:", clientId, "≠", LOGTO_APP_ID());
+            throw APIError.unauthenticated("Invalid client_id/azp");
+        }
+
+        if (!payload.sub) {
+            console.error("❌ Token missing sub");
+            throw APIError.unauthenticated("Token missing subject");
+        }
+
+        console.log("🎉 Auth success for user:", payload.sub);
+        return { userID: payload.sub };
+
+    } catch (err) {
+        console.error("❌ Token verification failed:", err);
         throw APIError.unauthenticated("Invalid token");
-    });
-
-    // Enforce client id (`client_id` or `azp`) like your Go version
-    const clientId = (payload as JWTPayload & { client_id?: string; azp?: string }).client_id ?? payload.azp;
-    if (clientId !== LOGTO_APP_ID()) {
-        throw APIError.unauthenticated("Invalid client_id/azp");
     }
-
-    // Subject is our user id
-    const sub = payload.sub;
-    if (!sub) throw APIError.unauthenticated("Token missing sub");
-
-    return { userID: sub };
 });
 
-// Wire the gateway so auth is executed for authenticated endpoints
 export const gateway = new Gateway({ authHandler: AuthHandler });
