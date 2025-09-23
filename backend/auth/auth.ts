@@ -27,19 +27,21 @@ function getBearer(tokenHeader?: string): string | null {
     return token;
 }
 
+const DEV = process.env.NODE_ENV !== "production";
+
 export const AuthHandler = authHandler<AuthParams, AuthData>(async ({ authorization }) => {
-    console.log("🔑 Starting AuthHandler");
+    DEV && console.log("🔑 Starting AuthHandler");
 
     const raw = getBearer(authorization);
     if (!raw) {
         console.error("❌ Missing or malformed Authorization header");
         throw APIError.unauthenticated("Missing bearer token");
     }
-    console.log("📦 Got bearer token, length:", raw.length);
+    DEV && console.log("📦 Got bearer token, length:", raw.length);
 
     // Build remote JWKS fetcher (caches keys)
     const jwksUrl = `https://${LOGTO_DOMAIN()}/oidc/jwks`;
-    console.log("🌐 Fetching JWKS from:", jwksUrl);
+    DEV && console.log("🌐 Fetching JWKS from:", jwksUrl);
     const jwks = createRemoteJWKSet(new URL(jwksUrl));
 
     // Verify JWT
@@ -51,12 +53,12 @@ export const AuthHandler = authHandler<AuthParams, AuthData>(async ({ authorizat
             clockTolerance: 600,
         });
 
-        console.log("✅ Token verified");
-        console.log("   iss:", payload.iss);
-        console.log("   aud:", payload.aud);
-        console.log("   sub:", payload.sub);
-        console.log("   client_id:", (payload as any).client_id);
-        console.log("   azp:", (payload as any).azp);
+        DEV && console.log("✅ Token verified");
+        DEV && console.log("   iss:", payload.iss);
+        DEV && console.log("   aud:", payload.aud);
+        DEV && console.log("   sub:", payload.sub);
+        DEV && console.log("   client_id:", (payload as any).client_id);
+        DEV && console.log("   azp:", (payload as any).azp);
 
         // Enforce client id (`client_id` or `azp`) like your Go version
         const clientId = (payload as JWTPayload & { client_id?: string; azp?: string }).client_id ?? payload.azp;
@@ -70,7 +72,7 @@ export const AuthHandler = authHandler<AuthParams, AuthData>(async ({ authorizat
             throw APIError.unauthenticated("Token missing subject");
         }
 
-        console.log("🎉 Auth success for user:", payload.sub);
+        DEV && console.log("🎉 Auth success for user:", payload.sub);
         return { userID: payload.sub };
 
     } catch (err) {

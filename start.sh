@@ -74,4 +74,5 @@ for secret in "${secrets[@]}"; do
 done
 
 export DISABLE_ENCORE_TELEMETRY=1
+export NODE_EXTRA_CA_CERTS="./.local-infra/certs/mkcert-rootCA.pem"
 exec encore run --debug --verbose --watch --listen 0.0.0.0:4000
