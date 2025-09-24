@@ -41,6 +41,10 @@ jobs:
             type=raw,value=latest,enable={{is_default_branch}}
             type=sha,prefix=,suffix=,format=short
 
+      - name: Compute short SHA
+        id: vars
+        run: echo "short_sha=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+
       # Build/push non-API services with buildx (web,background)
       - name: Build & push generic services (non-API)
         run: |
@@ -48,11 +52,10 @@ jobs:
           IFS=',' read -ra SERVICES <<< "${SERVICES_TO_PUSH}"
           for svc in "${SERVICES[@]}"; do
             echo "==> $svc"
-            # Build context is positional ('.'); no --context flag
             docker buildx build \
               --file "./services/${svc}/Dockerfile" \
               --tag "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/${svc}:latest" \
-              --tag "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/${svc}:${{ steps.meta.outputs.sha }}" \
+              --tag "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/${svc}:${{ steps.vars.outputs.short_sha }}" \
               --cache-from "type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/${svc}:buildcache" \
               --cache-to   "type=registry,mode=max,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/${svc}:buildcache" \
               --push \
@@ -101,7 +104,7 @@ jobs:
       - name: Tag & push API image to GHCR (latest + sha)
         run: |
           set -Eeuo pipefail
-          SHA_TAG="${{ steps.meta.outputs.sha }}"
+          SHA_TAG="${{ steps.vars.outputs.short_sha }}"
           docker tag encore-app ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/api:latest
           docker tag encore-app ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/api:${SHA_TAG}
           docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/api:latest

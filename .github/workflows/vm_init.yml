@@ -93,6 +93,24 @@ jobs:
           echo "🔎 Current Docker info:"
           docker info --format '{{.ServerVersion}} (storage driver: {{.Driver}})' || true
 
+      - name: Ensure user has docker group access (optional)
+        env:
+          TARGET_USER: ${{ env.TARGET_USER }}
+        run: |
+          set -Eeuo pipefail
+          if [[ -n "${TARGET_USER:-}" && "${TARGET_USER}" != "root" ]]; then
+            sudo groupadd -f docker
+            if id -nG "${TARGET_USER}" | tr ' ' '\n' | grep -qx docker; then
+              echo "✅ ${TARGET_USER} already in docker group"
+            else
+              echo "➕ Adding ${TARGET_USER} to docker group"
+              sudo usermod -aG docker "${TARGET_USER}"
+              echo "ℹ️  ${TARGET_USER} must re-login (or reboot) for group change to take effect."
+            fi
+          else
+            echo "ℹ️  Skipping docker group update (user is root or not set)."
+          fi
+
       - name: Give user ability to run docker and restart Docker
         uses: appleboy/ssh-action@v1.0.3
         with:
