@@ -4,6 +4,8 @@ set -euo pipefail
 # Allow overrides for env file paths
 INFRA_ENV_FILE="${INFRA_ENV_FILE:-.env.digitalocean}"
 APP_ENV_FILE="${APP_ENV_FILE:-.env.prod}"
+DNS_SAFE_REPLACE="${DNS_SAFE_REPLACE:-1}"   # 1=delete+create on change, 0=use update
+DNS_DEFAULT_TTL="${DNS_DEFAULT_TTL:-60}"
 
 # Load cloud/infra vars first
 if [[ ! -f "$INFRA_ENV_FILE" ]]; then

@@ -38,7 +38,7 @@ fi
 echo "🕵️  Setting GitHub repo SECRETS..."
 gh secret set SSH_KEY --repo "$GH_REPO" --body "$(<"${KEY_PATH}")"
 gh secret set ENV_FILE --repo "$GH_REPO" --body "$(<.env.prod)"
-gh secret set PG_INIT_SCRIPT --repo "$GH_REPO" --body "$(<scripts/de/pg-init.sh)"
+gh secret set PG_INIT_SCRIPT --repo "$GH_REPO" --body "$(<scripts/db/pg-init.sh)"
 gh secret set LOGTO_CONFIG --repo "$GH_REPO" --body "$(<scripts/logto/config.js)"
 gh secret set LOGTO_ENTRYPOINT --repo "$GH_REPO" --body "$(<scripts/logto/entrypoint.sh)"
 gh secret set LOGTO_INDEX --repo "$GH_REPO" --body "$(<scripts/logto/index.js)"

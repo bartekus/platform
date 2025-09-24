@@ -10,10 +10,6 @@ networks:
   net:
     driver: bridge
 
-volumes:
-  postgres_data:
-  redis_data:
-
 services:
   traefik:
     image: traefik:v3.1
@@ -35,12 +31,12 @@ services:
       - "443:443"
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
-      - "./letsencrypt:/letsencrypt"
+      - "/var/lib/platform/letsencrypt:/letsencrypt"
     networks: [net]
-    env_file: [.env]
+    env_file:
+      - /etc/platform/env
     labels:
       - "traefik.enable=true"
-      # Basic auth for dashboard
       - "traefik.http.middlewares.tkd-basicauth.basicauth.users=${TRAEFIK_DASHBOARD_AUTH}"
       - "traefik.http.routers.tkd.rule=Host(`${TRAEFIK_DASHBOARD_DOMAIN}`)"
       - "traefik.http.routers.tkd.entrypoints=websecure"
@@ -52,21 +48,16 @@ services:
   db:
     image: encoredotdev/postgres:16
     container_name: postgres_db
-    # Uncomment if you need host access:
-    # ports:
-    #   - "5433:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
-      # Mount init scripts prepared by CI (e.g., /opt/scripts/db/pg-init.sh)
-      - /opt/scripts/db:/docker-entrypoint-initdb.d:ro
+      - /var/lib/platform/postgres:/var/lib/postgresql/data
+      - /opt/platform/scripts/db/pg-init-scripts:/docker-entrypoint-initdb.d:ro
     environment:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - POSTGRES_DB=${POSTGRES_DB}
-      # Avoid trust; rely on password above
-      # - POSTGRES_HOST_AUTH_METHOD=trust
     networks: [net]
-    env_file: [.env]
+    env_file:
+      - /etc/platform/env
     restart: always
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB} -h 127.0.0.1 -p 5432"]
@@ -79,11 +70,8 @@ services:
   redis:
     image: redis:7.4-alpine
     container_name: redis
-    # Internal only; expose if you truly need host access
-    # ports:
-    #   - "6379:6379"
     volumes:
-      - redis_data:/data
+      - /var/lib/platform/redis:/data
     networks: [net]
     restart: always
     healthcheck:
@@ -100,18 +88,15 @@ services:
       db:
         condition: service_healthy
     entrypoint: ["sh", "-c", "./packages/cli/custom-setup/entrypoint.sh"]
-    #    entrypoint: ["sh", "-c", "npm run cli db seed -- --swe && npm start"]
     environment:
       - TRUST_PROXY_HEADER=1
       - ENDPOINT=https://${LOGTO_DOMAIN}
       - ADMIN_ENDPOINT=https://${LOGTO_ADMIN_DOMAIN}
       - DB_URL=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/logto
-      # App Specific
       - APP_NAME=platform
       - APP_DESCRIPTION=Baseline for organization workflows automation
       - APP_URI=${WEB_DOMAIN}
       - APP_URL=https://${WEB_DOMAIN}
-      # Logto Specific
       - LOGTO_APP_ID=${LOGTO_APP_ID}
       - LOGTO_APP_SECRET=${LOGTO_APP_SECRET}
       - LOGTO_APP_API_RESOURCE=https://${API_DOMAIN}/api
@@ -124,20 +109,18 @@ services:
       - LOGTO_GOOGLE_CLIENT_ID=${LOGTO_GOOGLE_CLIENT_ID}
       - LOGTO_GOOGLE_CLIENT_SECRET=${LOGTO_GOOGLE_CLIENT_SECRET}
     volumes:
-      # Use the path your CI places files into:
-      - /opt/scripts/logto:/etc/logto/packages/cli/custom-setup:ro
+      - /opt/platform/scripts/logto/custom-setup:/etc/logto/packages/cli/custom-setup:ro
     networks: [net]
-    env_file: [.env]
+    env_file:
+      - /etc/platform/env
     labels:
       - "traefik.enable=true"
-      # Core (port 3001)
       - "traefik.http.routers.logto.rule=Host(`${LOGTO_DOMAIN}`)"
       - "traefik.http.routers.logto.entrypoints=websecure"
       - "traefik.http.routers.logto.tls=true"
       - "traefik.http.routers.logto.tls.certresolver=myresolver"
       - "traefik.http.routers.logto.service=logto"
       - "traefik.http.services.logto.loadbalancer.server.port=3001"
-      # Admin (port 3002)
       - "traefik.http.routers.logto-admin.rule=Host(`${LOGTO_ADMIN_DOMAIN}`)"
       - "traefik.http.routers.logto-admin.entrypoints=websecure"
       - "traefik.http.routers.logto-admin.tls=true"
@@ -145,7 +128,6 @@ services:
       - "traefik.http.routers.logto-admin.service=logto-admin"
       - "traefik.http.services.logto-admin.loadbalancer.server.port=3002"
     healthcheck:
-      # Container-local to avoid DNS/TLS dependency during boot
       test: ["CMD-SHELL", "wget -qO- http://localhost:3001/api/health || exit 1"]
       interval: 10s
       timeout: 5s
@@ -162,12 +144,13 @@ services:
         condition: service_healthy
       traefik:
         condition: service_started
-    env_file: [ .env ]
+    env_file:
+      - /etc/platform/env
     environment:
       - DATABASE_URL=postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
       - REDIS_HOST=redis
       - REDIS_PORT=6379
-    networks: [ net ]
+    networks: [net]
     restart: always
     labels:
       - "traefik.enable=true"
@@ -176,13 +159,9 @@ services:
       - "traefik.http.routers.app.tls=true"
       - "traefik.http.routers.app.tls.certresolver=myresolver"
       - "traefik.http.services.app.loadbalancer.server.port=8000"
-      # Drain: mark old container unhealthy, then sleep N seconds (tune N below)
-      - "docker-rollout.pre-stop-hook=sh -c 'touch /tmp/drain && sleep 30'"
-    # Ensure the process has time to finish requests after SIGTERM as well
     stop_grace_period: 60s
     healthcheck:
-      # Fail if /tmp/drain exists; otherwise check the normal health endpoint
-      test: [ "CMD-SHELL", "test -f /tmp/drain && exit 1; wget -qO- http://localhost:8000/health >/dev/null 2>&1 || exit 1" ]
+      test: ["CMD-SHELL", "test -f /tmp/drain && exit 1; wget -qO- http://localhost:8000/health >/dev/null 2>&1 || exit 1"]
       interval: 5s
       timeout: 3s
       retries: 3
@@ -196,7 +175,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-    env_file: [.env]
+    env_file:
+      - /etc/platform/env
     environment:
       - DATABASE_URL=postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
       - REDIS_HOST=redis
@@ -204,7 +184,7 @@ services:
     networks: [net]
     restart: always
     healthcheck:
-      test: ["CMD-SHELL", "python -c 'import sys; sys.exit(0)'"] # TODO: replace with a real queue heartbeat
+      test: ["CMD-SHELL", "python -c 'import sys; sys.exit(0)'"]
       interval: 30s
       timeout: 5s
       retries: 10
@@ -215,7 +195,7 @@ services:
     depends_on:
       api:
         condition: service_healthy
-    networks: [ net ]
+    networks: [net]
     restart: always
     labels:
       - "traefik.enable=true"
@@ -224,10 +204,9 @@ services:
       - "traefik.http.routers.web.tls=true"
       - "traefik.http.routers.web.tls.certresolver=myresolver"
       - "traefik.http.services.web.loadbalancer.server.port=3001"
-      - "docker-rollout.pre-stop-hook=sh -c 'touch /tmp/drain && sleep 20'"
     stop_grace_period: 45s
     healthcheck:
-      test: [ "CMD-SHELL", "test -f /tmp/drain && exit 1; wget -qO- http://localhost:3001/health >/dev/null 2>&1 || exit 1" ]
+      test: ["CMD-SHELL", "test -f /tmp/drain && exit 1; wget -qO- http://localhost:3001/health >/dev/null 2>&1 || exit 1"]
       interval: 5s
       timeout: 3s
       retries: 3
@@ -238,9 +217,10 @@ services:
     image: amir20/dozzle:latest
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-      - ./dozzle/data:/data
+      - /var/lib/platform/dozzle:/data
     networks: [net]
-    env_file: [.env]
+    env_file:
+      - /etc/platform/env
     environment:
       DOZZLE_NO_ANALYTICS: "true"
       DOZZLE_AUTH_PROVIDER: "none"
@@ -253,12 +233,8 @@ services:
       - "traefik.http.routers.dozzle.tls.certresolver=myresolver"
       - "traefik.http.routers.dozzle.service=dozzle"
       - "traefik.http.services.dozzle.loadbalancer.server.port=8080"
-      - "traefik.http.middlewares.dozzle-auth.basicauth.users=${DOZZLE_AUTH}"
-      - "traefik.http.routers.dozzle.middlewares=dozzle-auth"
+      - "traefik.http.middlewares.dozzle-basicauth.basicauth.users=${DOZZLE_DASHBOARD_AUTH}"
+      - "traefik.http.routers.dozzle.middlewares=dozzle-basicauth@docker"
     healthcheck:
       test: ["CMD", "/dozzle", "healthcheck"]
-      interval: 3s
-      timeout: 30s
-      retries: 5
-      start_period: 30s
     logging: *default-logging
