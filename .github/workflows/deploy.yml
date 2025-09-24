@@ -9,8 +9,7 @@ concurrency:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }} # owner/repo
-  # IMPORTANT: exclude api here; we will build it via Encore separately
+  IMAGE_NAME: ${{ github.repository }}
   SERVICES_TO_PUSH: web,background
 
 jobs:
@@ -65,22 +64,20 @@ jobs:
         run: |
           set -Eeuo pipefail
           RAW=$(jq -r '.dependencies["encore.dev"] // empty' package.json)
-          if [ -z "${RAW}" ] || [ "${RAW}" = "null" ]; then
-            echo "encore.dev not found in dependencies" >&2
-            exit 1
-          fi
-          # strip leading non-digits (^, ~, >=, etc.)
+          [ -n "$RAW" ] && [ "$RAW" != "null" ] || { echo "encore.dev dep missing"; exit 1; }
+
+#          if [ -z "${RAW}" ] || [ "${RAW}" = "null" ]; then
+#            echo "encore.dev not found in dependencies" >&2
+#            exit 1
+#          fi
+
           CLEAN=$(printf "%s" "${RAW}" | sed 's/^[^0-9]*//')
-          if ! printf "%s" "${CLEAN}" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+'; then
-            echo "Unable to parse encore.dev version: ${RAW}" >&2
-            exit 1
-          fi
           echo "version=v${CLEAN}" >> "$GITHUB_OUTPUT"
 
       # --- Encore API build & push ---
       - name: Install Encore CLI (pinned from package.json)
         env:
-          ENCORE_VERSION: ${{ steps.encorever.outputs.version }}   # e.g., v1.50.0
+          ENCORE_VERSION: ${{ steps.encorever.outputs.version }}
         run: |
           set -Eeuo pipefail
           curl -fsSL https://encore.dev/install.sh -o install.sh
@@ -110,23 +107,19 @@ jobs:
         run: |
           set -Eeuo pipefail
           SHA_TAG="${{ steps.meta.outputs.sha }}"
-          SRC="encore-app"
-          LATEST="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/api:latest"
-          IMMUT="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/api:${SHA_TAG}"
+          docker tag encore-app ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/api:latest
+          docker tag encore-app ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/api:${SHA_TAG}
+          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/api:latest
+          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/api:${SHA_TAG}
 
-          docker tag "$SRC" "$LATEST"
-          docker tag "$SRC" "$IMMUT"
-          docker push "$LATEST"
-          docker push "$IMMUT"
-
-      # --- Materialize deployment files from repo secrets ---
+      # --- Materialize deployment artifacts from secrets ---
       - name: Prepare deployment artifacts from secrets
         run: |
           set -Eeuo pipefail
           mkdir -p .deploy/logto
 
           # 1) .env from ENV_FILE secret (verbatim)
-          cat > .deploy/.env <<'EOF'
+          cat > .deploy/env <<'EOF'
           ${{ secrets.ENV_FILE }}
           EOF
           
@@ -163,10 +156,10 @@ jobs:
           username: ${{ secrets.USER }}
           key: ${{ secrets.SSH_KEY }}
           # known_hosts: ${{ secrets.SSH_KNOWN_HOSTS }}   # ← enable if you store host key
-          source: ".deploy/.env,.deploy/pg-init.sh,.deploy/logto/*,docker-compose-deploy.yml"
+          source: ".deploy/env,.deploy/pg-init.sh,.deploy/logto/*,docker-compose-deploy.yml"
           target: "/tmp"
 
-      - name: Prepare Dozzle users.yml
+      - name: Place artifacts into FHS paths and set permissions
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.HOST }}
@@ -174,42 +167,38 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           script: |
             set -Eeuo pipefail
-            sudo mkdir -p /opt/dozzle/data
-            printf '%s\n' "${{ secrets.DOZZLE_USER_YAML }}" | sudo tee /opt/dozzle/data/users.yml >/dev/null
-            sudo chown -R ${{ secrets.USER }}:${{ secrets.USER }} /opt/dozzle
-            sudo chmod 600 /opt/dozzle/data/users.yml
-
-      - name: Move artifacts into place and set permissions
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.HOST }}
-          username: ${{ secrets.USER }}
-          key: ${{ secrets.SSH_KEY }}
-          script: |
-            set -Eeuo pipefail
-            sudo mkdir -p /opt /opt/scripts/db /opt/scripts/logto
             
-            # Move .env and compose
-            sudo mv /tmp/.env /opt/.env
-            sudo mv /tmp/docker-compose-deploy.yml /opt/docker-compose.yml
-            sudo chown ${{ secrets.USER }}:${{ secrets.USER }} /opt/.env /opt/docker-compose.yml
-            sudo chmod 600 /opt/.env
-            sudo chmod 644 /opt/docker-compose.yml
+            # Create FHS directories
+            sudo mkdir -p /etc/platform
+            sudo mkdir -p /opt/platform/scripts/db/pg-init-scripts
+            sudo mkdir -p /opt/platform/scripts/logto
+            sudo mkdir -p /opt/platform
+            sudo mkdir -p /var/lib/platform/{postgres,redis,letsencrypt}
             
-            # Move PG init
-            sudo mv /tmp/pg-init.sh /opt/scripts/db/pg-init.sh
-            sudo chown -R ${{ secrets.USER }}:${{ secrets.USER }} /opt/scripts/db
-            sudo chmod +x /opt/scripts/db/pg-init.sh
+            # Move config/env
+            sudo mv /tmp/env /etc/platform/env
+            sudo chown root:root /etc/platform/env
+            sudo chmod 600 /etc/platform/env
             
-            # Move Logto custom files
-            sudo mv /tmp/config.js /opt/scripts/logto/config.js
-            sudo mv /tmp/entrypoint.sh /opt/scripts/logto/entrypoint.sh
-            sudo mv /tmp/index.js /opt/scripts/logto/index.js
-            sudo mv /tmp/setup.js /opt/scripts/logto/setup.js
-            sudo chown -R ${{ secrets.USER }}:${{ secrets.USER }} /opt/scripts/logto
-            sudo chmod 755 /opt/scripts/logto
-            sudo chmod 644 /opt/scripts/logto/*.js
-            sudo chmod +x  /opt/scripts/logto/entrypoint.sh
+            # Move compose
+            sudo mv /tmp/docker-compose-deploy.yml /opt/platform/docker-compose.yml
+            sudo chown ${{ secrets.USER }}:${{ secrets.USER }} /opt/platform/docker-compose.yml
+            sudo chmod 644 /opt/platform/docker-compose.yml
+            
+            # PG init scripts
+            sudo mv /tmp/pg-init.sh /opt/platform/scripts/db/pg-init.sh
+            sudo chown -R ${{ secrets.USER }}:${{ secrets.USER }} /opt/platform/scripts
+            sudo chmod +x /opt/platform/scripts/db/pg-init.sh
+            
+            # Logto custom files
+            sudo mv /tmp/config.js     /opt/platform/scripts/logto/config.js
+            sudo mv /tmp/entrypoint.sh /opt/platform/scripts/logto/entrypoint.sh
+            sudo mv /tmp/index.js      /opt/platform/scripts/logto/index.js
+            sudo mv /tmp/setup.js      /opt/platform/scripts/logto/setup.js
+            sudo chmod 755 /opt/platform/scripts/logto
+            sudo chmod 644 /opt/platform/scripts/logto/*.js
+            sudo chmod +x  /opt/platform/scripts/logto/entrypoint.sh
+            
 
       - name: Deploy with rollout (immutable tag + draining)
         uses: appleboy/ssh-action@v1.0.3
@@ -220,8 +209,8 @@ jobs:
           script_stop: true
           script: |
             set -Eeuo pipefail
+            cd /opt/platform
             
-            cd /opt
             echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
             
             # Ensure docker-rollout is available
@@ -230,19 +219,18 @@ jobs:
               exit 1
             fi
             
-            # Pull immutable SHA tags for the services we’re deploying
+            # Pull immutable SHA tags for services
             IFS=',' read -ra SERVICES <<< "${{ env.SERVICES_TO_PUSH }}"
             SHA_TAG="${{ steps.meta.outputs.sha }}"
-            
             for service in "${SERVICES[@]}"; do
               docker pull "ghcr.io/${{ env.IMAGE_NAME }}/${service}:${SHA_TAG}"
             done
+            docker pull "ghcr.io/${{ env.IMAGE_NAME }}/api:${SHA_TAG}"
             
-            # Export the tag for compose references
+            # Export tag for compose
             echo "IMAGE_TAG=${SHA_TAG}" > .deploy.env
             
             # Drain-aware rollout for API and WEB; simple for BACKGROUND
-            # Pre-stop hooks: touch drain file and sleep long enough for healthcheck->unhealthy + inflight completion
             docker rollout -f docker-compose.yml --env-file .deploy.env \
               --pre-stop-hook "sh -c 'touch /tmp/drain && sleep 30'" api
             
