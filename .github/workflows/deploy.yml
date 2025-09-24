@@ -49,40 +49,18 @@ jobs:
       - name: Build & push generic services (non-API)
         run: |
           set -Eeuo pipefail
-          
-          # helper: find service dir (supports a few common layouts)
-          find_svc_dir() {
-            local svc="$1"
-            for d in "./services/${svc}" "./apps/${svc}" "./${svc}"; do
-              if [[ -d "$d" ]]; then
-                echo "$d"
-                return 0
-              fi
-            done
-            return 1
-          }
-          
           IFS=',' read -ra SERVICES <<< "${SERVICES_TO_PUSH}"
           for svc in "${SERVICES[@]}"; do
             echo "==> $svc"
-            SVC_DIR="$(find_svc_dir "$svc")" || {
-              echo "❌ Could not find directory for service '$svc'. Tried: ./services/$svc, ./apps/$svc, ./$svc"
-              echo "   Update SERVICES_TO_PUSH or adjust the build step to your tree."
-              exit 1
-            }
-          
-            # Choose Dockerfile path (default to SVC_DIR/Dockerfile)
-            DF="$SVC_DIR/Dockerfile"
-            [[ -f "$DF" ]] || { echo "❌ Missing Dockerfile at $DF"; exit 1; }
-          
             docker buildx build \
-              --file "$DF" \
+              --file "./services/${svc}/Dockerfile" \
               --tag "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/${svc}:latest" \
-              --tag "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/${svc}:${{ steps.vars.outputs.short_sha }}" \
+              --tag "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/${svc}:${{ steps.meta.outputs.sha }}" \
               --cache-from "type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/${svc}:buildcache" \
               --cache-to   "type=registry,mode=max,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/${svc}:buildcache" \
+              --progress=plain \
               --push \
-              "$SVC_DIR"
+              .
           done
 
       # Read encore.dev version from package.json and normalize to "vX.Y.Z"
@@ -127,7 +105,7 @@ jobs:
       - name: Tag & push API image to GHCR (latest + sha)
         run: |
           set -Eeuo pipefail
-          SHA_TAG="${{ steps.vars.outputs.short_sha }}"
+          SHA_TAG="${{ steps.meta.outputs.sha }}"
           docker tag encore-app ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/api:latest
           docker tag encore-app ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/api:${SHA_TAG}
           docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/api:latest
