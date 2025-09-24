@@ -12,10 +12,10 @@ echo "🔍 Checking GitHub CLI authentication..."
 gh auth status || (echo "❌ GitHub CLI auth failed. Run: gh auth login" && exit 1)
 
 echo "🔍 Verifying DO Project presence..."
-if ! doctl projects get "$DOCTL_PROJECT_ID" >/dev/null 2>&1; then
-  echo "⚠️  Project '$DOCTL_PROJECT_ID' not found (will be created in 00_project_setup.sh)."
+if doctl projects list --format Name --no-header | grep -qx "$DO_PROJECT_NAME"; then
+  echo "✅ Project '$DO_PROJECT_NAME' exists."
 else
-  echo "✅ Project '$DOCTL_PROJECT_ID' exists."
+  echo "⚠️  Project '$DO_PROJECT_NAME' not found (will be created in 00_project_setup.sh)."
 fi
 
 echo "✅ All authentication checks passed."

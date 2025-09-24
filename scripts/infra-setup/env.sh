@@ -39,6 +39,12 @@ for var in "${REQUIRED_VARS[@]}"; do
   fi
 done
 
+# Project metadata (used on create)
+DO_PROJECT_NAME="${DO_PROJECT_NAME:-$DOCTL_PROJECT_ID}"   # keep backward compat with your var
+DO_PROJECT_PURPOSE="${DO_PROJECT_PURPOSE:-Web Application}"
+DO_PROJECT_ENVIRONMENT="${DO_PROJECT_ENVIRONMENT:-Production}"  # Production|Development|Staging|Sandbox|Testing
+DO_PROJECT_DESC="${DO_PROJECT_DESC:-Platform stack}"
+
 # ── Domain config (can come from .env.prod or be set here) ─────────────────────
 # If DOMAIN is present (preferred from .env.prod), derive sensible defaults
 if [[ -n "${DOMAIN:-}" ]]; then
