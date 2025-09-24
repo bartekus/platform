@@ -46,86 +46,92 @@ jobs:
         run: echo "short_sha=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
 
       # Build/push non-API services with buildx (web,background)
-      - name: Build & push (compose-aware, bash+jq)
+      # We’ll point at your deploy compose file explicitly
+      - name: Build & push (from docker-compose-deploy.yml with fallbacks)
         env:
           COMPOSE_FILE: docker-compose-deploy.yml
           SHORT_SHA: ${{ steps.vars.outputs.short_sha }}
+        shell: python
         run: |
-          set -Eeuo pipefail
+          import os, sys, subprocess, yaml
           
-          # services we want to build (comma-separated), e.g. "web" or "web,background"
-          IFS=',' read -ra SERVICES <<< "${SERVICES_TO_PUSH}"
+          REGISTRY = os.environ["REGISTRY"]
+          IMAGE_NAME = os.environ["IMAGE_NAME"]       # e.g. bartekus/platform
+          SERVICES_TO_PUSH = [s.strip() for s in os.environ["SERVICES_TO_PUSH"].split(",") if s.strip()]
+          COMPOSE_FILE = os.environ.get("COMPOSE_FILE", "docker-compose.yml")
+          SHORT_SHA = os.environ["SHORT_SHA"]
           
-          # Generate normalized compose as JSON (handles anchors/extends/etc.)
-          if [[ ! -f "${COMPOSE_FILE}" ]]; then
-            echo "❌ compose file not found: ${COMPOSE_FILE}" >&2
-            exit 1
-          fi
-          CONFIG_JSON="$(docker compose -f "${COMPOSE_FILE}" config --format json)"
-          
-          # Helper to pull build info (context/dockerfile) from compose (string OR object)
-          get_build_info() {
-            local svc="$1"
-            jq -r --arg s "$svc" '
-              if .services[$s] and .services[$s].build then
-                ( .services[$s].build | 
-                  if type=="string" then 
-                    {context: ., dockerfile: "Dockerfile"} 
-                  else 
-                    {context: (.context // "."), dockerfile: (.dockerfile // "Dockerfile")} 
-                  end )
-              else empty end
-            ' <<<"$CONFIG_JSON"
+          # Conventional fallbacks when compose has no build: blocks
+          FALLBACKS = {
+            "web":  {"context": "frontend", "dockerfile": "Dockerfile"},
+            "api":  {"context": "backend",  "dockerfile": "Dockerfile"},
+            # "background": {"context": "background", "dockerfile": "Dockerfile"},
           }
           
-          for svc in "${SERVICES[@]}"; do
-            echo "==> ${svc}"
-            context="" ; dockerfile=""
+          def sh(cmd, **kw):
+            print("+", " ".join(cmd))
+            subprocess.check_call(cmd, **kw)
           
-            # Try compose build block first
-            BI="$(get_build_info "$svc")"
-            if [[ -n "$BI" && "$BI" != "null" ]]; then
-              context="$(jq -r '.context' <<<"$BI")"
-              dockerfile="$(jq -r '.dockerfile' <<<"$BI")"
-            else
-              # Fallbacks when compose has only image: (no build:)
-              case "$svc" in
-                web) context="frontend"; dockerfile="Dockerfile" ;;
-                background) context="background"; dockerfile="Dockerfile" ;;
-                *)
-                  echo "⚠️  No build info for '${svc}' and no fallback mapping. Skipping."
-                  continue
-                ;;
-              esac
-            fi
+          # Load compose (if present)
+          compose = {}
+          if os.path.exists(COMPOSE_FILE):
+            with open(COMPOSE_FILE, "r") as f:
+              compose = yaml.safe_load(f) or {}
+          services_cfg = (compose.get("services") or {}) if isinstance(compose, dict) else {}
           
-            # If dockerfile is relative, make it relative to context
-            if [[ "$dockerfile" != /* ]]; then
-              dockerfile="${context%/}/${dockerfile}"
-            fi
+          for svc in SERVICES_TO_PUSH:
+            print(f"==> {svc}")
+            # Derive context/dockerfile
+            context = None
+            dockerfile = None
+          
+            if svc in services_cfg and isinstance(services_cfg[svc], dict) and "build" in services_cfg[svc]:
+              b = services_cfg[svc]["build"]
+              if isinstance(b, str):
+                context = b
+                dockerfile = os.path.join(context, "Dockerfile")
+              elif isinstance(b, dict):
+                context = b.get("context", ".")
+                df = b.get("dockerfile", "Dockerfile")
+                dockerfile = df if os.path.isabs(df) else os.path.join(context, df)
+          
+            # Fallbacks when no build info in compose
+            if context is None or dockerfile is None:
+              fb = FALLBACKS.get(svc)
+              if not fb:
+                print(f"Warning: No build info for '{svc}' and no fallback mapping. Skipping.")
+                continue
+              context = fb["context"]
+              dockerfile = os.path.join(context, fb["dockerfile"])
           
             # Validate paths
-            [[ -d "$context" ]]    || { echo "❌ context dir not found: $context" >&2; exit 1; }
-            [[ -f "$dockerfile" ]] || { echo "❌ Dockerfile not found: $dockerfile" >&2; exit 1; }
+            if not os.path.isdir(context):
+              print(f"Error: context directory not found: {context}", file=sys.stderr)
+              sys.exit(1)
+            if not os.path.isfile(dockerfile):
+              print(f"Error: Dockerfile not found: {dockerfile}", file=sys.stderr)
+              sys.exit(1)
           
-            repo="${REGISTRY}/${IMAGE_NAME}/${svc}"
-            latest_tag="${repo}:latest"
-            sha_tag="${repo}:${SHORT_SHA}"
-            cache_ref="${repo}:buildcache"
+            repo = f"{REGISTRY}/{IMAGE_NAME}/{svc}"
+            latest_tag = f"{repo}:latest"
+            sha_tag = f"{repo}:{SHORT_SHA}"
+            cache_ref = f"{repo}:buildcache"
           
-            echo "Context:    $context"
-            echo "Dockerfile: $dockerfile"
-            echo "Tags:       $latest_tag , $sha_tag"
+            cmd = [
+              "docker","buildx","build",
+              "--file", dockerfile,
+              "--tag", latest_tag,
+              "--tag", sha_tag,
+              "--cache-from", f"type=registry,ref={cache_ref}",
+              "--cache-to",   f"type=registry,mode=max,ref={cache_ref}",
+              "--push",
+              context
+            ]
+            # Add plain progress if you want verbose output:
+            # cmd.insert(5, "--progress=plain")
+            sh(cmd)
           
-            docker buildx build \
-              --file "$dockerfile" \
-              --tag "$latest_tag" \
-              --tag "$sha_tag" \
-              --cache-from "type=registry,ref=${cache_ref}" \
-              --cache-to   "type=registry,mode=max,ref=${cache_ref}" \
-              --push \
-              "$context"
-          done
+          print("✅ Done building & pushing:", ", ".join(SERVICES_TO_PUSH))
 
       # Read encore.dev version from package.json and normalize to "vX.Y.Z"
       - name: Resolve Encore CLI version from package.json
