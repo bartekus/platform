@@ -59,15 +59,41 @@ jobs:
               --push
           done
 
+      # Read encore.dev version from package.json and normalize to "vX.Y.Z"
+      - name: Resolve Encore CLI version from package.json
+        id: encorever
+        run: |
+          set -Eeuo pipefail
+          RAW=$(jq -r '.dependencies["encore.dev"] // empty' package.json)
+          if [ -z "${RAW}" ] || [ "${RAW}" = "null" ]; then
+            echo "encore.dev not found in dependencies" >&2
+            exit 1
+          fi
+          # strip leading non-digits (^, ~, >=, etc.)
+          CLEAN=$(printf "%s" "${RAW}" | sed 's/^[^0-9]*//')
+          if ! printf "%s" "${CLEAN}" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+'; then
+            echo "Unable to parse encore.dev version: ${RAW}" >&2
+            exit 1
+          fi
+          echo "version=v${CLEAN}" >> "$GITHUB_OUTPUT"
+
       # --- Encore API build & push ---
-      - name: Install Encore CLI (pinned)
+      - name: Install Encore CLI (pinned from package.json)
         env:
-          ENCORE_VERSION: "v1.50.0"  # pin to your known-good version
+          ENCORE_VERSION: ${{ steps.encorever.outputs.version }}   # e.g., v1.50.0
         run: |
           set -Eeuo pipefail
           curl -fsSL https://encore.dev/install.sh -o install.sh
           bash install.sh
           /home/runner/.encore/bin/encore version
+
+      - name: Verify Encore version
+        run: |
+          set -Eeuo pipefail
+          WANT='${{ steps.encorever.outputs.version }}'
+          GOT=$(/home/runner/.encore/bin/encore version | awk '{print $NF}')
+          echo "Encore want=${WANT} got=${GOT}"
+          test "${WANT}" = "${GOT}"
 
       - name: Build API image via Encore
         working-directory: backend
