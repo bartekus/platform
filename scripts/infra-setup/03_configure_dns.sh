@@ -21,16 +21,13 @@ else
   echo "✅ Domain ${DOMAIN} already exists."
 fi
 
-# Helpers
+# ── Helpers ───────────────────────────────────────────────────────────────────
 upsert_a_record() {
   local name="$1" ip="$2" ttl="${3:-60}"
-  local id
+  local id cur
   id=$(doctl compute domain records list "$DOMAIN" --format ID,Type,Name,Data --no-header \
     | awk -v n="$name" '$2=="A" && $3==n {print $1}' | head -n1)
-
   if [[ -n "$id" ]]; then
-    # Update only if data changed
-    local cur
     cur=$(doctl compute domain records get "$DOMAIN" "$id" --format Data --no-header | tr -d ' ')
     if [[ "$cur" != "$ip" ]]; then
       doctl compute domain records update "$DOMAIN" "$id" --record-data "$ip" --record-ttl "$ttl" >/dev/null
@@ -44,15 +41,31 @@ upsert_a_record() {
   fi
 }
 
+upsert_aaaa_record() {
+  local name="$1" ip6="$2" ttl="${3:-60}"
+  local id cur
+  id=$(doctl compute domain records list "$DOMAIN" --format ID,Type,Name,Data --no-header \
+    | awk -v n="$name" '$2=="AAAA" && $3==n {print $1}' | head -n1)
+  if [[ -n "$id" ]]; then
+    cur=$(doctl compute domain records get "$DOMAIN" "$id" --format Data --no-header | tr -d ' ')
+    if [[ "$cur" != "$ip6" ]]; then
+      doctl compute domain records update "$DOMAIN" "$id" --record-data "$ip6" --record-ttl "$ttl" >/dev/null
+      echo "🔁 Updated AAAA ${name} → ${ip6}"
+    else
+      echo "✅ AAAA ${name} already points to ${ip6}"
+    fi
+  else
+    doctl compute domain records create "$DOMAIN" --record-type AAAA --record-name "$name" --record-data "$ip6" --record-ttl "$ttl" >/dev/null
+    echo "➕ Created AAAA ${name} → ${ip6}"
+  fi
+}
+
 upsert_cname_record() {
   local name="$1" target="$2" ttl="${3:-60}"
-  # DO wants target as fqdn without scheme; trailing dot optional
-  local id
+  local id cur
   id=$(doctl compute domain records list "$DOMAIN" --format ID,Type,Name,Data --no-header \
     | awk -v n="$name" '$2=="CNAME" && $3==n {print $1}' | head -n1)
-
   if [[ -n "$id" ]]; then
-    local cur
     cur=$(doctl compute domain records get "$DOMAIN" "$id" --format Data --no-header | tr -d ' ')
     if [[ "$cur" != "$target" ]]; then
       doctl compute domain records update "$DOMAIN" "$id" --record-data "$target" --record-ttl "$ttl" >/dev/null
@@ -66,24 +79,17 @@ upsert_cname_record() {
   fi
 }
 
-# Apex A (@) => DROPLET_IP
+# ── Records ───────────────────────────────────────────────────────────────────
+# Apex A/AAAA → server IPs
 upsert_a_record "@" "$DROPLET_IP"
+[[ -n "${DROPLET_IPV6:-}" && "$DROPLET_IPV6" != "::" ]] && upsert_aaaa_record "@" "$DROPLET_IPV6"
 
-# Figure out labels for each service
 apex="$DOMAIN"
-apex_label="@"
-
 to_label() {
   local fqdn="$1"
-  if [[ "$fqdn" == "$apex" ]]; then
-    echo "@"
-  else
-    # strip trailing .domain
-    echo "${fqdn%.$DOMAIN}"
-  fi
+  [[ "$fqdn" == "$apex" ]] && echo "@" || echo "${fqdn%.$DOMAIN}"
 }
 
-# Collect desired hostnames (skip empty)
 hosts=()
 [[ -n "${WEB_DOMAIN:-}" ]] && hosts+=("$WEB_DOMAIN")
 [[ -n "${API_DOMAIN:-}" ]] && hosts+=("$API_DOMAIN")
@@ -95,12 +101,18 @@ hosts=()
 for h in "${hosts[@]}"; do
   label="$(to_label "$h")"
   if [[ "$label" == "@" ]]; then
-    # Ensure apex already covered; optionally ensure WEB_DOMAIN=A if you prefer direct A
-    upsert_a_record "@" "$DROPLET_IP"
-  else
-    # Prefer CNAME to apex to ease IP rotation
-    upsert_cname_record "$label" "$apex"
+    # already handled above
+    continue
   fi
+
+  # Default: CNAME sub → apex (inherits A/AAAA)
+  upsert_cname_record "$label" "$apex"
+
+  # OPTIONAL: direct A/AAAA for specific subs (uncomment if desired)
+  # if [[ "$label" == "backend" || "$label" == "api" ]]; then
+  #   upsert_a_record "$label" "$DROPLET_IP"
+  #   [[ -n "${DROPLET_IPV6:-}" && "$DROPLET_IPV6" != "::" ]] && upsert_aaaa_record "$label" "$DROPLET_IPV6"
+  # fi
 done
 
-echo "✅ DNS configuration complete for ${DOMAIN}."
+echo "✅ DNS configuration complete for ${DOMAIN} (A and AAAA at apex)."
