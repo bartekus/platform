@@ -138,20 +138,20 @@ jobs:
           
           # 3) Logto custom setup files
           cat > .deploy/logto/config.js <<'EOF'
-          ${{ secrets.LOGTO_CUSTOM_CONFIG }}
+          ${{ secrets.LOGTO_CONFIG }}
           EOF
           
           cat > .deploy/logto/entrypoint.sh <<'EOF'
-          ${{ secrets.LOGTO_CUSTOM_ENTRYPOINT }}
+          ${{ secrets.LOGTO_ENTRYPOINT }}
           EOF
           chmod +x .deploy/logto/entrypoint.sh
           
           cat > .deploy/logto/index.js <<'EOF'
-          ${{ secrets.LOGTO_CUSTOM_INDEX }}
+          ${{ secrets.LOGTO_INDEX }}
           EOF
           
           cat > .deploy/logto/setup.js <<'EOF'
-          ${{ secrets.LOGTO_CUSTOM_SETUP }}
+          ${{ secrets.LOGTO_SETUP }}
           EOF
           
           ls -lah .deploy .deploy/logto
@@ -187,7 +187,7 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           script: |
             set -Eeuo pipefail
-            sudo mkdir -p /opt /opt/scripts/db/pg-init-scripts /opt/scripts/logto/custom-setup
+            sudo mkdir -p /opt /opt/scripts/db /opt/scripts/logto
             
             # Move .env and compose
             sudo mv /tmp/.env /opt/.env
@@ -197,19 +197,19 @@ jobs:
             sudo chmod 644 /opt/docker-compose.yml
             
             # Move PG init
-            sudo mv /tmp/pg-init.sh /opt/scripts/db/pg-init-scripts/init.sh
+            sudo mv /tmp/pg-init.sh /opt/scripts/db/pg-init.sh
             sudo chown -R ${{ secrets.USER }}:${{ secrets.USER }} /opt/scripts/db
-            sudo chmod +x /opt/scripts/db/pg-init-scripts/init.sh
+            sudo chmod +x /opt/scripts/db/pg-init.sh
             
             # Move Logto custom files
-            sudo mv /tmp/config.js /opt/scripts/logto/custom-setup/config.js
-            sudo mv /tmp/entrypoint.sh /opt/scripts/logto/custom-setup/entrypoint.sh
-            sudo mv /tmp/index.js /opt/scripts/logto/custom-setup/index.js
-            sudo mv /tmp/setup.js /opt/scripts/logto/custom-setup/setup.js
+            sudo mv /tmp/config.js /opt/scripts/logto/config.js
+            sudo mv /tmp/entrypoint.sh /opt/scripts/logto/entrypoint.sh
+            sudo mv /tmp/index.js /opt/scripts/logto/index.js
+            sudo mv /tmp/setup.js /opt/scripts/logto/setup.js
             sudo chown -R ${{ secrets.USER }}:${{ secrets.USER }} /opt/scripts/logto
-            sudo chmod 755 /opt/scripts/logto/custom-setup
-            sudo chmod 644 /opt/scripts/logto/custom-setup/*.js
-            sudo chmod +x  /opt/scripts/logto/custom-setup/entrypoint.sh
+            sudo chmod 755 /opt/scripts/logto
+            sudo chmod 644 /opt/scripts/logto/*.js
+            sudo chmod +x  /opt/scripts/logto/entrypoint.sh
 
       - name: Deploy with rollout (immutable tag + draining)
         uses: appleboy/ssh-action@v1.0.3
