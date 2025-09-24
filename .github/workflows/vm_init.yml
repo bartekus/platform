@@ -33,11 +33,11 @@ jobs:
             mkdir -p ~/.docker/cli-plugins
             RVER="v0.13"
             if curl -fsSL "https://raw.githubusercontent.com/wowu/docker-rollout/${RVER}/docker-rollout" \
-              -o ~/.docker/cli-plugins/docker-rollout; then
-                echo "docker-rollout: pinned ${RVER}"
-              else
-                echo "docker-rollout: falling back to main"
-                curl -fsSL "https://raw.githubusercontent.com/wowu/docker-rollout/main/docker-rollout" \
+                 -o ~/.docker/cli-plugins/docker-rollout; then
+              echo "docker-rollout: pinned ${RVER}"
+            else
+              echo "docker-rollout: falling back to main"
+              curl -fsSL "https://raw.githubusercontent.com/wowu/docker-rollout/main/docker-rollout" \
                 -o ~/.docker/cli-plugins/docker-rollout
             fi
 
