@@ -2,10 +2,14 @@
 set -euo pipefail
 
 # Allow overrides for env file paths
+# Infra related
 INFRA_ENV_FILE="${INFRA_ENV_FILE:-.env.digitalocean}"
-APP_ENV_FILE="${APP_ENV_FILE:-.env.prod}"
 DNS_SAFE_REPLACE="${DNS_SAFE_REPLACE:-1}"   # 1=delete+create on change, 0=use update
 DNS_DEFAULT_TTL="${DNS_DEFAULT_TTL:-60}"
+WORKFLOW_FILE="${WORKFLOW_FILE:-.github/workflows/vm_init.yml}"  # path or basename ok
+BRANCH="${BRANCH:-main}"
+# Deployment specific
+APP_ENV_FILE="${APP_ENV_FILE:-.env.prod}"
 
 # Load cloud/infra vars first
 if [[ ! -f "$INFRA_ENV_FILE" ]]; then

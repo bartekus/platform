@@ -16,8 +16,8 @@ jobs:
       - name: Install Docker and docker-rollout
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.HOST }}
-          username: ${{ secrets.USER }}
+          host: ${{ vars.HOST }}
+          username: ${{ vars.USER }}
           key: ${{ secrets.SSH_KEY }}
           script: |
             set -Eeuo pipefail
@@ -35,8 +35,8 @@ jobs:
       - name: Give user ability to run docker and restart Docker
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.HOST }}
-          username: ${{ secrets.USER }}
+          host: ${{ vars.HOST }}
+          username: ${{ vars.USER }}
           key: ${{ secrets.SSH_KEY }}
           script: |
             sudo usermod -aG docker $USER
@@ -54,8 +54,8 @@ jobs:
       - name: Validate Docker and Docker Compose Installation
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.HOST }}
-          username: ${{ secrets.USER }}
+          host: ${{ vars.HOST }}
+          username: ${{ vars.USER }}
           key: ${{ secrets.SSH_KEY }}
           script: |
             # Validate Docker installation

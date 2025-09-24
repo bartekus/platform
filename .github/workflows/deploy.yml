@@ -112,6 +112,11 @@ jobs:
           docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/api:latest
           docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/api:${SHA_TAG}
 
+      - name: Print target host (sanity)
+        run: |
+          echo "Target host: ${{ vars.HOST }}"
+          echo "Target user: ${{ vars.USER }}"
+
       # --- Materialize deployment artifacts from secrets ---
       - name: Prepare deployment artifacts from secrets
         run: |
@@ -150,10 +155,10 @@ jobs:
           ls -lah .deploy .deploy/logto
 
       - name: Copy deployment artifacts and compose file to remote
-        uses: appleboy/scp-action@master
+        uses: appleboy/scp-action@v0.1.7
         with:
-          host: ${{ secrets.HOST }}
-          username: ${{ secrets.USER }}
+          host: ${{ vars.HOST }}
+          username: ${{ vars.USER }}
           key: ${{ secrets.SSH_KEY }}
           # known_hosts: ${{ secrets.SSH_KNOWN_HOSTS }}   # ← enable if you store host key
           source: ".deploy/env,.deploy/pg-init.sh,.deploy/logto/*,docker-compose-deploy.yml"
@@ -162,8 +167,8 @@ jobs:
       - name: Place artifacts into FHS paths and set permissions
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.HOST }}
-          username: ${{ secrets.USER }}
+          host: ${{ vars.HOST }}
+          username: ${{ vars.USER }}
           key: ${{ secrets.SSH_KEY }}
           script: |
             set -Eeuo pipefail
@@ -182,12 +187,12 @@ jobs:
             
             # Move compose
             sudo mv /tmp/docker-compose-deploy.yml /opt/platform/docker-compose.yml
-            sudo chown ${{ secrets.USER }}:${{ secrets.USER }} /opt/platform/docker-compose.yml
+            sudo chown ${{ vars.USER }}:${{ vars.USER }} /opt/platform/docker-compose.yml
             sudo chmod 644 /opt/platform/docker-compose.yml
             
             # PG init scripts
             sudo mv /tmp/pg-init.sh /opt/platform/scripts/db/pg-init.sh
-            sudo chown -R ${{ secrets.USER }}:${{ secrets.USER }} /opt/platform/scripts
+            sudo chown -R ${{ vars.USER }}:${{ vars.USER }} /opt/platform/scripts
             sudo chmod +x /opt/platform/scripts/db/pg-init.sh
             
             # Logto custom files
@@ -198,13 +203,13 @@ jobs:
             sudo chmod 755 /opt/platform/scripts/logto
             sudo chmod 644 /opt/platform/scripts/logto/*.js
             sudo chmod +x  /opt/platform/scripts/logto/entrypoint.sh
-            
+
 
       - name: Deploy with rollout (immutable tag + draining)
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.HOST }}
-          username: ${{ secrets.USER }}
+          host: ${{ vars.HOST }}
+          username: ${{ vars.USER }}
           key: ${{ secrets.SSH_KEY }}
           script_stop: true
           script: |

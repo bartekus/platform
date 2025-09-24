@@ -154,4 +154,9 @@ for h in "${hosts[@]}"; do
   # fi
 done
 
+doctl compute domain records list "$DOMAIN"
+dig +short A "$WEB_DOMAIN"
+dig +short AAAA "$WEB_DOMAIN"
+dig +short CNAME "$TRAEFIK_DASHBOARD_DOMAIN"
+
 echo "✅ DNS configuration complete for ${DOMAIN} (A and AAAA at apex)."

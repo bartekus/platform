@@ -6,7 +6,9 @@ encore.gen.cue
 
 # Local development
 .local-infra
-scripts/infra/.cache*
+scripts/infra-setup/.cache_droplet_ip
+scripts/infra-setup/.cache_project_id
+scripts/infra-setup/.cache_ssh_key_id
 
 # Dependency directories
 node_modules/
