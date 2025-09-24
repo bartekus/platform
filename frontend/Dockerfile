@@ -1,33 +1,23 @@
-# Stage 1: Build the React application
+# Stage 1: Build the React (Vite) application
 FROM node:22-alpine AS build
-
-# Set the working directory inside the container
 WORKDIR /app
 
-# Copy package.json and package-lock.json (or yarn.lock)
+# Install deps with better caching
 COPY package*.json ./
+RUN npm ci
 
-# Install dependencies
-RUN npm install
-
-# Copy the rest of the application code
+# Build
 COPY . .
+RUN npm run build  # produces /app/dist
 
-# Build the React application
-RUN npm run build
-
-# Stage 2: Serve the built application with Nginx
+# Stage 2: Serve with Nginx
 FROM nginx:stable-alpine AS production
 
-# Copy the built React application from the build stage
-COPY --from=build /app/build /usr/share/nginx/html
+# (Optional) SPA history fallback for React Router
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-# Copy a custom Nginx configuration if needed (e.g., for handling react-router client-side routing)
-# If using react-router, you might need an Nginx config to redirect all unknown paths to index.html
-# COPY nginx.conf /etc/nginx/conf.d/default.conf
+# Copy Vite output
+COPY --from=build /app/dist /usr/share/nginx/html
 
-# Expose port 80 (default for Nginx)
 EXPOSE 80
-
-# Start Nginx
 CMD ["nginx", "-g", "daemon off;"]
