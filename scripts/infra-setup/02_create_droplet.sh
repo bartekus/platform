@@ -6,6 +6,23 @@ source ./scripts/infra-setup/.cache_project_id || true
 
 EXISTING_ID=$(doctl compute droplet list --format ID,Name --no-header | awk -v name="$DROPLET_NAME" '$2 == name { print $1 }')
 
+# Validate/normalize IMAGE slug (common Ubuntu shorthand corrections)
+if ! doctl compute image list-distribution --format Slug --no-header | awk '{print $1}' | grep -qx "$IMAGE"; then
+  case "$IMAGE" in
+    ubuntu-24-10-x64|ubuntu-24-10) IMAGE="ubuntu-24-04-x64" ;;
+    ubuntu-22-10-x64|ubuntu-22-10) IMAGE="ubuntu-22-04-x64" ;;
+    ubuntu-20-10-x64|ubuntu-20-10) IMAGE="ubuntu-20-04-x64" ;;
+  esac
+  # If still not valid, fail with a helpful message
+  if ! doctl compute image list-distribution --format Slug --no-header | awk '{print $1}' | grep -qx "$IMAGE"; then
+    echo "❌ IMAGE slug is invalid: '${IMAGE}'. Try one of:"
+    doctl compute image list-distribution --format Slug,Name --no-header | grep -E '^ubuntu-(20|22|24)-04-x64' | sort -r
+    exit 1
+  else
+    echo "ℹ️  Normalized IMAGE slug to '${IMAGE}'."
+  fi
+fi
+
 if [[ -n "${EXISTING_ID:-}" ]]; then
   DROPLET_ID="$EXISTING_ID"
   echo "💻 Droplet already exists with ID ${DROPLET_ID}"

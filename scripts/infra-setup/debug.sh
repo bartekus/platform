@@ -18,4 +18,12 @@ else
   echo "⚠️  Project '$DO_PROJECT_NAME' not found (will be created in 00_project_setup.sh)."
 fi
 
+echo "🔍 Verifying DO Image slug '${IMAGE}'..."
+if ! doctl compute image list-distribution --format Slug --no-header | awk '{print $1}' | grep -qx "$IMAGE"; then
+  echo "⚠️  Image slug '$IMAGE' not found among public distribution images."
+  echo "   Here are a few common Ubuntu LTS slugs you can use:"
+  doctl compute image list-distribution --format Slug,Name --no-header | grep -E '^ubuntu-(20|22|24)-04-x64' | sort -r
+  echo "   Set IMAGE=ubuntu-24-04-x64 in .env.digitalocean (recommended)."
+fi
+
 echo "✅ All authentication checks passed."
