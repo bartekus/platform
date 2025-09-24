@@ -67,7 +67,7 @@ services:
       - "5433:5432"  # Expose PostgreSQL port to host
     volumes:
       - postgres_db:/var/lib/postgresql/data
-      - ./scripts/db/pg-init-scripts:/docker-entrypoint-initdb.d  # Mount initialization scripts
+      - ./scripts/db:/docker-entrypoint-initdb.d  # Mount initialization scripts
     environment:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
@@ -140,7 +140,7 @@ services:
       - LOGTO_GOOGLE_CLIENT_SECRET=${LOGTO_GOOGLE_CLIENT_SECRET}
       - NODE_EXTRA_CA_CERTS=/etc/ssl/certs/mkcert-rootCA.pem
     volumes:
-      - ./scripts/logto/custom-setup:/etc/logto/packages/cli/custom-setup
+      - ./scripts/logto:/etc/logto/packages/cli/custom-setup
       - ./.local-infra/certs/mkcert-rootCA.pem:/etc/ssl/certs/mkcert-rootCA.pem:ro
     networks:
       - net

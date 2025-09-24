@@ -57,8 +57,8 @@ services:
     #   - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      # Mount init scripts prepared by CI (e.g., /opt/scripts/db/pg-init-scripts/init.sh)
-      - /opt/scripts/db/pg-init-scripts:/docker-entrypoint-initdb.d:ro
+      # Mount init scripts prepared by CI (e.g., /opt/scripts/db/pg-init.sh)
+      - /opt/scripts/db:/docker-entrypoint-initdb.d:ro
     environment:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
@@ -125,7 +125,7 @@ services:
       - LOGTO_GOOGLE_CLIENT_SECRET=${LOGTO_GOOGLE_CLIENT_SECRET}
     volumes:
       # Use the path your CI places files into:
-      - /opt/scripts/logto/custom-setup:/etc/logto/packages/cli/custom-setup:ro
+      - /opt/scripts/logto:/etc/logto/packages/cli/custom-setup:ro
     networks: [net]
     env_file: [.env]
     labels:
