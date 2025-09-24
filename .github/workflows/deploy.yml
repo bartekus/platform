@@ -1,0 +1,188 @@
+name: Build and Push Docker Images
+
+on:
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }} # owner/repo
+  SERVICES_TO_PUSH: web,api,background
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=sha,prefix=,suffix=,format=short
+
+      # Build/push each service (simple loop)
+      - name: Build & push services
+        run: |
+          set -Eeuo pipefail
+          IFS=',' read -ra SERVICES <<< "${SERVICES_TO_PUSH}"
+          for svc in "${SERVICES[@]}"; do
+            echo "==> $svc"
+            docker buildx build \
+              --file "./services/${svc}/Dockerfile" \
+              --context "." \
+              --tag "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/${svc}:latest" \
+              --tag "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/${svc}:${{ steps.meta.outputs.sha }}" \
+              --cache-from "type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/${svc}:buildcache" \
+              --cache-to   "type=registry,mode=max,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/${svc}:buildcache" \
+              --push
+          done
+
+
+        # --- Materialize deployment files from repo secrets ---
+      - name: Prepare deployment artifacts from secrets
+        run: |
+          set -Eeuo pipefail
+          mkdir -p .deploy/logto
+          
+          # 1) .env from ENV_FILE secret (verbatim, preserves newlines)
+          cat > .deploy/.env <<'EOF'
+          ${{ secrets.ENV_FILE }}
+          EOF
+          
+          # 2) Postgres init script
+          cat > .deploy/pg-init.sh <<'EOF'
+          ${{ secrets.PG_INIT_SCRIPT }}
+          EOF
+          chmod +x .deploy/pg-init.sh
+          
+          # 3) Logto custom setup files
+          cat > .deploy/logto/config.js <<'EOF'
+          ${{ secrets.LOGTO_CUSTOM_CONFIG }}
+          EOF
+          
+          cat > .deploy/logto/entrypoint.sh <<'EOF'
+          ${{ secrets.LOGTO_CUSTOM_ENTRYPOINT }}
+          EOF
+          chmod +x .deploy/logto/entrypoint.sh
+          
+          cat > .deploy/logto/index.js <<'EOF'
+          ${{ secrets.LOGTO_CUSTOM_INDEX }}
+          EOF
+          
+          cat > .deploy/logto/setup.js <<'EOF'
+          ${{ secrets.LOGTO_CUSTOM_SETUP }}
+          EOF
+          
+          # Optionally verify sizes for sanity (doesn't leak contents)
+          ls -lah .deploy .deploy/logto
+
+      - name: Copy deployment artifacts and compose file to remote
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USER }}
+          key: ${{ secrets.SSH_KEY }}
+          # If you’ve stored your host key, enable this for MITM protection:
+          # known_hosts: ${{ secrets.SSH_KNOWN_HOSTS }}
+          source: ".deploy/.env,.deploy/pg-init.sh,.deploy/logto/*,docker-compose-deploy.yml"
+          target: "/tmp"
+
+      - name: Prepare Dozzle users.yml
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USER }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            set -Eeuo pipefail
+            sudo mkdir -p /opt/dozzle/data
+            printf '%s\n' "${{ secrets.DOZZLE_USER_YAML }}" | sudo tee /opt/dozzle/data/users.yml >/dev/null
+            sudo chown -R ${{ secrets.USER }}:${{ secrets.USER }} /opt/dozzle
+            sudo chmod 600 /opt/dozzle/data/users.yml
+
+      - name: Move artifacts into place and set permissions
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USER }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            set -Eeuo pipefail
+            sudo mkdir -p /opt /opt/scripts/db/pg-init-scripts /opt/scripts/logto/custom-setup
+            
+            # Move .env and compose
+            sudo mv /tmp/.env /opt/.env
+            sudo mv /tmp/docker-compose-deploy.yml /opt/docker-compose.yml
+            sudo chown ${{ secrets.USER }}:${{ secrets.USER }} /opt/.env /opt/docker-compose.yml
+            sudo chmod 600 /opt/.env
+            sudo chmod 644 /opt/docker-compose.yml
+            
+            # Move PG init
+            sudo mv /tmp/pg-init.sh /opt/scripts/db/pg-init-scripts/init.sh
+            sudo chown -R ${{ secrets.USER }}:${{ secrets.USER }} /opt/scripts/db
+            sudo chmod +x /opt/scripts/db/pg-init-scripts/init.sh
+            
+            # Move Logto custom files
+            sudo mv /tmp/config.js /opt/scripts/logto/custom-setup/config.js
+            sudo mv /tmp/entrypoint.sh /opt/scripts/logto/custom-setup/entrypoint.sh
+            sudo mv /tmp/index.js /opt/scripts/logto/custom-setup/index.js
+            sudo mv /tmp/setup.js /opt/scripts/logto/custom-setup/setup.js
+            sudo chown -R ${{ secrets.USER }}:${{ secrets.USER }} /opt/scripts/logto
+            sudo chmod 755 /opt/scripts/logto/custom-setup
+            sudo chmod 644 /opt/scripts/logto/custom-setup/*.js
+            sudo chmod +x  /opt/scripts/logto/custom-setup/entrypoint.sh
+
+      - name: Move files & deploy specific image tags
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USER }}
+          key: ${{ secrets.SSH_KEY }}
+          script_stop: true
+          script: |
+            set -Eeuo pipefail
+            sudo mv /tmp/.env /tmp/docker-compose-deploy.yml /opt/
+            sudo mv /opt/docker-compose-deploy.yml /opt/docker-compose.yml
+            sudo chown ${{ secrets.USER }}:${{ secrets.USER }} /opt/.env /opt/docker-compose.yml
+            sudo chmod 600 /opt/.env
+            sudo chmod 644 /opt/docker-compose.yml
+
+            cd /opt
+            echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+            # Pull immutable SHA tags and rollout each service to that tag
+            IFS=',' read -ra SERVICES <<< "${{ env.SERVICES_TO_PUSH }}"
+            SHA_TAG="${{ steps.meta.outputs.sha }}"
+
+            for service in "${SERVICES[@]}"; do
+              docker pull "ghcr.io/${{ env.IMAGE_NAME }}/${service}:${SHA_TAG}"
+            done
+
+            # Export the tag via env file that compose uses (if your compose references it)
+            echo "IMAGE_TAG=${SHA_TAG}" > .deploy.env
+
+            # Rollout
+            for service in "${SERVICES[@]}"; do
+              docker rollout -f docker-compose.yml "$service"
+            done
+
+            # Safer clean-up: only dangling
+            docker image prune -f
+            echo "🚀 Deployment complete @ ${SHA_TAG}"
