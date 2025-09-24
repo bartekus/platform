@@ -2,6 +2,7 @@
 set -euo pipefail
 
 ./scripts/infra-setup/debug.sh
+./scripts/infra-setup/00_project_setup.sh
 ./scripts/infra-setup/01_ssh_config.sh
 ./scripts/infra-setup/02_create_droplet.sh
 ./scripts/infra-setup/03_set_github_secrets.sh
