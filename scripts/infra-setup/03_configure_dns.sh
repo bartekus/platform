@@ -62,20 +62,47 @@ upsert_aaaa_record() {
 
 upsert_cname_record() {
   local name="$1" target="$2" ttl="${3:-60}"
+
+  # DO requires a trailing dot for CNAME targets (FQDN)
+  normalize_fqdn() {
+    local fq="$1"
+    # strip any stray whitespace
+    fq="$(echo -n "$fq" | tr -d ' ')"
+    # add trailing dot if missing
+    [[ "$fq" == *"." ]] || fq="${fq}."
+    echo "$fq"
+  }
+
+  # For comparison: strip trailing dot
+  strip_dot() {
+    local fq="$1"
+    [[ "$fq" == *"." ]] && echo "${fq%?}" || echo "$fq"
+  }
+
+  local desired_fqdn
+  desired_fqdn="$(normalize_fqdn "$target")"
+  local desired_nodot
+  desired_nodot="$(strip_dot "$desired_fqdn")"
+
   local id cur
   id=$(doctl compute domain records list "$DOMAIN" --format ID,Type,Name,Data --no-header \
     | awk -v n="$name" '$2=="CNAME" && $3==n {print $1}' | head -n1)
+
   if [[ -n "$id" ]]; then
     cur=$(doctl compute domain records get "$DOMAIN" "$id" --format Data --no-header | tr -d ' ')
-    if [[ "$cur" != "$target" ]]; then
-      doctl compute domain records update "$DOMAIN" "$id" --record-data "$target" --record-ttl "$ttl" >/dev/null
-      echo "🔁 Updated CNAME ${name} → ${target}"
+    # compare without the dot so we don’t churn on existing records that omit it
+    if [[ "$(strip_dot "$cur")" != "$desired_nodot" ]]; then
+      doctl compute domain records update "$DOMAIN" "$id" \
+        --record-data "$desired_fqdn" --record-ttl "$ttl" >/dev/null
+      echo "🔁 Updated CNAME ${name} → ${desired_fqdn}"
     else
-      echo "✅ CNAME ${name} already points to ${target}"
+      echo "✅ CNAME ${name} already points to ${desired_fqdn}"
     fi
   else
-    doctl compute domain records create "$DOMAIN" --record-type CNAME --record-name "$name" --record-data "$target" --record-ttl "$ttl" >/dev/null
-    echo "➕ Created CNAME ${name} → ${target}"
+    doctl compute domain records create "$DOMAIN" \
+      --record-type CNAME --record-name "$name" \
+      --record-data "$desired_fqdn" --record-ttl "$ttl" >/dev/null
+    echo "➕ Created CNAME ${name} → ${desired_fqdn}"
   fi
 }
 

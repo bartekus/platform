@@ -43,8 +43,21 @@ fi
 # Assign to project if available
 if [[ -n "${DO_PROJECT_ID_RESOLVED:-}" ]]; then
   echo "📎 Assigning droplet to project ${DO_PROJECT_ID_RESOLVED}..."
-  doctl projects resources assign "$DO_PROJECT_ID_RESOLVED" "do:droplet:${DROPLET_ID}" >/dev/null
+  doctl projects resources assign "$DO_PROJECT_ID_RESOLVED" \
+    --resource "do:droplet:${DROPLET_ID}" >/dev/null
 fi
+
+for i in {1..5}; do
+  if doctl projects resources list "$DO_PROJECT_ID_RESOLVED" --format URN --no-header \
+     | grep -q "do:droplet:${DROPLET_ID}"; then
+    echo "📎 Droplet assigned to project."
+    break
+  fi
+  sleep 2
+  if [[ $i -eq 5 ]]; then
+    echo "⚠️  Could not confirm project assignment; continuing."
+  fi
+done
 
 echo "🌐 Waiting for droplet IPs..."
 for i in {1..60}; do
