@@ -65,12 +65,6 @@ jobs:
           set -Eeuo pipefail
           RAW=$(jq -r '.dependencies["encore.dev"] // empty' package.json)
           [ -n "$RAW" ] && [ "$RAW" != "null" ] || { echo "encore.dev dep missing"; exit 1; }
-
-#          if [ -z "${RAW}" ] || [ "${RAW}" = "null" ]; then
-#            echo "encore.dev not found in dependencies" >&2
-#            exit 1
-#          fi
-
           CLEAN=$(printf "%s" "${RAW}" | sed 's/^[^0-9]*//')
           echo "version=v${CLEAN}" >> "$GITHUB_OUTPUT"
 

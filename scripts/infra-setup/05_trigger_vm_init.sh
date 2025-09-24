@@ -36,7 +36,15 @@ fi
 
 echo "✅ Workflow ID: $WF_ID"
 echo "🚀 Triggering on branch '$BRANCH'…"
-gh workflow run "$WF_ID" --repo "$GH_REPO" --ref "$BRANCH" >/dev/null
+host_arg="${HOST:-}"
+user_arg="${SERVER_USER:-}"
+
+# Send inputs along with the dispatch
+gh workflow run "$WF_ID" --repo "$GH_REPO" --ref "$BRANCH" \
+  -f droplet_ip="${DROPLET_IP:-}" \
+  -f droplet_ipv6="${DROPLET_IPV6:-}" \
+  -f host="${host_arg}" \
+  -f user="${user_arg}" >/dev/null
 
 # Poll for the NEW run that is queued|in_progress to avoid grabbing a previous failed run.
 echo "🔎 Waiting for the new run to register…"

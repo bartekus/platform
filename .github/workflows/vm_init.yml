@@ -2,6 +2,19 @@ name: VM Initialization
 
 on:
   workflow_dispatch:
+    inputs:
+      droplet_ip:
+        description: "Droplet IPv4"
+        required: true
+      droplet_ipv6:
+        description: "Droplet IPv6"
+        required: false
+      host:
+        description: "SSH host (fallback if droplet_ip unset)"
+        required: false
+      user:
+        description: "SSH username"
+        required: false
 
 env:
   ROOT_DIRECTORY: /opt
@@ -10,6 +23,13 @@ jobs:
   initialize_vm:
     runs-on: ubuntu-latest
     steps:
+      - name: Echo inputs (sanity)
+        run: |
+          echo "IP4=${{ github.event.inputs.droplet_ip }}"
+          echo "IP6=${{ github.event.inputs.droplet_ipv6 }}"
+          echo "HOST=${{ github.event.inputs.host }}"
+          echo "USER=${{ github.event.inputs.user }}"
+
       - name: Checkout code
         uses: actions/checkout@v2
 
