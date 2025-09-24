@@ -10,7 +10,8 @@ concurrency:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }} # owner/repo
-  SERVICES_TO_PUSH: web,api,background
+  # IMPORTANT: exclude api here; we will build it via Encore separately
+  SERVICES_TO_PUSH: web,background
 
 jobs:
   build-and-push:
@@ -32,7 +33,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Docker meta
+      - name: Docker meta (tags for all images)
         id: meta
         uses: docker/metadata-action@v5
         with:
@@ -41,8 +42,8 @@ jobs:
             type=raw,value=latest,enable={{is_default_branch}}
             type=sha,prefix=,suffix=,format=short
 
-      # Build/push each service
-      - name: Build & push services
+      # Build/push non-API services with buildx (web,background)
+      - name: Build & push generic services (non-API)
         run: |
           set -Eeuo pipefail
           IFS=',' read -ra SERVICES <<< "${SERVICES_TO_PUSH}"
@@ -57,6 +58,40 @@ jobs:
               --cache-to   "type=registry,mode=max,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/${svc}:buildcache" \
               --push
           done
+
+      # --- Encore API build & push ---
+      - name: Install Encore CLI (pinned)
+        env:
+          ENCORE_VERSION: "v1.50.0"  # pin to your known-good version
+        run: |
+          set -Eeuo pipefail
+          curl -fsSL https://encore.dev/install.sh -o install.sh
+          bash install.sh
+          /home/runner/.encore/bin/encore version
+
+      - name: Build API image via Encore
+        working-directory: backend
+        env:
+          # If you need a specific platform on runner, set it here:
+          DOCKER_DEFAULT_PLATFORM: linux/amd64
+        run: |
+          set -Eeuo pipefail
+          # Build local docker image named "encore-app" (Encore's default tag for docker builds)
+          /home/runner/.encore/bin/encore build docker encore-app
+          docker image inspect encore-app >/dev/null
+
+      - name: Tag & push API image to GHCR (latest + sha)
+        run: |
+          set -Eeuo pipefail
+          SHA_TAG="${{ steps.meta.outputs.sha }}"
+          SRC="encore-app"
+          LATEST="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/api:latest"
+          IMMUT="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/api:${SHA_TAG}"
+
+          docker tag "$SRC" "$LATEST"
+          docker tag "$SRC" "$IMMUT"
+          docker push "$LATEST"
+          docker push "$IMMUT"
 
       # --- Materialize deployment files from repo secrets ---
       - name: Prepare deployment artifacts from secrets
