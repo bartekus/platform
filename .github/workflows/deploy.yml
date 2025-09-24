@@ -10,7 +10,7 @@ concurrency:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
-  SERVICES_TO_PUSH: web,background
+  SERVICES_TO_PUSH: web
 
 jobs:
   build-and-push:
@@ -46,21 +46,85 @@ jobs:
         run: echo "short_sha=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
 
       # Build/push non-API services with buildx (web,background)
-      - name: Build & push generic services (non-API)
+      - name: Build & push (compose-aware, bash+jq)
+        env:
+          COMPOSE_FILE: docker-compose-deploy.yml
+          SHORT_SHA: ${{ steps.vars.outputs.short_sha }}
         run: |
           set -Eeuo pipefail
+          
+          # services we want to build (comma-separated), e.g. "web" or "web,background"
           IFS=',' read -ra SERVICES <<< "${SERVICES_TO_PUSH}"
+          
+          # Generate normalized compose as JSON (handles anchors/extends/etc.)
+          if [[ ! -f "${COMPOSE_FILE}" ]]; then
+            echo "❌ compose file not found: ${COMPOSE_FILE}" >&2
+            exit 1
+          fi
+          CONFIG_JSON="$(docker compose -f "${COMPOSE_FILE}" config --format json)"
+          
+          # Helper to pull build info (context/dockerfile) from compose (string OR object)
+          get_build_info() {
+            local svc="$1"
+            jq -r --arg s "$svc" '
+              if .services[$s] and .services[$s].build then
+                ( .services[$s].build | 
+                  if type=="string" then 
+                    {context: ., dockerfile: "Dockerfile"} 
+                  else 
+                    {context: (.context // "."), dockerfile: (.dockerfile // "Dockerfile")} 
+                  end )
+              else empty end
+            ' <<<"$CONFIG_JSON"
+          }
+          
           for svc in "${SERVICES[@]}"; do
-            echo "==> $svc"
+            echo "==> ${svc}"
+            context="" ; dockerfile=""
+          
+            # Try compose build block first
+            BI="$(get_build_info "$svc")"
+            if [[ -n "$BI" && "$BI" != "null" ]]; then
+              context="$(jq -r '.context' <<<"$BI")"
+              dockerfile="$(jq -r '.dockerfile' <<<"$BI")"
+            else
+              # Fallbacks when compose has only image: (no build:)
+              case "$svc" in
+                web) context="frontend"; dockerfile="Dockerfile" ;;
+                background) context="background"; dockerfile="Dockerfile" ;;
+                *)
+                  echo "⚠️  No build info for '${svc}' and no fallback mapping. Skipping."
+                  continue
+                ;;
+              esac
+            fi
+          
+            # If dockerfile is relative, make it relative to context
+            if [[ "$dockerfile" != /* ]]; then
+              dockerfile="${context%/}/${dockerfile}"
+            fi
+          
+            # Validate paths
+            [[ -d "$context" ]]    || { echo "❌ context dir not found: $context" >&2; exit 1; }
+            [[ -f "$dockerfile" ]] || { echo "❌ Dockerfile not found: $dockerfile" >&2; exit 1; }
+          
+            repo="${REGISTRY}/${IMAGE_NAME}/${svc}"
+            latest_tag="${repo}:latest"
+            sha_tag="${repo}:${SHORT_SHA}"
+            cache_ref="${repo}:buildcache"
+          
+            echo "Context:    $context"
+            echo "Dockerfile: $dockerfile"
+            echo "Tags:       $latest_tag , $sha_tag"
+          
             docker buildx build \
-              --file "./services/${svc}/Dockerfile" \
-              --tag "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/${svc}:latest" \
-              --tag "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/${svc}:${{ steps.meta.outputs.sha }}" \
-              --cache-from "type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/${svc}:buildcache" \
-              --cache-to   "type=registry,mode=max,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/${svc}:buildcache" \
-              --progress=plain \
+              --file "$dockerfile" \
+              --tag "$latest_tag" \
+              --tag "$sha_tag" \
+              --cache-from "type=registry,ref=${cache_ref}" \
+              --cache-to   "type=registry,mode=max,ref=${cache_ref}" \
               --push \
-              .
+              "$context"
           done
 
       # Read encore.dev version from package.json and normalize to "vX.Y.Z"
