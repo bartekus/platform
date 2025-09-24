@@ -38,38 +38,60 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Install Docker and docker-rollout
+      - name: Ensure Docker & docker-rollout (idempotent)
         run: |
           set -Eeuo pipefail
           
-          # Install Docker (official script)
-          for i in {1..3}; do
-            curl -fsSL https://get.docker.com -o get-docker.sh && break || sleep 2
-          done
-          sh get-docker.sh
-          docker version
+          have() { command -v "$1" >/dev/null 2>&1; }
           
-          # Install docker-rollout (pin to release; fallback to main)
-          mkdir -p ~/.docker/cli-plugins
-          RVER="v0.13"
-          if curl -fsSL "https://raw.githubusercontent.com/wowu/docker-rollout/${RVER}/docker-rollout" \
-               -o ~/.docker/cli-plugins/docker-rollout; then
-            echo "docker-rollout: pinned ${RVER}"
+          echo "🔎 Checking Docker…"
+          if have docker; then
+            echo "✅ Docker already installed: $(docker --version)"
           else
-            echo "docker-rollout: falling back to main"
-            curl -fsSL "https://raw.githubusercontent.com/wowu/docker-rollout/main/docker-rollout" \
-              -o ~/.docker/cli-plugins/docker-rollout
+            echo "⬇️ Installing Docker via get.docker.com…"
+            for i in {1..3}; do
+              curl -fsSL https://get.docker.com -o get-docker.sh && break || sleep 2
+            done
+            sh get-docker.sh
+            docker --version
           fi
           
-          chmod +x ~/.docker/cli-plugins/docker-rollout
+          echo "🔧 Ensuring Docker service is enabled & running…"
+          if ! systemctl is-enabled --quiet docker; then
+            sudo systemctl enable docker
+          fi
+          if ! systemctl is-active --quiet docker; then
+            sudo systemctl start docker
+          fi
+          sudo systemctl status docker --no-pager -l | sed -n '1,5p'
           
-          # Validate via Docker CLI (not by executing the script directly)
-          docker rollout --help >/dev/null
+          echo "🔎 Checking docker-rollout CLI plugin…"
+          # docker CLI plugins live under ~/.docker/cli-plugins/docker-<name>
+          PLUGDIR="${HOME}/.docker/cli-plugins"
+          PLUGPATH="${PLUGDIR}/docker-rollout"
+          if docker rollout --help >/dev/null 2>&1; then
+            echo "✅ docker-rollout already available via Docker CLI"
+            ls -l "$PLUGPATH" || true
+          else
+            echo "⬇️ Installing docker-rollout plugin…"
+            mkdir -p "$PLUGDIR"
+            RVER="v0.13"
+            if curl -fsSL "https://raw.githubusercontent.com/wowu/docker-rollout/${RVER}/docker-rollout" \
+                 -o "$PLUGPATH"; then
+              echo "docker-rollout: pinned ${RVER}"
+            else
+              echo "docker-rollout: falling back to main"
+              curl -fsSL "https://raw.githubusercontent.com/wowu/docker-rollout/main/docker-rollout" \
+                -o "$PLUGPATH"
+            fi
+            chmod +x "$PLUGPATH"
+            # Validate through Docker’s plugin dispatcher (not by executing the script directly)
+            docker rollout --help >/dev/null
+            echo "✅ docker-rollout installed at ${PLUGPATH}"
+          fi
           
-          # Optional extra sanity:
-          which docker
-          docker --version
-          ls -l ~/.docker/cli-plugins/docker-rollout
+          echo "🔎 Current Docker info:"
+          docker info --format '{{.ServerVersion}} (storage driver: {{.Driver}})' || true
 
       - name: Give user ability to run docker and restart Docker
         uses: appleboy/ssh-action@v1.0.3

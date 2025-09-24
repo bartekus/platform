@@ -48,15 +48,15 @@ jobs:
           IFS=',' read -ra SERVICES <<< "${SERVICES_TO_PUSH}"
           for svc in "${SERVICES[@]}"; do
             echo "==> $svc"
+            # Build context is positional ('.'); no --context flag
             docker buildx build \
               --file "./services/${svc}/Dockerfile" \
-              --context "." \
               --tag "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/${svc}:latest" \
               --tag "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/${svc}:${{ steps.meta.outputs.sha }}" \
               --cache-from "type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/${svc}:buildcache" \
               --cache-to   "type=registry,mode=max,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/${svc}:buildcache" \
-              --progress=plain \
-              --push
+              --push \
+              .
           done
 
       # Read encore.dev version from package.json and normalize to "vX.Y.Z"

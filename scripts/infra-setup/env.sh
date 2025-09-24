@@ -2,12 +2,20 @@
 set -euo pipefail
 
 # Allow overrides for env file paths
+BRANCH="${BRANCH:-main}"
 # Infra related
 INFRA_ENV_FILE="${INFRA_ENV_FILE:-.env.digitalocean}"
 DNS_SAFE_REPLACE="${DNS_SAFE_REPLACE:-1}"   # 1=delete+create on change, 0=use update
 DNS_DEFAULT_TTL="${DNS_DEFAULT_TTL:-60}"
-WORKFLOW_FILE="${WORKFLOW_FILE:-.github/workflows/vm_init.yml}"  # path or basename ok
-BRANCH="${BRANCH:-main}"
+
+# Which workflows to trigger
+WORKFLOW_FILE="${WORKFLOW_FILE:-.github/workflows/vm_init.yml}"
+DEPLOY_WORKFLOW_FILE="${DEPLOY_WORKFLOW_FILE:-.github/workflows/deploy.yml}"
+
+# Toggles (set to 0 to skip)
+TRIGGER_VM_INIT="${TRIGGER_VM_INIT:-1}"
+TRIGGER_DEPLOY="${TRIGGER_DEPLOY:-1}"
+
 # Deployment specific
 APP_ENV_FILE="${APP_ENV_FILE:-.env.prod}"
 
