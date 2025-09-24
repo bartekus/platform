@@ -10,7 +10,7 @@ GH_REPO="$GITHUB_REPO"
 # Validate files exist (adjust paths if you actually use custom-setup/)
 req_files=(
   ".env.prod"
-  "scripts/pg-init.sh"
+  "scripts/db/pg-init.sh"
   "scripts/logto/config.js"
   "scripts/logto/entrypoint.sh"
   "scripts/logto/index.js"
@@ -38,7 +38,7 @@ fi
 echo "🕵️  Setting GitHub repo SECRETS..."
 gh secret set SSH_KEY --repo "$GH_REPO" --body "$(<"${KEY_PATH}")"
 gh secret set ENV_FILE --repo "$GH_REPO" --body "$(<.env.prod)"
-gh secret set PG_INIT_SCRIPT --repo "$GH_REPO" --body "$(<scripts/pg-init.sh)"
+gh secret set PG_INIT_SCRIPT --repo "$GH_REPO" --body "$(<scripts/de/pg-init.sh)"
 gh secret set LOGTO_CONFIG --repo "$GH_REPO" --body "$(<scripts/logto/config.js)"
 gh secret set LOGTO_ENTRYPOINT --repo "$GH_REPO" --body "$(<scripts/logto/entrypoint.sh)"
 gh secret set LOGTO_INDEX --repo "$GH_REPO" --body "$(<scripts/logto/index.js)"

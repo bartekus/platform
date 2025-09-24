@@ -22,13 +22,19 @@ else
 fi
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
+# List records (text table), skip header row
+list_records() {
+  doctl compute domain records list "$DOMAIN" 2>/dev/null | tail -n +2
+}
+
+# $1=name, $2=ip (IPv4)
 upsert_a_record() {
   local name="$1" ip="$2" ttl="${3:-60}"
-  local id cur
-  id=$(doctl compute domain records list "$DOMAIN" --format ID,Type,Name,Data --no-header \
-    | awk -v n="$name" '$2=="A" && $3==n {print $1}' | head -n1)
-  if [[ -n "$id" ]]; then
-    cur=$(doctl compute domain records get "$DOMAIN" "$id" --format Data --no-header | tr -d ' ')
+  local line id cur
+  line="$(list_records | awk -v n="$name" '$2=="A" && $3==n {print; exit}')"
+  if [[ -n "$line" ]]; then
+    id="$(awk '{print $1}' <<<"$line")"
+    cur="$(awk '{print $4}' <<<"$line" | tr -d ' ')"
     if [[ "$cur" != "$ip" ]]; then
       doctl compute domain records update "$DOMAIN" "$id" --record-data "$ip" --record-ttl "$ttl" >/dev/null
       echo "🔁 Updated A ${name} → ${ip}"
@@ -41,13 +47,14 @@ upsert_a_record() {
   fi
 }
 
+# $1=name, $2=ip6 (IPv6)
 upsert_aaaa_record() {
   local name="$1" ip6="$2" ttl="${3:-60}"
-  local id cur
-  id=$(doctl compute domain records list "$DOMAIN" --format ID,Type,Name,Data --no-header \
-    | awk -v n="$name" '$2=="AAAA" && $3==n {print $1}' | head -n1)
-  if [[ -n "$id" ]]; then
-    cur=$(doctl compute domain records get "$DOMAIN" "$id" --format Data --no-header | tr -d ' ')
+  local line id cur
+  line="$(list_records | awk -v n="$name" '$2=="AAAA" && $3==n {print; exit}')"
+  if [[ -n "$line" ]]; then
+    id="$(awk '{print $1}' <<<"$line")"
+    cur="$(awk '{print $4}' <<<"$line" | tr -d ' ')"
     if [[ "$cur" != "$ip6" ]]; then
       doctl compute domain records update "$DOMAIN" "$id" --record-data "$ip6" --record-ttl "$ttl" >/dev/null
       echo "🔁 Updated AAAA ${name} → ${ip6}"
@@ -60,49 +67,31 @@ upsert_aaaa_record() {
   fi
 }
 
+# $1=name, $2=target fqdn (we will normalize trailing dot)
 upsert_cname_record() {
   local name="$1" target="$2" ttl="${3:-60}"
 
-  # DO requires a trailing dot for CNAME targets (FQDN)
-  normalize_fqdn() {
-    local fq="$1"
-    # strip any stray whitespace
-    fq="$(echo -n "$fq" | tr -d ' ')"
-    # add trailing dot if missing
-    [[ "$fq" == *"." ]] || fq="${fq}."
-    echo "$fq"
-  }
+  # normalize FQDN to include trailing dot for DO
+  [[ "$target" == *"." ]] || target="${target}."
+  # for comparisons, also store no-dot version
+  local target_nodot="${target%.}"
 
-  # For comparison: strip trailing dot
-  strip_dot() {
-    local fq="$1"
-    [[ "$fq" == *"." ]] && echo "${fq%?}" || echo "$fq"
-  }
-
-  local desired_fqdn
-  desired_fqdn="$(normalize_fqdn "$target")"
-  local desired_nodot
-  desired_nodot="$(strip_dot "$desired_fqdn")"
-
-  local id cur
-  id=$(doctl compute domain records list "$DOMAIN" --format ID,Type,Name,Data --no-header \
-    | awk -v n="$name" '$2=="CNAME" && $3==n {print $1}' | head -n1)
-
-  if [[ -n "$id" ]]; then
-    cur=$(doctl compute domain records get "$DOMAIN" "$id" --format Data --no-header | tr -d ' ')
-    # compare without the dot so we don’t churn on existing records that omit it
-    if [[ "$(strip_dot "$cur")" != "$desired_nodot" ]]; then
-      doctl compute domain records update "$DOMAIN" "$id" \
-        --record-data "$desired_fqdn" --record-ttl "$ttl" >/dev/null
-      echo "🔁 Updated CNAME ${name} → ${desired_fqdn}"
+  local line id cur
+  line="$(list_records | awk -v n="$name" '$2=="CNAME" && $3==n {print; exit}')"
+  if [[ -n "$line" ]]; then
+    id="$(awk '{print $1}' <<<"$line")"
+    cur="$(awk '{print $4}' <<<"$line" | tr -d ' ')"
+    # strip dot for comparison so we don’t flap
+    cur="${cur%.}"
+    if [[ "$cur" != "$target_nodot" ]]; then
+      doctl compute domain records update "$DOMAIN" "$id" --record-data "$target" --record-ttl "$ttl" >/dev/null
+      echo "🔁 Updated CNAME ${name} → ${target}"
     else
-      echo "✅ CNAME ${name} already points to ${desired_fqdn}"
+      echo "✅ CNAME ${name} already points to ${target}"
     fi
   else
-    doctl compute domain records create "$DOMAIN" \
-      --record-type CNAME --record-name "$name" \
-      --record-data "$desired_fqdn" --record-ttl "$ttl" >/dev/null
-    echo "➕ Created CNAME ${name} → ${desired_fqdn}"
+    doctl compute domain records create "$DOMAIN" --record-type CNAME --record-name "$name" --record-data "$target" --record-ttl "$ttl" >/dev/null
+    echo "➕ Created CNAME ${name} → ${target}"
   fi
 }
 
