@@ -5,12 +5,12 @@ on:
     inputs:
       droplet_ip:
         description: "Droplet IPv4"
-        required: true
+        required: false
       droplet_ipv6:
         description: "Droplet IPv6"
         required: false
       host:
-        description: "SSH host (fallback if droplet_ip unset)"
+        description: "SSH host (fallback)"
         required: false
       user:
         description: "SSH username"
@@ -22,13 +22,18 @@ env:
 jobs:
   initialize_vm:
     runs-on: ubuntu-latest
+    env:
+      # Prefer explicit inputs, else the repo variables you already set (HOST/USER)
+      TARGET_HOST: ${{ github.event.inputs.droplet_ip || github.event.inputs.host || vars.HOST }}
+      TARGET_USER: ${{ github.event.inputs.user || vars.USER }}
+      TARGET_IPV6: ${{ github.event.inputs.droplet_ipv6 }}
     steps:
       - name: Echo inputs (sanity)
         run: |
-          echo "IP4=${{ github.event.inputs.droplet_ip }}"
-          echo "IP6=${{ github.event.inputs.droplet_ipv6 }}"
-          echo "HOST=${{ github.event.inputs.host }}"
-          echo "USER=${{ github.event.inputs.user }}"
+          echo "IP4=${{ env.TARGET_HOST }}"
+          echo "IP6=${{ env.TARGET_IPV6 }}"
+          echo "HOST=${{ env.TARGET_HOST }}"
+          echo "USER=${{ env.TARGET_USER }}"
 
       - name: Checkout code
         uses: actions/checkout@v2
