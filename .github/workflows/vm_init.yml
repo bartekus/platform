@@ -42,7 +42,7 @@ jobs:
           script: |
             set -Eeuo pipefail
 
-          # Install Docker (official script)
+            # Install Docker (official script)
             for i in {1..3}; do
             curl -fsSL https://get.docker.com -o get-docker.sh && break || sleep 2
             done
@@ -52,13 +52,12 @@ jobs:
             # Install docker-rollout (pin to release; fallback to main)
             mkdir -p ~/.docker/cli-plugins
             RVER="v0.13"
-            if curl -fsSL "https://raw.githubusercontent.com/wowu/docker-rollout/${RVER}/docker-rollout" \
-                 -o ~/.docker/cli-plugins/docker-rollout; then
+
+            if curl -fsSL "https://raw.githubusercontent.com/wowu/docker-rollout/${RVER}/docker-rollout" -o ~/.docker/cli-plugins/docker-rollout; then
               echo "docker-rollout: pinned ${RVER}"
             else
               echo "docker-rollout: falling back to main"
-              curl -fsSL "https://raw.githubusercontent.com/wowu/docker-rollout/main/docker-rollout" \
-                -o ~/.docker/cli-plugins/docker-rollout
+              curl -fsSL "https://raw.githubusercontent.com/wowu/docker-rollout/main/docker-rollout" -o ~/.docker/cli-plugins/docker-rollout
             fi
 
             chmod +x ~/.docker/cli-plugins/docker-rollout
