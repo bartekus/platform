@@ -3,6 +3,10 @@ name: Build and Push Docker Images
 on:
   workflow_dispatch:
 
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }} # owner/repo
@@ -37,7 +41,7 @@ jobs:
             type=raw,value=latest,enable={{is_default_branch}}
             type=sha,prefix=,suffix=,format=short
 
-      # Build/push each service (simple loop)
+      # Build/push each service
       - name: Build & push services
         run: |
           set -Eeuo pipefail
@@ -54,14 +58,13 @@ jobs:
               --push
           done
 
-
-        # --- Materialize deployment files from repo secrets ---
+      # --- Materialize deployment files from repo secrets ---
       - name: Prepare deployment artifacts from secrets
         run: |
           set -Eeuo pipefail
           mkdir -p .deploy/logto
-          
-          # 1) .env from ENV_FILE secret (verbatim, preserves newlines)
+
+          # 1) .env from ENV_FILE secret (verbatim)
           cat > .deploy/.env <<'EOF'
           ${{ secrets.ENV_FILE }}
           EOF
@@ -90,7 +93,6 @@ jobs:
           ${{ secrets.LOGTO_CUSTOM_SETUP }}
           EOF
           
-          # Optionally verify sizes for sanity (doesn't leak contents)
           ls -lah .deploy .deploy/logto
 
       - name: Copy deployment artifacts and compose file to remote
@@ -99,8 +101,7 @@ jobs:
           host: ${{ secrets.HOST }}
           username: ${{ secrets.USER }}
           key: ${{ secrets.SSH_KEY }}
-          # If you’ve stored your host key, enable this for MITM protection:
-          # known_hosts: ${{ secrets.SSH_KNOWN_HOSTS }}
+          # known_hosts: ${{ secrets.SSH_KNOWN_HOSTS }}   # ← enable if you store host key
           source: ".deploy/.env,.deploy/pg-init.sh,.deploy/logto/*,docker-compose-deploy.yml"
           target: "/tmp"
 
@@ -149,7 +150,7 @@ jobs:
             sudo chmod 644 /opt/scripts/logto/custom-setup/*.js
             sudo chmod +x  /opt/scripts/logto/custom-setup/entrypoint.sh
 
-      - name: Move files & deploy specific image tags
+      - name: Deploy with rollout (immutable tag + draining)
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.HOST }}
@@ -158,31 +159,38 @@ jobs:
           script_stop: true
           script: |
             set -Eeuo pipefail
-            sudo mv /tmp/.env /tmp/docker-compose-deploy.yml /opt/
-            sudo mv /opt/docker-compose-deploy.yml /opt/docker-compose.yml
-            sudo chown ${{ secrets.USER }}:${{ secrets.USER }} /opt/.env /opt/docker-compose.yml
-            sudo chmod 600 /opt/.env
-            sudo chmod 644 /opt/docker-compose.yml
-
+            
             cd /opt
             echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-
-            # Pull immutable SHA tags and rollout each service to that tag
+            
+            # Ensure docker-rollout is available
+            if ! docker rollout --help >/dev/null 2>&1; then
+              echo "docker-rollout CLI not found. Run your vm_init or install the plugin." >&2
+              exit 1
+            fi
+            
+            # Pull immutable SHA tags for the services we’re deploying
             IFS=',' read -ra SERVICES <<< "${{ env.SERVICES_TO_PUSH }}"
             SHA_TAG="${{ steps.meta.outputs.sha }}"
-
+            
             for service in "${SERVICES[@]}"; do
               docker pull "ghcr.io/${{ env.IMAGE_NAME }}/${service}:${SHA_TAG}"
             done
-
-            # Export the tag via env file that compose uses (if your compose references it)
+            
+            # Export the tag for compose references
             echo "IMAGE_TAG=${SHA_TAG}" > .deploy.env
-
-            # Rollout
-            for service in "${SERVICES[@]}"; do
-              docker rollout -f docker-compose.yml "$service"
-            done
-
-            # Safer clean-up: only dangling
+            
+            # Drain-aware rollout for API and WEB; simple for BACKGROUND
+            # Pre-stop hooks: touch drain file and sleep long enough for healthcheck->unhealthy + inflight completion
+            docker rollout -f docker-compose.yml --env-file .deploy.env \
+              --pre-stop-hook "sh -c 'touch /tmp/drain && sleep 30'" api
+            
+            docker rollout -f docker-compose.yml --env-file .deploy.env \
+              --pre-stop-hook "sh -c 'touch /tmp/drain && sleep 20'" web
+            
+            docker rollout -f docker-compose.yml --env-file .deploy.env background
+            
+            # Clean up dangling images only
             docker image prune -f
+            
             echo "🚀 Deployment complete @ ${SHA_TAG}"
