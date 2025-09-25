@@ -48,7 +48,7 @@ services:
     container_name: postgres_db
     volumes:
       - /var/lib/platform/postgres:/var/lib/postgresql/data
-      - /opt/platform/scripts/db/pg-init-scripts:/docker-entrypoint-initdb.d:ro
+      - /opt/platform/scripts/db:/docker-entrypoint-initdb.d:ro
     environment:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
