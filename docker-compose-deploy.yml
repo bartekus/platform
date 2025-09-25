@@ -10,7 +10,7 @@ networks:
 
 services:
   traefik:
-    image: traefik:v3.1
+    image: traefik:v3.5
     restart: always
     command:
       - "--api.dashboard=true"
@@ -36,17 +36,44 @@ services:
       - /etc/platform/env
     labels:
       - "traefik.enable=true"
-      - "traefik.http.middlewares.tkd-basicauth.basicauth.users=${TRAEFIK_DASHBOARD_AUTH}"
-      - "traefik.http.routers.tkd.rule=Host(`${TRAEFIK_DASHBOARD_DOMAIN}`)"
+      - "traefik.http.middlewares.tkd-basicauth.basicauth.users=${TRAEFIK_BASIC_AUTH}"
+      - "traefik.http.routers.tkd.rule=Host(`${TRAEFIK_DOMAIN}`)"
       - "traefik.http.routers.tkd.entrypoints=websecure"
       - "traefik.http.routers.tkd.tls=true"
       - "traefik.http.routers.tkd.service=api@internal"
       - "traefik.http.routers.tkd.middlewares=tkd-basicauth"
     logging: *default-logging
 
+  dozzle:
+    image: amir20/dozzle:v8.14
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /var/lib/platform/dozzle:/data
+    networks:
+      - net
+    env_file:
+      - /etc/platform/env
+    environment:
+      DOZZLE_NO_ANALYTICS: "true"
+      DOZZLE_AUTH_PROVIDER: "none"
+    restart: always
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.dozzle.rule=Host(`${DOZZLE_DOMAIN}`)"
+      - "traefik.http.routers.dozzle.entrypoints=websecure"
+      - "traefik.http.routers.dozzle.tls=true"
+      - "traefik.http.routers.dozzle.tls.certresolver=myresolver"
+      - "traefik.http.routers.dozzle.service=dozzle"
+      - "traefik.http.services.dozzle.loadbalancer.server.port=8080"
+      - "traefik.http.middlewares.dozzle-basicauth.basicauth.users=${DOZZLE_BASIC_AUTH}"
+      - "traefik.http.routers.dozzle.middlewares=dozzle-basicauth@docker"
+    healthcheck:
+      test: [ "CMD", "/dozzle", "healthcheck" ]
+    logging: *default-logging
+
   db:
     image: encoredotdev/postgres:15
-    container_name: db
+    restart: always
     volumes:
       - /var/lib/platform/postgres:/var/lib/postgresql/data
       - /opt/platform/scripts/db:/docker-entrypoint-initdb.d
@@ -59,7 +86,6 @@ services:
       - net
     env_file:
       - /etc/platform/env
-    restart: always
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB} -h 127.0.0.1 -p 5432"]
       interval: 10s
@@ -69,13 +95,12 @@ services:
     logging: *default-logging
 
   redis:
-    image: redis:7.4-alpine
-    container_name: redis
+    image: redis:8
+    restart: always
     volumes:
       - /var/lib/platform/redis:/data
     networks:
       - net
-    restart: always
     healthcheck:
       test: ["CMD", "redis-cli", "--raw", "ping"]
       interval: 10s
@@ -85,7 +110,8 @@ services:
     logging: *default-logging
 
   logto:
-    image: ghcr.io/logto-io/logto:1.18.0
+    image: ghcr.io/logto-io/logto:1.31
+    restart: always
     depends_on:
       db:
         condition: service_healthy
@@ -138,8 +164,30 @@ services:
       start_period: 40s
     logging: *default-logging
 
+  pgweb:
+    image: sosedoff/pgweb:0.16
+    restart: always
+    ports:
+      - "127.0.0.1:8081:8081"
+    environment:
+      - DATABASE_URL=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/logto?sslmode=disable
+    depends_on:
+      - db
+    networks:
+      - net
+    env_file:
+      - .env.local
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.app.rule=Host(`${API_DOMAIN}`)"
+      - "traefik.http.routers.app.entrypoints=websecure"
+      - "traefik.http.routers.app.tls=true"
+      - "traefik.http.routers.app.tls.certresolver=myresolver"
+      - "traefik.http.services.app.loadbalancer.server.port=8000"
+
   api:
     image: ghcr.io/bartekus/platform/api:${IMAGE_TAG:-latest}
+    restart: always
     depends_on:
       db:
         condition: service_healthy
@@ -150,12 +198,11 @@ services:
     env_file:
       - /etc/platform/env
     environment:
-      - DATABASE_URL=postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
+      - API_DOMAIN=${API_DOMAIN}
+      - LOGTO_APP_ID=${LOGTO_APP_ID}
+      - LOGTO_DOMAIN=${LOGTO_DOMAIN}
     networks:
       - net
-    restart: always
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.app.rule=Host(`${API_DOMAIN}`)"
@@ -197,12 +244,12 @@ services:
 
   web:
     image: ghcr.io/bartekus/platform/web:${IMAGE_TAG:-latest}
+    restart: always
     depends_on:
       api:
         condition: service_healthy
     networks:
       - net
-    restart: always
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.web.rule=Host(`${WEB_DOMAIN}`)"
@@ -217,31 +264,4 @@ services:
       timeout: 3s
       retries: 3
       start_period: 20s
-    logging: *default-logging
-
-  dozzle:
-    image: amir20/dozzle:latest
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - /var/lib/platform/dozzle:/data
-    networks:
-      - net
-    env_file:
-      - /etc/platform/env
-    environment:
-      DOZZLE_NO_ANALYTICS: "true"
-      DOZZLE_AUTH_PROVIDER: "none"
-    restart: always
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.dozzle.rule=Host(`${DOZZLE_DOMAIN}`)"
-      - "traefik.http.routers.dozzle.entrypoints=websecure"
-      - "traefik.http.routers.dozzle.tls=true"
-      - "traefik.http.routers.dozzle.tls.certresolver=myresolver"
-      - "traefik.http.routers.dozzle.service=dozzle"
-      - "traefik.http.services.dozzle.loadbalancer.server.port=8080"
-      - "traefik.http.middlewares.dozzle-basicauth.basicauth.users=${DOZZLE_DASHBOARD_AUTH}"
-      - "traefik.http.routers.dozzle.middlewares=dozzle-basicauth@docker"
-    healthcheck:
-      test: ["CMD", "/dozzle", "healthcheck"]
     logging: *default-logging

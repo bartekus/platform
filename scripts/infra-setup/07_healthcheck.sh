@@ -7,10 +7,11 @@ source ./scripts/infra-setup/.cache_droplet_ip || true
 hosts=()
 [[ -n "${WEB_DOMAIN:-}" ]] && hosts+=("$WEB_DOMAIN")
 [[ -n "${API_DOMAIN:-}" ]] && hosts+=("$API_DOMAIN")
-[[ -n "${TRAEFIK_DASHBOARD_DOMAIN:-}" ]] && hosts+=("$TRAEFIK_DASHBOARD_DOMAIN")
+[[ -n "${TRAEFIK_DOMAIN:-}" ]] && hosts+=("$TRAEFIK_DOMAIN")
 [[ -n "${DOZZLE_DOMAIN:-}" ]] && hosts+=("$DOZZLE_DOMAIN")
 [[ -n "${LOGTO_DOMAIN:-}" ]] && hosts+=("$LOGTO_DOMAIN")
 [[ -n "${LOGTO_ADMIN_DOMAIN:-}" ]] && hosts+=("$LOGTO_ADMIN_DOMAIN")
+[[ -n "${PGWEB_DOMAIN:-}" ]] && hosts+=("$PGWEB_DOMAIN")
 
 if [[ ${#hosts[@]} -eq 0 ]]; then
   echo "ℹ️  No hostnames configured; skipping healthcheck."

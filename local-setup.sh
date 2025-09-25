@@ -2,7 +2,7 @@
 set -euo pipefail
 
 echo "Installing/Updating brew dependencies"
-brew install encoredev/tap/encore mkcert nss stripe/stripe-cli/stripe gettext
+brew install encoredev/tap/encore mkcert nss stripe/stripe-cli/stripe gettext envsubst openssl
 brew link --force gettext
 
 echo "Setting up mkcert local CA (idempotent)"
@@ -34,7 +34,7 @@ source "$ENV_FILE"
 set +a
 
 # Required domain vars
-required_vars=(DOMAIN API_DOMAIN WEB_DOMAIN DOZZLE_DOMAIN LOGTO_DOMAIN LOGTO_ADMIN_DOMAIN TRAEFIK_DASHBOARD_DOMAIN)
+required_vars=(DOMAIN API_DOMAIN WEB_DOMAIN DOZZLE_DOMAIN LOGTO_DOMAIN LOGTO_ADMIN_DOMAIN TRAEFIK_DOMAIN PGWEB_DOMAIN)
 
 missing=()
 for v in "${required_vars[@]}"; do
@@ -58,7 +58,7 @@ cp -f "$CAROOT/rootCA.pem" "${CERT_DIR}/mkcert-rootCA.pem"
 
 echo "Generating mkcert certificate for local HTTPS domains"
 mkcert -cert-file "${CERT_DIR}/${DOMAIN}.pem" -key-file "${CERT_DIR}/${DOMAIN}-key.pem" \
-  "${API_DOMAIN}" "${WEB_DOMAIN}" "${DOZZLE_DOMAIN}" "${LOGTO_DOMAIN}" "${LOGTO_ADMIN_DOMAIN}" "${TRAEFIK_DASHBOARD_DOMAIN}"
+  "${API_DOMAIN}" "${WEB_DOMAIN}" "${DOZZLE_DOMAIN}" "${LOGTO_DOMAIN}" "${LOGTO_ADMIN_DOMAIN}" "${TRAEFIK_DOMAIN}" "${PGWEB_DOMAIN}"
 
 echo "Generating tls.yml local Traefik config"
 
@@ -116,7 +116,7 @@ if [[ ! -x "$HOSTS_SCRIPT" ]]; then
 fi
 
 echo "Adding /etc/hosts entries (may prompt for sudo)"
-for domain in "${API_DOMAIN}" "${WEB_DOMAIN}" "${DOZZLE_DOMAIN}" "${LOGTO_DOMAIN}" "${LOGTO_ADMIN_DOMAIN}" "${TRAEFIK_DASHBOARD_DOMAIN}"; do
+for domain in "${API_DOMAIN}" "${WEB_DOMAIN}" "${DOZZLE_DOMAIN}" "${LOGTO_DOMAIN}" "${LOGTO_ADMIN_DOMAIN}" "${TRAEFIK_DOMAIN}" "${PGWEB_DOMAIN}"; do
   "$HOSTS_SCRIPT" "$domain"
 done
 

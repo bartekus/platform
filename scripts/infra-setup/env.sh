@@ -62,10 +62,11 @@ DO_PROJECT_DESC="${DO_PROJECT_DESC:-Platform stack}"
 # ── Domain config (can come from .env.prod or be set here) ─────────────────────
 # If DOMAIN is present (preferred from .env.prod), derive sensible defaults
 if [[ -n "${DOMAIN:-}" ]]; then
-  TRAEFIK_DASHBOARD_DOMAIN="${TRAEFIK_DASHBOARD_DOMAIN:-traefik.${DOMAIN}}"
+  TRAEFIK_DOMAIN="${TRAEFIK_DOMAIN:-traefik.${DOMAIN}}"
   API_DOMAIN="${API_DOMAIN:-backend.${DOMAIN}}"
   WEB_DOMAIN="${WEB_DOMAIN:-${DOMAIN}}"
   DOZZLE_DOMAIN="${DOZZLE_DOMAIN:-dozzle.${DOMAIN}}"
   LOGTO_DOMAIN="${LOGTO_DOMAIN:-logto.${DOMAIN}}"
   LOGTO_ADMIN_DOMAIN="${LOGTO_ADMIN_DOMAIN:-logto-admin.${DOMAIN}}"
+  PGWEB_DOMAIN="${PGWEB_DOMAIN:-pgweb.${DOMAIN}}"
 fi

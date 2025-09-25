@@ -1,6 +1,21 @@
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "50m"
+    max-file: "6"
+
+networks:
+  net:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:
+
 services:
   traefik:
-    image: traefik:latest
+    image: traefik:v3.5
+    container_name: traefik
     command:
       - "--api.dashboard=true"  # enable dashboard (no insecure)
       - "--providers.docker=true"
@@ -27,41 +42,48 @@ services:
     labels:
       - "traefik.enable=true"
       # basic auth middleware
-      - "traefik.http.middlewares.tkd-basicauth.basicauth.users=${TRAEFIK_DASHBOARD_AUTH}"
+      - "traefik.http.middlewares.tkd-basicauth.basicauth.users=${TRAEFIK_BASIC_AUTH}"
       # router for dashboard
-      - "traefik.http.routers.tkd.rule=Host(`${TRAEFIK_DASHBOARD_DOMAIN}`)"
+      - "traefik.http.routers.tkd.rule=Host(`${TRAEFIK_DOMAIN}`)"
       - "traefik.http.routers.tkd.entrypoints=websecure"
       - "traefik.http.routers.tkd.tls=true"
       - "traefik.http.routers.tkd.service=api@internal"
       - "traefik.http.routers.tkd.middlewares=tkd-basicauth"
-    logging:
-      driver: json-file
-      options:
-        max-size: "50m"
-        max-file: "6"
+    logging: *default-logging
 
-  redis:
-    image: redis:latest
-    container_name: redis
-    ports:
-      - "6379:6379"
+  dozzle:
+    image: amir20/dozzle:latest
+    container_name: dozzle
+    restart: always
     volumes:
-      - redis_data:/data
+      - /var/run/docker.sock:/var/run/docker.sock
     networks:
       - net
+    env_file:
+      - .env.local
+    environment:
+      DOZZLE_NO_ANALYTICS: true
+      DOZZLE_AUTH_PROVIDER: "none"
+    labels:
+      - "traefik.enable=true"
+      # basic auth middleware
+      - "traefik.http.middlewares.dozzle-basicauth.basicauth.users=${DOZZLE_BASIC_AUTH}"
+      # router for dozzle dashboard
+      - "traefik.http.routers.dozzle.rule=Host(`${DOZZLE_DOMAIN}`)"
+      - "traefik.http.routers.dozzle.entrypoints=websecure"
+      - "traefik.http.routers.dozzle.tls=true"
+      - "traefik.http.routers.dozzle.service=dozzle"
+      - "traefik.http.services.dozzle.loadbalancer.server.port=8080"
+      - "traefik.http.routers.dozzle.middlewares=dozzle-basicauth@docker"
     healthcheck:
-      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
-      interval: 10s
-      timeout: 5s
+      test: [ "CMD", "/dozzle", "healthcheck" ]
+      interval: 3s
+      timeout: 30s
       retries: 5
-    logging:
-      driver: json-file
-      options:
-        max-size: "50m"
-        max-file: "6"
+      start_period: 30s
 
   db:
-    image: encoredotdev/postgres:latest
+    image: encoredotdev/postgres:15
     container_name: db
     ports:
       - "5433:5432"  # Expose PostgreSQL port to host
@@ -82,29 +104,28 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    logging:
-      driver: json-file
-      options:
-        max-size: "50m"
-        max-file: "6"
+    logging: *default-logging
 
-  pgweb:
-    container_name: pgweb
-    restart: always
-    image: sosedoff/pgweb
+  redis:
+    image: redis:8
+    container_name: redis
     ports:
-      - "127.0.0.1:8081:8081"
-    environment:
-      - DATABASE_URL=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/logto?sslmode=disable
-    depends_on:
-      - db
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
     networks:
       - net
-    env_file:
-      - .env.local
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    logging: *default-logging
 
   logto:
-    image: ghcr.io/logto-io/logto:latest
+    image: ghcr.io/logto-io/logto:1.31
+    container_name: logto
+    restart: always
     depends_on:
       - db
     extra_hosts:
@@ -119,7 +140,7 @@ services:
       - TRUST_PROXY_HEADER=1
       - ENDPOINT=https://${LOGTO_DOMAIN}
       - ADMIN_ENDPOINT=https://${LOGTO_ADMIN_DOMAIN}
-      - DB_URL=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/logto
+      - DB_URL=postgres://${POSTGRES_LOGTO_USER}:${POSTGRES_LOGTO_PASSWORD}@db:5432/${POSTGRES_LOGTO_DB}
       # App Specific
       - APP_NAME=platform
       - APP_DESCRIPTION="Baseline for organization workflows automation"
@@ -159,50 +180,38 @@ services:
       - "traefik.http.routers.logto-admin.tls=true"
       - "traefik.http.routers.logto-admin.service=logto-admin"
       - "traefik.http.services.logto-admin.loadbalancer.server.port=3002"
-    logging:
-      driver: json-file
-      options:
-        max-size: "50m"
-        max-file: "6"
+    logging: *default-logging
+
+  pgweb:
+    image: sosedoff/pgweb:0.16
+    container_name: pgweb
+    restart: always
+    ports:
+      - "127.0.0.1:8081:8081"
+    environment:
+      - DATABASE_URL=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/logto?sslmode=disable
+    depends_on:
+      - db
+    networks:
+      - net
+    env_file:
+      - .env.local
+    labels:
+      - "traefik.enable=true"
+      # basic auth middleware
+      - "traefik.http.middlewares.pgweb-basicauth.basicauth.users=${PGWEB_BASIC_AUTH}"
+      # router for pgweb dashboard
+      - "traefik.http.routers.pgweb.rule=Host(`${PGWEB_DOMAIN}`)"
+      - "traefik.http.routers.pgweb.entrypoints=websecure"
+      - "traefik.http.routers.pgweb.tls=true"
+      - "traefik.http.routers.pgweb.service=pgweb"
+      - "traefik.http.services.pgweb.loadbalancer.server.port=8080"
+      - "traefik.http.routers.pgweb.middlewares=pgweb-basicauth@docker"
+    logging: *default-logging
 
    # In local dev
    # we rely on encore.ts for our api development
    # likewise we, for web we leverage vite server functionality
    # Lastly we treat local development setup as stateless in a sense that all the data required for the development is seeded as part of the local-start process
 
-  dozzle:
-    image: amir20/dozzle:latest
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-    networks:
-      - net
-    env_file:
-      - .env.local
-    environment:
-      DOZZLE_NO_ANALYTICS: true
-      DOZZLE_AUTH_PROVIDER: "none"
-    labels:
-      - "traefik.enable=true"
-      # basic auth middleware
-      - "traefik.http.middlewares.dozzle-basicauth.basicauth.users=${DOZZLE_DASHBOARD_AUTH}"
-      # router for dozzle dashboard
-      - "traefik.http.routers.dozzle.rule=Host(`${DOZZLE_DOMAIN}`)"
-      - "traefik.http.routers.dozzle.entrypoints=websecure"
-      - "traefik.http.routers.dozzle.tls=true"
-      - "traefik.http.routers.dozzle.service=dozzle"
-      - "traefik.http.services.dozzle.loadbalancer.server.port=8080"
-      - "traefik.http.routers.dozzle.middlewares=dozzle-basicauth@docker"
-    healthcheck:
-      test: ["CMD", "/dozzle", "healthcheck"]
-      interval: 3s
-      timeout: 30s
-      retries: 5
-      start_period: 30s
 
-volumes:
-  postgres_data:
-  redis_data:
-
-networks:
-  net:
-    driver: bridge

@@ -18,7 +18,7 @@ source "$ENV_FILE"
 set +a
 
 # Required domain vars
-required_vars=(DOMAIN API_DOMAIN WEB_DOMAIN DOZZLE_DOMAIN LOGTO_DOMAIN LOGTO_ADMIN_DOMAIN TRAEFIK_DASHBOARD_DOMAIN)
+required_vars=(DOMAIN API_DOMAIN WEB_DOMAIN DOZZLE_DOMAIN LOGTO_DOMAIN LOGTO_ADMIN_DOMAIN TRAEFIK_DOMAIN PGWEB_DOMAIN)
 missing=()
 for v in "${required_vars[@]}"; do
   if [[ -z "${!v:-}" ]]; then
@@ -44,7 +44,7 @@ if [[ ! -x "$HOSTS_SCRIPT" ]]; then
 fi
 
 echo "Removing /etc/hosts entries (may prompt for sudo)"
-for domain in "${API_DOMAIN}" "${WEB_DOMAIN}" "${DOZZLE_DOMAIN}" "${LOGTO_DOMAIN}" "${LOGTO_ADMIN_DOMAIN}" "${TRAEFIK_DASHBOARD_DOMAIN}"; do
+for domain in "${API_DOMAIN}" "${WEB_DOMAIN}" "${DOZZLE_DOMAIN}" "${LOGTO_DOMAIN}" "${LOGTO_ADMIN_DOMAIN}" "${TRAEFIK_DOMAIN}" "${PGWEB_DOMAIN}"; do
   "$HOSTS_SCRIPT" "$domain"
 done
 

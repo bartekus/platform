@@ -29,10 +29,11 @@ if [[ -n "${DOMAIN:-}" ]]; then
   gh variable set DOMAIN --repo "$GH_REPO" --body "$DOMAIN"
   [[ -n "${WEB_DOMAIN:-}" ]] && gh variable set WEB_DOMAIN --repo "$GH_REPO" --body "$WEB_DOMAIN"
   [[ -n "${API_DOMAIN:-}" ]] && gh variable set API_DOMAIN --repo "$GH_REPO" --body "$API_DOMAIN"
-  [[ -n "${TRAEFIK_DASHBOARD_DOMAIN:-}" ]] && gh variable set TRAEFIK_DASHBOARD_DOMAIN --repo "$GH_REPO" --body "$TRAEFIK_DASHBOARD_DOMAIN"
+  [[ -n "${TRAEFIK_DOMAIN:-}" ]] && gh variable set TRAEFIK_DOMAIN --repo "$GH_REPO" --body "$TRAEFIK_DOMAIN"
   [[ -n "${DOZZLE_DOMAIN:-}" ]] && gh variable set DOZZLE_DOMAIN --repo "$GH_REPO" --body "$DOZZLE_DOMAIN"
   [[ -n "${LOGTO_DOMAIN:-}" ]] && gh variable set LOGTO_DOMAIN --repo "$GH_REPO" --body "$LOGTO_DOMAIN"
   [[ -n "${LOGTO_ADMIN_DOMAIN:-}" ]] && gh variable set LOGTO_ADMIN_DOMAIN --repo "$GH_REPO" --body "$LOGTO_ADMIN_DOMAIN"
+  [[ -n "${PGWEB_DOMAIN:-}" ]] && gh variable set PGWEB_DOMAIN --repo "$GH_REPO" --body "$PGWEB_DOMAIN"
 fi
 
 echo "🕵️  Setting GitHub repo SECRETS..."

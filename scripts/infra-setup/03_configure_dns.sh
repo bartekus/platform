@@ -132,10 +132,11 @@ to_label() {
 hosts=()
 [[ -n "${WEB_DOMAIN:-}" ]] && hosts+=("$WEB_DOMAIN")
 [[ -n "${API_DOMAIN:-}" ]] && hosts+=("$API_DOMAIN")
-[[ -n "${TRAEFIK_DASHBOARD_DOMAIN:-}" ]] && hosts+=("$TRAEFIK_DASHBOARD_DOMAIN")
+[[ -n "${TRAEFIK_DOMAIN:-}" ]] && hosts+=("$TRAEFIK_DOMAIN")
 [[ -n "${DOZZLE_DOMAIN:-}" ]] && hosts+=("$DOZZLE_DOMAIN")
 [[ -n "${LOGTO_DOMAIN:-}" ]] && hosts+=("$LOGTO_DOMAIN")
 [[ -n "${LOGTO_ADMIN_DOMAIN:-}" ]] && hosts+=("$LOGTO_ADMIN_DOMAIN")
+[[ -n "${PGWEB_DOMAIN:-}" ]] && hosts+=("$PGWEB_DOMAIN")
 
 for h in "${hosts[@]}"; do
   label="$(to_label "$h")"
@@ -157,6 +158,6 @@ done
 doctl compute domain records list "$DOMAIN"
 dig +short A "$WEB_DOMAIN"
 dig +short AAAA "$WEB_DOMAIN"
-dig +short CNAME "$TRAEFIK_DASHBOARD_DOMAIN"
+dig +short CNAME "$TRAEFIK_DOMAIN"
 
 echo "✅ DNS configuration complete for ${DOMAIN} (A and AAAA at apex)."
