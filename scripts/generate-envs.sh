@@ -8,11 +8,11 @@ set -euo pipefail
 #   ./.env.sample
 # Outputs:
 #   ./.env.local
-#   ./.env.production
+#   ./.env.prod
 
 SAMPLE_FILE="${SAMPLE_FILE:-.env.sample}"
 OUT_LOCAL="${OUT_LOCAL:-.env.local}"
-OUT_PROD="${OUT_PROD:-.env.production}"
+OUT_PROD="${OUT_PROD:-.env.prod}"
 
 # --- generators --------------------------------------------------------------
 
