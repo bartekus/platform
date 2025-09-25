@@ -94,10 +94,12 @@ services:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - POSTGRES_DB=${POSTGRES_DB}
+      # Used by scripts/db/pg-init.sh
       - POSTGRES_MULTIPLE_DATABASES=${POSTGRES_MULTIPLE_DATABASES}
       - DB_ADMIN_USER=${DB_ADMIN_USER}
       - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
       - DB_ADMIN_ACCESS=${DB_ADMIN_ACCESS}
+      - LOGTO_DB_NAME=${POSTGRES_LOGTO_DB}
     networks:
       - net
     env_file:
