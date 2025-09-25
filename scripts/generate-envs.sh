@@ -105,7 +105,22 @@ expand_with_envsubst() {
   # Build the variable allowlist from the file content
   local varlist
   # shellcheck disable=SC2002
-  varlist="$(cat "$infile" | grep -o '\${[A-Za-z0-9_]\+}' | tr -d '${}' | sort -u | sed 's/^/\$/')" || true
+#  varlist="$(cat "$infile" | grep -o '\${[A-Za-z0-9_]\+}' | tr -d '${}' | sort -u | sed 's/^/\$/')" || true
+  varlist="$(
+    cat "$infile" \
+    | grep -o '\${[A-Za-z0-9_]\+}' \
+    | tr -d '${}' \
+    | sort -u \
+    | sed 's/^/\$/' \
+    | grep -v '^\$DOMAIN$' \
+    | grep -v '^\$POSTGRES_LOGTO_USER$' \
+    | grep -v '^\$POSTGRES_LOGTO_PASSWORD$' \
+    | grep -v '^\$POSTGRES_LOGTO_DB$' \
+    | grep -v '^\$POSTGRES_API_USER$' \
+    | grep -v '^\$POSTGRES_API_PASSWORD$' \
+    | grep -v '^\$POSTGRES_API_DB$' \
+    || true
+  )"
   if [[ -z "$varlist" ]]; then
     # No vars to expand; just copy
     cp "$infile" "$outfile"
