@@ -166,10 +166,10 @@ jobs:
           DOCKER_DEFAULT_PLATFORM: linux/amd64
         run: |
           set -Eeuo pipefail
-          test -f ./infra-config.json || { echo "infra-config.json missing at repo root"; exit 1; }
+          test -f ./encore-config.json || { echo "encore-config.json missing at repo root"; exit 1; }
           test -f ./encore.app || { echo "encore.app missing at repo root"; exit 1; }
           /home/runner/.encore/bin/encore build docker \
-            --config ./infra-config.json \
+            --config ./encore-config.json \
             encore-app
           docker image inspect encore-app >/dev/null
 
