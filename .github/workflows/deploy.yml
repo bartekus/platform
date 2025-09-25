@@ -256,9 +256,15 @@ jobs:
           host: ${{ vars.HOST }}
           username: ${{ vars.USER }}
           key: ${{ secrets.SSH_KEY }}
-          # known_hosts: ${{ secrets.SSH_KNOWN_HOSTS }}   # ← enable if you store host key
-          source: ".deploy/env,.deploy/pg-init.sh,.deploy/logto/*,docker-compose-deploy.yml"
-          target: "/tmp"
+          target: "/tmp/platform-bundle"
+          source: |
+            .deploy/env
+            .deploy/pg-init.sh
+            .deploy/logto/config.js
+            .deploy/logto/entrypoint.sh
+            .deploy/logto/index.js
+            .deploy/logto/setup.js
+            docker-compose-deploy.yml
 
       - name: Place artifacts into FHS paths and set permissions
         uses: appleboy/ssh-action@v1.0.3
@@ -269,36 +275,57 @@ jobs:
           script: |
             set -Eeuo pipefail
             
-            # Create FHS directories
+            SRC="/tmp/platform-bundle"
+            
+            echo "Contents of ${SRC}:"
+            ls -lah "${SRC}" || true
+            ls -lah "${SRC}/.deploy" || true
+            ls -lah "${SRC}/.deploy/logto" || true
+            
+            # Create FHS directories (avoid brace expansion quirks)
             sudo mkdir -p /etc/platform
             sudo mkdir -p /opt/platform/scripts/db/pg-init-scripts
             sudo mkdir -p /opt/platform/scripts/logto
             sudo mkdir -p /opt/platform
-            sudo mkdir -p /var/lib/platform/{postgres,redis,letsencrypt}
+            sudo mkdir -p /var/lib/platform/postgres /var/lib/platform/redis /var/lib/platform/letsencrypt
+            
+            # Validate expected files before moving
+            for f in "${SRC}/.deploy/env" \
+                     "${SRC}/.deploy/pg-init.sh" \
+                     "${SRC}/.deploy/logto/config.js" \
+                     "${SRC}/.deploy/logto/entrypoint.sh" \
+                     "${SRC}/.deploy/logto/index.js" \
+                     "${SRC}/.deploy/logto/setup.js" \
+                     "${SRC}/docker-compose-deploy.yml"; do
+              [ -f "$f" ] || { echo "Missing: $f"; exit 1; }
+            done
             
             # Move config/env
-            sudo mv /tmp/env /etc/platform/env
+            sudo mv "${SRC}/.deploy/env" /etc/platform/env
             sudo chown root:root /etc/platform/env
             sudo chmod 600 /etc/platform/env
             
             # Move compose
-            sudo mv /tmp/docker-compose-deploy.yml /opt/platform/docker-compose.yml
-            sudo chown ${{ vars.USER }}:${{ vars.USER }} /opt/platform/docker-compose.yml
+            sudo mv "${SRC}/docker-compose-deploy.yml" /opt/platform/docker-compose.yml
+            # If you want a non-root owner for compose, change owner here:
+            sudo chown root:root /opt/platform/docker-compose.yml
             sudo chmod 644 /opt/platform/docker-compose.yml
             
             # PG init scripts
-            sudo mv /tmp/pg-init.sh /opt/platform/scripts/db/pg-init.sh
-            sudo chown -R ${{ vars.USER }}:${{ vars.USER }} /opt/platform/scripts
+            sudo mv "${SRC}/.deploy/pg-init.sh" /opt/platform/scripts/db/pg-init.sh
+            sudo chown -R root:root /opt/platform/scripts
             sudo chmod +x /opt/platform/scripts/db/pg-init.sh
             
             # Logto custom files
-            sudo mv /tmp/config.js     /opt/platform/scripts/logto/config.js
-            sudo mv /tmp/entrypoint.sh /opt/platform/scripts/logto/entrypoint.sh
-            sudo mv /tmp/index.js      /opt/platform/scripts/logto/index.js
-            sudo mv /tmp/setup.js      /opt/platform/scripts/logto/setup.js
+            sudo mv "${SRC}/.deploy/logto/config.js"     /opt/platform/scripts/logto/config.js
+            sudo mv "${SRC}/.deploy/logto/entrypoint.sh" /opt/platform/scripts/logto/entrypoint.sh
+            sudo mv "${SRC}/.deploy/logto/index.js"      /opt/platform/scripts/logto/index.js
+            sudo mv "${SRC}/.deploy/logto/setup.js"      /opt/platform/scripts/logto/setup.js
             sudo chmod 755 /opt/platform/scripts/logto
             sudo chmod 644 /opt/platform/scripts/logto/*.js
             sudo chmod +x  /opt/platform/scripts/logto/entrypoint.sh
+            
+            echo "File placement completed."
 
 
       - name: Deploy with rollout (immutable tag + draining)
