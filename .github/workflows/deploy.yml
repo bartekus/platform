@@ -386,37 +386,43 @@ jobs:
             echo "Pulling ghcr.io/${{ env.IMAGE_NAME }}/api:$SHA_TAG"
             docker pull "ghcr.io/${{ env.IMAGE_NAME }}/api:$SHA_TAG"
             
+            # Build one runtime env-file the compose CLI will read
+            if [ -f /etc/platform/env ]; then
+              cat /etc/platform/env > .env.runtime
+            else
+              echo "ERROR: /etc/platform/env missing"; exit 1
+            fi
             # Export tag for compose
-            echo "IMAGE_TAG=$SHA_TAG" > .deploy.env
-            echo "Wrote .deploy.env:"
-            cat .deploy.env
+            echo "IMAGE_TAG=$SHA_TAG"
+            echo "IMAGE_TAG=${SHA_TAG}" >> .env.runtime
+            echo "Wrote .env.runtime with $(wc -l < .env.runtime) lines"
             
             # Decide strategy: docker-rollout vs compose fallback
             if docker rollout --help >/dev/null 2>&1; then
               echo "Using docker-rollout"
             
-              docker rollout -f docker-compose.yml --env-file .deploy.env \
+              docker rollout -f docker-compose.yml --env-file .env.runtime \
                 --pre-stop-hook "sh -c 'touch /tmp/drain && sleep 30'" api
             
-              docker rollout -f docker-compose.yml --env-file .deploy.env \
+              docker rollout -f docker-compose.yml --env-file .env.runtime \
                 --pre-stop-hook "sh -c 'touch /tmp/drain && sleep 20'" web
             
               if grep -qE '^[[:space:]]*background:' docker-compose.yml; then
-                docker rollout -f docker-compose.yml --env-file .deploy.env background
+                docker rollout -f docker-compose.yml --env-file .env.runtime background
               fi
             else
               echo "docker-rollout not found; using docker compose fallback"
             
               # Create/refresh containers with the new immutable tag.
               # Assumes your compose uses: image: ghcr.io/...:${IMAGE_TAG}
-              docker compose --env-file .deploy.env pull
+              docker compose --env-file .env.runtime pull
               # Update api first (drain hook supported in your container's preStop or entrypoint)
-              docker compose --env-file .deploy.env up -d api
+              docker compose --env-file .env.runtime up -d api
               # Then web
-              docker compose --env-file .deploy.env up -d web
+              docker compose --env-file .env.runtime up -d web
               # Optional background
               if grep -qE '^[[:space:]]*background:' docker-compose.yml; then
-                docker compose --env-file .deploy.env up -d background
+                docker compose --env-file .env.runtime up -d background
               fi
             fi
             
