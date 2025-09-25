@@ -372,32 +372,33 @@ jobs:
             if [ -z "$SHA_TAG" ]; then
               SHA_TAG="$(echo "${GITHUB_SHA}" | cut -c1-7)"
             fi
+
+            # Resolve immutable tag from workflow (already set to badd9dc above)
             echo "Using SHA_TAG=$SHA_TAG"
             
             # Pull images by immutable tag
-            SERVICES_CSV="${{ env.SERVICES_TO_PUSH }}"
+            SERVICES_CSV="${SERVICES_CSV:-${{ env.SERVICES_TO_PUSH }}}"
             IFS=',' read -ra SERVICES <<< "$SERVICES_CSV"
-            for service in "${SERVICES[@]}"; do
-              service="$(echo "$service" | xargs)"  # trim
-              [ -n "$service" ] || continue
-              echo "Pulling ghcr.io/${{ env.IMAGE_NAME }}/$service:$SHA_TAG"
-              docker pull "ghcr.io/${{ env.IMAGE_NAME }}/$service:$SHA_TAG"
+              for service in "${SERVICES[@]}"; do
+              s="$(echo "$service" | xargs)"
+              [ -n "$s" ] || continue
+            echo "Pulling ghcr.io/${{ env.IMAGE_NAME }}/$s:$SHA_TAG"
+            docker pull "ghcr.io/${{ env.IMAGE_NAME }}/$s:$SHA_TAG"
             done
             echo "Pulling ghcr.io/${{ env.IMAGE_NAME }}/api:$SHA_TAG"
             docker pull "ghcr.io/${{ env.IMAGE_NAME }}/api:$SHA_TAG"
             
-            # Build one runtime env-file the compose CLI will read
+            # Build unified env file (static + IMAGE_TAG)
             if [ -f /etc/platform/env ]; then
               cat /etc/platform/env > .env.runtime
             else
               echo "ERROR: /etc/platform/env missing"; exit 1
             fi
-            # Export tag for compose
-            echo "IMAGE_TAG=$SHA_TAG"
-            echo "IMAGE_TAG=${SHA_TAG}" >> .env.runtime
-            echo "Wrote .env.runtime with $(wc -l < .env.runtime) lines"
-            
-            # Decide strategy: docker-rollout vs compose fallback
+            echo "IMAGE_TAG=$SHA_TAG" >> .env.runtime
+            echo "Wrote .env.runtime:"
+            sed -e 's/=.*/=<redacted>/' .env.runtime | sed 's/IMAGE_TAG=<redacted>/IMAGE_TAG='"$SHA_TAG"'/'
+  
+            # Rollout or compose fallback
             if docker rollout --help >/dev/null 2>&1; then
               echo "Using docker-rollout"
             
@@ -424,7 +425,7 @@ jobs:
               if grep -qE '^[[:space:]]*background:' docker-compose.yml; then
                 docker compose --env-file .env.runtime up -d background
               fi
-            fi
+            fi 
             
             # Clean up dangling layers
             docker image prune -f || true
