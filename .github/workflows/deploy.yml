@@ -143,6 +143,26 @@ jobs:
           CLEAN=$(printf "%s" "${RAW}" | sed 's/^[^0-9]*//')
           echo "version=v${CLEAN}" >> "$GITHUB_OUTPUT"
 
+      - name: Set up Node (for Encore parser)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'                # match your frontend
+          cache: 'npm'
+          cache-dependency-path: |
+            frontend/package-lock.json
+            backend/package-lock.json
+
+      - name: Install JS deps needed for parsing
+        run: |
+          set -Eeuo pipefail
+          if [ -f frontend/package-lock.json ]; then
+            npm ci --prefix frontend
+          fi
+          # If your backend has a package.json used by encore.ts runtime, keep this:
+          if [ -f backend/package-lock.json ]; then
+            npm ci --prefix backend
+          fi
+
       # --- Encore API build & push ---
       - name: Install Encore CLI (pinned from package.json)
         env:
