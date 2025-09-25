@@ -6,6 +6,7 @@
   "license": "MIT",
   "type": "module",
   "scripts": {
+    "build": "encore build docker --config ./infra-config.json backend",
     "test": "vitest"
   },
   "devDependencies": {

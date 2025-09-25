@@ -1,0 +1,8 @@
+{
+  "$schema": "https://encore.dev/schemas/infra.schema.json",
+  "secrets": {
+    "API_DOMAIN": { "$env": "API_DOMAIN" },
+    "LOGTO_APP_ID": { "$env": "LOGTO_APP_ID" },
+    "LOGTO_DOMAIN": { "$env": "LOGTO_DOMAIN" }
+  }
+}

@@ -161,15 +161,16 @@ jobs:
           echo "Encore want=${WANT} got=${GOT}"
           test "${WANT}" = "${GOT}"
 
-      - name: Build API image via Encore
-        working-directory: backend
+      - name: Build API image via Encore (from repo root)
         env:
-          # If you need a specific platform on runner, set it here:
           DOCKER_DEFAULT_PLATFORM: linux/amd64
         run: |
           set -Eeuo pipefail
-          # Build local docker image named "encore-app" (Encore's default tag for docker builds)
-          /home/runner/.encore/bin/encore build docker encore-app
+          test -f ./infra-config.json || { echo "infra-config.json missing at repo root"; exit 1; }
+          test -f ./encore.app || { echo "encore.app missing at repo root"; exit 1; }
+          /home/runner/.encore/bin/encore build docker \
+            --config ./infra-config.json \
+            encore-app
           docker image inspect encore-app >/dev/null
 
       - name: Tag & push API image to GHCR (latest + sha)
