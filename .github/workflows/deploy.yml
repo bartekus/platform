@@ -196,7 +196,13 @@ jobs:
       - name: Tag & push API image to GHCR (latest + sha)
         run: |
           set -Eeuo pipefail
-          SHA_TAG="${{ steps.meta.outputs.sha }}"
+          # Prefer our computed short SHA; fall back to first 7 of GITHUB_SHA.
+          SHA_TAG="${{ steps.vars.outputs.short_sha }}"
+          if [ -z "$SHA_TAG" ]; then
+            SHA_TAG="$(echo "${GITHUB_SHA}" | cut -c1-7)"
+          fi
+          echo "Using SHA_TAG=$SHA_TAG"
+          
           docker tag encore-app ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/api:latest
           docker tag encore-app ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/api:${SHA_TAG}
           docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/api:latest
