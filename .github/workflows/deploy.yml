@@ -250,23 +250,46 @@ jobs:
           
           ls -lah .deploy .deploy/logto
 
-      - name: Copy deployment artifacts and compose file to remote
+      - name: Pack deployment bundle
+        run: |
+          set -Eeuo pipefail
+      
+          # Sanity: make sure files exist
+          for f in \
+            .deploy/env \
+            .deploy/pg-init.sh \
+            .deploy/logto/config.js \
+            .deploy/logto/entrypoint.sh \
+            .deploy/logto/index.js \
+            .deploy/logto/setup.js \
+            docker-compose-deploy.yml
+          do
+            [ -f "$f" ] || { echo "Missing $f"; exit 1; }
+          done
+      
+          # Create a minimal bundle dir to keep paths predictable
+          rm -rf .bundle && mkdir -p .bundle/.deploy/logto
+          cp -a docker-compose-deploy.yml .bundle/
+          cp -a .deploy/env .bundle/.deploy/env
+          cp -a .deploy/pg-init.sh .bundle/.deploy/pg-init.sh
+          cp -a .deploy/logto/config.js .bundle/.deploy/logto/config.js
+          cp -a .deploy/logto/entrypoint.sh .bundle/.deploy/logto/entrypoint.sh
+          cp -a .deploy/logto/index.js .bundle/.deploy/logto/index.js
+          cp -a .deploy/logto/setup.js .bundle/.deploy/logto/setup.js
+      
+          tar -czf platform-bundle.tgz -C .bundle .
+          ls -lah platform-bundle.tgz
+
+      - name: Copy deployment bundle to remote
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ vars.HOST }}
           username: ${{ vars.USER }}
           key: ${{ secrets.SSH_KEY }}
-          target: "/tmp/platform-bundle"
-          source: |
-            .deploy/env
-            .deploy/pg-init.sh
-            .deploy/logto/config.js
-            .deploy/logto/entrypoint.sh
-            .deploy/logto/index.js
-            .deploy/logto/setup.js
-            docker-compose-deploy.yml
+          target: "/tmp"
+          source: platform-bundle.tgz
 
-      - name: Place artifacts into FHS paths and set permissions
+      - name: Unpack and place artifacts on remote
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ vars.HOST }}
@@ -275,14 +298,16 @@ jobs:
           script: |
             set -Eeuo pipefail
             
-            SRC="/tmp/platform-bundle"
+            BUNDLE_TGZ="/tmp/platform-bundle.tgz"
+            SRC_DIR="/tmp/platform-bundle"
+            sudo rm -rf "$SRC_DIR"
+            sudo mkdir -p "$SRC_DIR"
+            sudo tar -xzf "$BUNDLE_TGZ" -C "$SRC_DIR"
             
-            echo "Contents of ${SRC}:"
-            ls -lah "${SRC}" || true
-            ls -lah "${SRC}/.deploy" || true
-            ls -lah "${SRC}/.deploy/logto" || true
+            echo "Bundle contents:"
+            sudo find "$SRC_DIR" -maxdepth 3 -type f -ls || true
             
-            # Create FHS directories (avoid brace expansion quirks)
+            # Create FHS directories (avoid brace expansion)
             sudo mkdir -p /etc/platform
             sudo mkdir -p /opt/platform/scripts/db/pg-init-scripts
             sudo mkdir -p /opt/platform/scripts/logto
@@ -290,43 +315,43 @@ jobs:
             sudo mkdir -p /var/lib/platform/postgres /var/lib/platform/redis /var/lib/platform/letsencrypt
             
             # Validate expected files before moving
-            for f in "${SRC}/.deploy/env" \
-                     "${SRC}/.deploy/pg-init.sh" \
-                     "${SRC}/.deploy/logto/config.js" \
-                     "${SRC}/.deploy/logto/entrypoint.sh" \
-                     "${SRC}/.deploy/logto/index.js" \
-                     "${SRC}/.deploy/logto/setup.js" \
-                     "${SRC}/docker-compose-deploy.yml"; do
+            for f in \
+              "$SRC_DIR/.deploy/env" \
+              "$SRC_DIR/.deploy/pg-init.sh" \
+              "$SRC_DIR/.deploy/logto/config.js" \
+              "$SRC_DIR/.deploy/logto/entrypoint.sh" \
+              "$SRC_DIR/.deploy/logto/index.js" \
+              "$SRC_DIR/.deploy/logto/setup.js" \
+              "$SRC_DIR/docker-compose-deploy.yml"
+            do
               [ -f "$f" ] || { echo "Missing: $f"; exit 1; }
             done
             
             # Move config/env
-            sudo mv "${SRC}/.deploy/env" /etc/platform/env
+            sudo mv "$SRC_DIR/.deploy/env" /etc/platform/env
             sudo chown root:root /etc/platform/env
             sudo chmod 600 /etc/platform/env
             
             # Move compose
-            sudo mv "${SRC}/docker-compose-deploy.yml" /opt/platform/docker-compose.yml
-            # If you want a non-root owner for compose, change owner here:
+            sudo mv "$SRC_DIR/docker-compose-deploy.yml" /opt/platform/docker-compose.yml
             sudo chown root:root /opt/platform/docker-compose.yml
             sudo chmod 644 /opt/platform/docker-compose.yml
             
-            # PG init scripts
-            sudo mv "${SRC}/.deploy/pg-init.sh" /opt/platform/scripts/db/pg-init.sh
+            # PG init script
+            sudo mv "$SRC_DIR/.deploy/pg-init.sh" /opt/platform/scripts/db/pg-init.sh
             sudo chown -R root:root /opt/platform/scripts
             sudo chmod +x /opt/platform/scripts/db/pg-init.sh
             
             # Logto custom files
-            sudo mv "${SRC}/.deploy/logto/config.js"     /opt/platform/scripts/logto/config.js
-            sudo mv "${SRC}/.deploy/logto/entrypoint.sh" /opt/platform/scripts/logto/entrypoint.sh
-            sudo mv "${SRC}/.deploy/logto/index.js"      /opt/platform/scripts/logto/index.js
-            sudo mv "${SRC}/.deploy/logto/setup.js"      /opt/platform/scripts/logto/setup.js
+            sudo mv "$SRC_DIR/.deploy/logto/config.js"     /opt/platform/scripts/logto/config.js
+            sudo mv "$SRC_DIR/.deploy/logto/entrypoint.sh" /opt/platform/scripts/logto/entrypoint.sh
+            sudo mv "$SRC_DIR/.deploy/logto/index.js"      /opt/platform/scripts/logto/index.js
+            sudo mv "$SRC_DIR/.deploy/logto/setup.js"      /opt/platform/scripts/logto/setup.js
             sudo chmod 755 /opt/platform/scripts/logto
             sudo chmod 644 /opt/platform/scripts/logto/*.js
             sudo chmod +x  /opt/platform/scripts/logto/entrypoint.sh
             
-            echo "File placement completed."
-
+            echo "✅ Files placed."
 
       - name: Deploy with rollout (immutable tag + draining)
         uses: appleboy/ssh-action@v1.0.3
