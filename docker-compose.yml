@@ -66,13 +66,12 @@ services:
     ports:
       - "5433:5432"  # Expose PostgreSQL port to host
     volumes:
-      - postgres_db:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data
       - ./scripts/db:/docker-entrypoint-initdb.d  # Mount initialization scripts
     environment:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - POSTGRES_DB=${POSTGRES_DB}
-      - POSTGRES_HOST_AUTH_METHOD=trust
       - POSTGRES_MULTIPLE_DATABASES=${POSTGRES_MULTIPLE_DATABASES}
     networks:
       - net
@@ -166,71 +165,10 @@ services:
         max-size: "50m"
         max-file: "6"
 
-#  api:
-#    build:
-#      context: ./backend
-#      dockerfile: Dockerfile
-#    depends_on:
-#      - db
-#      - redis
-#    env_file:
-#      - .env.local
-#    environment:
-#      - DATABASE_URL=postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
-#      - REDIS_HOST=queue
-#      - REDIS_PORT=6379
-#    networks:
-#      - net
-#    deploy:
-#      replicas: 1
-#    labels:
-#      - "traefik.enable=true"
-#      - "traefik.http.routers.app.rule=Host(`${API_DOMAIN}`)"
-#      - "traefik.http.routers.app.entrypoints=websecure"
-#      - "traefik.http.routers.app.tls=true"
-#      - "traefik.http.services.app.loadbalancer.server.port=8000"
-#    logging:
-#      driver: json-file
-#      options:
-#        max-size: "50m"
-#        max-file: "6"
-#
-#  background:
-#    build:
-#      context: ./backend
-#      dockerfile: Dockerfile.background
-#    depends_on:
-#      - db
-#      - redis
-#    environment:
-#      - DATABASE_URL=postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
-#      - REDIS_HOST=redis
-#      - REDIS_PORT=6379
-#    networks:
-#      - net
-#    deploy:
-#      replicas: 2
-#    restart: always
-#
-#  web:
-#    build:
-#      context: ./frontend
-#      dockerfile: Dockerfile
-#    depends_on:
-#      - api
-#    networks:
-#      - net
-#    labels:
-#      - "traefik.enable=true"
-#      - "traefik.http.routers.web.rule=Host(`${WEB_DOMAIN}`)"
-#      - "traefik.http.routers.web.entrypoints=websecure"
-#      - "traefik.http.routers.web.tls=true"
-#      - "traefik.http.services.web.loadbalancer.server.port=3001"
-#    logging:
-#      driver: json-file
-#      options:
-#        max-size: "50m"
-#        max-file: "6"
+   # In local dev
+   # we rely on encore.ts for our api development
+   # likewise we, for web we leverage vite server functionality
+   # Lastly we treat local development setup as stateless in a sense that all the data required for the development is seeded as part of the local-start process
 
   dozzle:
     image: amir20/dozzle:latest
@@ -262,7 +200,7 @@ services:
       start_period: 30s
 
 volumes:
-  postgres_db:
+  postgres_data:
   redis_data:
 
 networks:

@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Runs only on first init of the data dir.
-# Requires POSTGRES_PASSWORD (and optionally POSTGRES_USER/DB).
+# Runs once on first init. Requires POSTGRES_PASSWORD.
 # Optional: POSTGRES_MULTIPLE_DATABASES="logto,app"
 
 if [[ -z "${POSTGRES_PASSWORD:-}" ]]; then
@@ -17,51 +16,58 @@ fi
 
 echo "Multiple database creation requested: ${POSTGRES_MULTIPLE_DATABASES}"
 
-psql_base=( psql -v ON_ERROR_STOP=1 -U "${POSTGRES_USER:-postgres}" -d postgres )
+PSQL_USER="${POSTGRES_USER:-postgres}"
+psql_base=( psql -v ON_ERROR_STOP=1 -U "$PSQL_USER" -d postgres )
 
-create_user_and_database() {
-  local db="$1"
-  # Pass values as psql variables; psql expands :'var' before sending SQL
-  "${psql_base[@]}" -v db="$db" -v pw="$POSTGRES_PASSWORD" <<'EOSQL'
-DO $$
-DECLARE
-  dbname  text := :'db';
-  passwd  text := :'pw';
+ensure_role() {
+  local role_raw="$1"
+  local role_lit pw_lit
+  role_lit="$(printf "%s" "$role_raw" | sed "s/'/''/g")"
+  pw_lit="$(printf "%s" "$POSTGRES_PASSWORD" | sed "s/'/''/g")"
+
+  # OK inside DO (transactional)
+  "${psql_base[@]}" <<EOSQL
+DO \$\$
 BEGIN
-  -- role
-  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = dbname) THEN
-    EXECUTE format('CREATE ROLE %I LOGIN PASSWORD %L', dbname, passwd);
-    -- grant minimal extras as needed (avoid SUPERUSER by default)
-    EXECUTE format('ALTER ROLE %I CREATEDB CREATEROLE', dbname);
-  END IF;
-
-  -- database
-  IF NOT EXISTS (SELECT 1 FROM pg_database WHERE datname = dbname) THEN
-    EXECUTE format('CREATE DATABASE %I OWNER %I', dbname, dbname);
-  ELSE
-    EXECUTE format('ALTER DATABASE %I OWNER TO %I', dbname, dbname);
+  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = '$role_lit') THEN
+    EXECUTE format('CREATE ROLE %I LOGIN PASSWORD %L', '$role_lit', '$pw_lit');
+    -- Grant only what you need (drop if unnecessary):
+    EXECUTE format('ALTER ROLE %I CREATEDB CREATEROLE', '$role_lit');
   END IF;
 END
-$$;
+\$\$;
 EOSQL
-  echo "  Ensured user+database '${db}' exist"
+}
+
+ensure_database() {
+  local db_raw="$1"
+  local db_lit
+  db_lit="$(printf "%s" "$db_raw" | sed "s/'/''/g")"
+
+  # Must run OUTSIDE a txn. Two safe patterns:
+
+  # A) Shell check + plain CREATE (simple & clear)
+  if ! "${psql_base[@]}" -tA -c "SELECT 1 FROM pg_database WHERE datname = '$db_lit'" | grep -q '^1$'; then
+    "${psql_base[@]}" -c "CREATE DATABASE \"${db_raw}\" OWNER \"${db_raw}\";"
+  else
+    "${psql_base[@]}" -c "ALTER DATABASE \"${db_raw}\" OWNER TO \"${db_raw}\";"
+  fi
+
+  # B) Alternatively (single call) using \gexec:
+  # "${psql_base[@]}" <<EOSQL
+  # SELECT format('CREATE DATABASE %I OWNER %I', '$db_lit', '$db_lit')
+  # WHERE NOT EXISTS (SELECT 1 FROM pg_database WHERE datname = '$db_lit')\gexec
+  # EOSQL
 }
 
 IFS=',' read -ra DBS <<< "${POSTGRES_MULTIPLE_DATABASES}"
 for db in "${DBS[@]}"; do
   db="$(echo "$db" | xargs)"   # trim
   [[ -n "$db" ]] || continue
-  create_user_and_database "$db"
-done
 
-echo "Multiple databases ensured."
-
-# Split on commas
-IFS=',' read -ra DBS <<< "${POSTGRES_MULTIPLE_DATABASES}"
-for db in "${DBS[@]}"; do
-  db="$(echo "$db" | xargs)"   # trim
-  [[ -n "$db" ]] || continue
-  create_user_and_database "$db"
+  ensure_role "$db"
+  ensure_database "$db"
+  echo "  Ensured user+database '$db' exist"
 done
 
 echo "Multiple databases ensured."
