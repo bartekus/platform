@@ -2,7 +2,8 @@
 set -euo pipefail
 
 echo "Installing/Updating brew dependencies"
-brew install encoredev/tap/encore mkcert nss stripe/stripe-cli/stripe gettext envsubst openssl
+# we are installing gettext to easily get envsubst which is what we are actually dependent on
+brew install encoredev/tap/encore mkcert nss stripe/stripe-cli/stripe gettext openssl
 brew link --force gettext
 
 echo "Setting up mkcert local CA (idempotent)"

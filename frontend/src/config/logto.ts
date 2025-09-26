@@ -1,27 +1,48 @@
 import { LogtoConfig } from '@logto/react'
 
+if (import.meta.env && !import.meta.env.VITE_API_DOMAIN) {
+    throw new Error("You must specify a valid VITE_API_DOMAIN.");
+}
+
+if (import.meta.env && !import.meta.env.VITE_LOGTO_APP_ID) {
+    throw new Error("You must specify a valid VITE_LOGTO_APP_ID.");
+}
+
+if (import.meta.env && !import.meta.env.VITE_LOGTO_DOMAIN) {
+    throw new Error("You must specify a valid VITE_LOGTO_DOMAIN.");
+}
+
+if (import.meta.env && !import.meta.env.VITE_WEB_DOMAIN) {
+    throw new Error("You must specify a valid VITE_WEB_DOMAIN.");
+}
+
+const API_DOMAIN = import.meta.env.VITE_API_DOMAIN;
+const LOGTO_APP_ID = import.meta.env.VITE_LOGTO_APP_ID;
+const LOGTO_DOMAIN = import.meta.env.VITE_LOGTO_DOMAIN;
+const WEB_DOMAIN = import.meta.env.VITE_WEB_DOMAIN;
+
 export const config: LogtoConfig = {
     // The public Logto endpoint (core)
-    endpoint: 'https://logto.localdev.online',
+    endpoint: `https://${LOGTO_DOMAIN}`,
 
     // The application ID you created in Logto admin for your frontend
-    appId: 'q33loirfmp83n55u4l8k',   // comes from Logto Admin UI
+    appId: `${LOGTO_APP_ID}`,   // comes from Logto Admin UI
 
     // Match the API resource you registered in Logto for Encore
-    resources: ['https://backend.localdev.online/api'],
+    resources: [`https://${API_DOMAIN}/api`],
 }
 
 export const appConfig = {
     // Same API resource as above, just reused by your frontend code
-    apiResourceIndicator: 'https://backend.localdev.online/api',
+    apiResourceIndicator: `https://${API_DOMAIN}/api`,
 
     // Where Logto should send the browser back after sign-in
     // Must match the redirect URI registered in your Logto app config
-    signInRedirectUri: 'https://web.localdev.online/callback',
+    signInRedirectUri: `https://${WEB_DOMAIN}/callback`,
 
     // Where to go after sign-out; also should be registered in Logto
-    signOutRedirectUri: 'https://web.localdev.online/',
+    signOutRedirectUri: `https://${WEB_DOMAIN}/`,
 }
 
-// Encore dev server proxied through Traefik
-export const encoreApiEndpoint = 'https://backend.localdev.online'
+// Encore server proxied through Traefik
+export const encoreApiEndpoint = `https://${API_DOMAIN}`

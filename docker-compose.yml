@@ -20,6 +20,7 @@ services:
       - "--api.dashboard=true"  # enable dashboard (no insecure)
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
+      - "--providers.docker.network=net"
       - "--entrypoints.web.address=:80"
       - "--entrypoints.websecure.address=:443"
       - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
@@ -66,6 +67,7 @@ services:
       DOZZLE_AUTH_PROVIDER: "none"
     labels:
       - "traefik.enable=true"
+      - "traefik.docker.network=net"
       # basic auth middleware
       - "traefik.http.middlewares.dozzle-basicauth.basicauth.users=${DOZZLE_BASIC_AUTH}"
       # router for dozzle dashboard
@@ -173,6 +175,7 @@ services:
       - .env.local
     labels:
       - "traefik.enable=true"
+      - "traefik.docker.network=net"
       # Core (port 3001)
       - "traefik.http.routers.logto.rule=Host(`${LOGTO_DOMAIN}`)"
       - "traefik.http.routers.logto.entrypoints=websecure"
@@ -194,7 +197,7 @@ services:
     ports:
       - "127.0.0.1:8081:8081"
     environment:
-      - DATABASE_URL=postgres://${DB_ADMIN_USER}:${DB_ADMIN_PASSWORD}@db:5432/${POSTGRES_LOGTO_DB}?sslmode=disable
+      - PGWEB_DATABASE_URL=postgres://${DB_ADMIN_USER}:${DB_ADMIN_PASSWORD}@db:5432/${POSTGRES_LOGTO_DB}?sslmode=disable
     depends_on:
       - db
     networks:
@@ -203,6 +206,7 @@ services:
       - .env.local
     labels:
       - "traefik.enable=true"
+      - "traefik.docker.network=net"
       # basic auth middleware
       - "traefik.http.middlewares.pgweb-basicauth.basicauth.users=${PGWEB_BASIC_AUTH}"
       # router for pgweb dashboard
@@ -210,7 +214,7 @@ services:
       - "traefik.http.routers.pgweb.entrypoints=websecure"
       - "traefik.http.routers.pgweb.tls=true"
       - "traefik.http.routers.pgweb.service=pgweb"
-      - "traefik.http.services.pgweb.loadbalancer.server.port=8080"
+      - "traefik.http.services.pgweb.loadbalancer.server.port=8081"
       - "traefik.http.routers.pgweb.middlewares=pgweb-basicauth@docker"
     logging: *default-logging
 
