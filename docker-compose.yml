@@ -21,13 +21,13 @@ services:
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
       - "--providers.docker.network=net"
+      - "--providers.file.directory=/etc/traefik/dynamic"
+      - "--providers.file.watch=true"
       - "--entrypoints.web.address=:80"
       - "--entrypoints.websecure.address=:443"
       - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
       - "--entrypoints.web.http.redirections.entryPoint.scheme=https"
       - "--entrypoints.web.http.redirections.entrypoint.permanent=true"
-      - "--providers.file.directory=/etc/traefik/dynamic"
-      - "--providers.file.watch=true"
     ports:
       - "80:80"
       - "443:443"
@@ -42,18 +42,17 @@ services:
       - .env.local
     labels:
       - "traefik.enable=true"
-      # basic auth middleware
-      - "traefik.http.middlewares.tkd-basicauth.basicauth.users=${TRAEFIK_BASIC_AUTH}"
-      # router for dashboard
       - "traefik.http.routers.tkd.rule=Host(`${TRAEFIK_DOMAIN}`)"
       - "traefik.http.routers.tkd.entrypoints=websecure"
       - "traefik.http.routers.tkd.tls=true"
       - "traefik.http.routers.tkd.service=api@internal"
+      # BasicAuth
+      - "traefik.http.middlewares.tkd-basicauth.basicauth.users=${TRAEFIK_BASIC_AUTH}"
       - "traefik.http.routers.tkd.middlewares=tkd-basicauth"
     logging: *default-logging
 
   dozzle:
-    image: amir20/dozzle:latest
+    image: amir20/dozzle:v8.14
     container_name: dozzle
     restart: always
     volumes:
@@ -68,14 +67,13 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=net"
-      # basic auth middleware
-      - "traefik.http.middlewares.dozzle-basicauth.basicauth.users=${DOZZLE_BASIC_AUTH}"
-      # router for dozzle dashboard
       - "traefik.http.routers.dozzle.rule=Host(`${DOZZLE_DOMAIN}`)"
       - "traefik.http.routers.dozzle.entrypoints=websecure"
       - "traefik.http.routers.dozzle.tls=true"
       - "traefik.http.routers.dozzle.service=dozzle"
       - "traefik.http.services.dozzle.loadbalancer.server.port=8080"
+      # BasicAuth
+      - "traefik.http.middlewares.dozzle-basicauth.basicauth.users=${DOZZLE_BASIC_AUTH}"
       - "traefik.http.routers.dozzle.middlewares=dozzle-basicauth@docker"
     healthcheck:
       test: [ "CMD", "/dozzle", "healthcheck" ]
@@ -188,6 +186,12 @@ services:
       - "traefik.http.routers.logto-admin.tls=true"
       - "traefik.http.routers.logto-admin.service=logto-admin"
       - "traefik.http.services.logto-admin.loadbalancer.server.port=3002"
+    healthcheck:
+      test: [ "CMD-SHELL", "wget -qO- http://localhost:3001/api/health || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 40s
     logging: *default-logging
 
   pgweb:
@@ -207,14 +211,13 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=net"
-      # basic auth middleware
-      - "traefik.http.middlewares.pgweb-basicauth.basicauth.users=${PGWEB_BASIC_AUTH}"
-      # router for pgweb dashboard
+      - "traefik.http.services.pgweb.loadbalancer.server.port=8081"
       - "traefik.http.routers.pgweb.rule=Host(`${PGWEB_DOMAIN}`)"
       - "traefik.http.routers.pgweb.entrypoints=websecure"
       - "traefik.http.routers.pgweb.tls=true"
       - "traefik.http.routers.pgweb.service=pgweb"
-      - "traefik.http.services.pgweb.loadbalancer.server.port=8081"
+      # BasicAuth
+      - "traefik.http.middlewares.pgweb-basicauth.basicauth.users=${PGWEB_BASIC_AUTH}"
       - "traefik.http.routers.pgweb.middlewares=pgweb-basicauth@docker"
     logging: *default-logging
 

@@ -16,14 +16,15 @@ services:
       - "--api.dashboard=true"
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
+      - "--providers.docker.network=net"
       - "--entrypoints.web.address=:80"
       - "--entrypoints.websecure.address=:443"
-      - "--certificatesresolvers.myresolver.acme.tlschallenge=true"
-      - "--certificatesresolvers.myresolver.acme.email=${ACME_EMAIL}"
-      - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
       - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
       - "--entrypoints.web.http.redirections.entryPoint.scheme=https"
       - "--entrypoints.web.http.redirections.entrypoint.permanent=true"
+      - "--certificatesresolvers.myresolver.acme.tlschallenge=true"
+      - "--certificatesresolvers.myresolver.acme.email=${ACME_EMAIL}"
+      - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
     ports:
       - "80:80"
       - "443:443"
@@ -36,11 +37,12 @@ services:
       - /etc/platform/env
     labels:
       - "traefik.enable=true"
-      - "traefik.http.middlewares.tkd-basicauth.basicauth.users=${TRAEFIK_BASIC_AUTH}"
       - "traefik.http.routers.tkd.rule=Host(`${TRAEFIK_DOMAIN}`)"
       - "traefik.http.routers.tkd.entrypoints=websecure"
       - "traefik.http.routers.tkd.tls=true"
       - "traefik.http.routers.tkd.service=api@internal"
+      # BasicAuth
+      - "traefik.http.middlewares.tkd-basicauth.basicauth.users=${TRAEFIK_BASIC_AUTH}"
       - "traefik.http.routers.tkd.middlewares=tkd-basicauth"
     logging: *default-logging
 
@@ -59,12 +61,14 @@ services:
     restart: always
     labels:
       - "traefik.enable=true"
+      - "traefik.docker.network=net"
       - "traefik.http.routers.dozzle.rule=Host(`${DOZZLE_DOMAIN}`)"
       - "traefik.http.routers.dozzle.entrypoints=websecure"
       - "traefik.http.routers.dozzle.tls=true"
       - "traefik.http.routers.dozzle.tls.certresolver=myresolver"
       - "traefik.http.routers.dozzle.service=dozzle"
       - "traefik.http.services.dozzle.loadbalancer.server.port=8080"
+      # BasicAuth
       - "traefik.http.middlewares.dozzle-basicauth.basicauth.users=${DOZZLE_BASIC_AUTH}"
       - "traefik.http.routers.dozzle.middlewares=dozzle-basicauth@docker"
     healthcheck:
@@ -81,7 +85,12 @@ services:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - POSTGRES_DB=${POSTGRES_DB}
+      # Used by scripts/db/pg-init.sh
       - POSTGRES_MULTIPLE_DATABASES=${POSTGRES_MULTIPLE_DATABASES}
+      - DB_ADMIN_USER=${DB_ADMIN_USER}
+      - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
+      - DB_ADMIN_ACCESS=${DB_ADMIN_ACCESS}
+      - LOGTO_DB_NAME=${POSTGRES_LOGTO_DB}
     networks:
       - net
     env_file:
@@ -121,10 +130,12 @@ services:
       - ENDPOINT=https://${LOGTO_DOMAIN}
       - ADMIN_ENDPOINT=https://${LOGTO_ADMIN_DOMAIN}
       - DB_URL=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/logto
+      # App Specific
       - APP_NAME=platform
       - APP_DESCRIPTION=Baseline for organization workflows automation
       - APP_URI=${WEB_DOMAIN}
       - APP_URL=https://${WEB_DOMAIN}
+      # Logto Specific
       - LOGTO_APP_ID=${LOGTO_APP_ID}
       - LOGTO_APP_SECRET=${LOGTO_APP_SECRET}
       - LOGTO_APP_API_RESOURCE=https://${API_DOMAIN}/api
@@ -144,12 +155,15 @@ services:
       - /etc/platform/env
     labels:
       - "traefik.enable=true"
+      - "traefik.docker.network=net"
+      # Core (port 3001)
       - "traefik.http.routers.logto.rule=Host(`${LOGTO_DOMAIN}`)"
       - "traefik.http.routers.logto.entrypoints=websecure"
       - "traefik.http.routers.logto.tls=true"
       - "traefik.http.routers.logto.tls.certresolver=myresolver"
       - "traefik.http.routers.logto.service=logto"
       - "traefik.http.services.logto.loadbalancer.server.port=3001"
+      # Admin (port 3002)
       - "traefik.http.routers.logto-admin.rule=Host(`${LOGTO_ADMIN_DOMAIN}`)"
       - "traefik.http.routers.logto-admin.entrypoints=websecure"
       - "traefik.http.routers.logto-admin.tls=true"
@@ -170,20 +184,25 @@ services:
     ports:
       - "127.0.0.1:8081:8081"
     environment:
-      - DATABASE_URL=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/logto?sslmode=disable
+      - PGWEB_DATABASE_URL=postgres://${DB_ADMIN_USER}:${DB_ADMIN_PASSWORD}@db:5432/${POSTGRES_LOGTO_DB}?sslmode=disable
     depends_on:
       - db
     networks:
       - net
     env_file:
-      - .env.local
+      - /etc/platform/env
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.app.rule=Host(`${API_DOMAIN}`)"
-      - "traefik.http.routers.app.entrypoints=websecure"
-      - "traefik.http.routers.app.tls=true"
-      - "traefik.http.routers.app.tls.certresolver=myresolver"
-      - "traefik.http.services.app.loadbalancer.server.port=8000"
+      - "traefik.docker.network=net"
+      - "traefik.http.services.pgweb.loadbalancer.server.port=8081"
+      - "traefik.http.routers.pgweb.rule=Host(`${PGWEB_DOMAIN}`)"
+      - "traefik.http.routers.pgweb.entrypoints=websecure"
+      - "traefik.http.routers.pgweb.tls=true"
+      - "traefik.http.routers.pgweb.tls.certresolver=myresolver"
+      - "traefik.http.routers.pgweb.service=pgweb"
+      # BasicAuth
+      - "traefik.http.middlewares.pgweb-basicauth.basicauth.users=${PGWEB_BASIC_AUTH}"
+      - "traefik.http.routers.pgweb.middlewares=pgweb-basicauth@docker"
 
   api:
     image: ghcr.io/bartekus/platform/api:${IMAGE_TAG:-latest}
@@ -248,6 +267,13 @@ services:
     depends_on:
       api:
         condition: service_healthy
+    env_file:
+      - /etc/platform/env
+    environment:
+      - VITE_LOGTO_APP_ID=${LOGTO_APP_ID}
+      - VITE_LOGTO_DOMAIN=${LOGTO_DOMAIN}
+      - VITE_API_DOMAIN=${API_DOMAIN}
+      - VITE_WEB_DOMAIN=${WEB_DOMAIN}
     networks:
       - net
     labels:
