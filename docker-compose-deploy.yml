@@ -44,7 +44,27 @@ services:
       - "traefik.http.routers.tkd.service=api@internal"
       # BasicAuth
       - "traefik.http.middlewares.tkd-basicauth.basicauth.users=${TRAEFIK_BASIC_AUTH}"
-      - "traefik.http.routers.tkd.middlewares=tkd-basicauth"
+#      - "traefik.http.routers.tkd.middlewares=tkd-basicauth@docker"
+      # NEW: public router just for the manifest (no auth)
+      - "traefik.http.routers.tkd-manifest.rule=Host(`${TRAEFIK_DOMAIN}`) && Path(`/dashboard/manifest.json`)"
+      - "traefik.http.routers.tkd-manifest.entrypoints=websecure"
+      - "traefik.http.routers.tkd-manifest.tls=true"
+      - "traefik.http.routers.tkd-manifest.tls.certresolver=myresolver"
+      - "traefik.http.routers.tkd-manifest.service=api@internal"
+      - "traefik.http.routers.tkd-manifest.priority=100"   # ensure it wins over tkd
+      # Security headers
+      - "traefik.http.middlewares.tkd-headers.headers.stsSeconds=31536000"
+      - "traefik.http.middlewares.tkd-headers.headers.stsIncludeSubdomains=true"
+      - "traefik.http.middlewares.tkd-headers.headers.stsPreload=true"
+      - "traefik.http.middlewares.tkd-headers.headers.forceSTSHeader=true"
+      - "traefik.http.middlewares.tkd-headers.headers.contentTypeNosniff=true"
+      - "traefik.http.middlewares.tkd-headers.headers.browserXssFilter=true"
+      - "traefik.http.middlewares.tkd-headers.headers.referrerPolicy=no-referrer"
+      # (only if you saw http:// assets earlier; you didn’t)
+      # - "traefik.http.middlewares.tkd-headers.headers.contentSecurityPolicy=upgrade-insecure-requests"
+
+      # Attach to tkd (after basicauth)
+      - "traefik.http.routers.tkd.middlewares=tkd-basicauth@docker,tkd-headers@docker"
       # redirect middleware deployd.xyz -> WEB_DOMAIN
       - "traefik.http.middlewares.redirect-to-web.redirectregex.regex=^https://(${DOMAIN})/?(.*)"
       - "traefik.http.middlewares.redirect-to-web.redirectregex.replacement=https://${WEB_DOMAIN}/$${2}"
