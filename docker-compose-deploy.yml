@@ -319,7 +319,6 @@ services:
       - "traefik.http.services.web.loadbalancer.server.port=80"
     stop_grace_period: 45s
     healthcheck:
-#      test: ["CMD", "true"]
       test: ["CMD-SHELL", "wget -q -O - http://127.0.0.1:80/ >/dev/null 2>&1"]
       interval: 5s
       timeout: 3s

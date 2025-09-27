@@ -24,11 +24,13 @@ COPY --from=build /app/dist /usr/share/nginx/html
 COPY public/env.js.tmpl /usr/share/nginx/html/env.js.tmpl
 
 # 10-line startup hook
-RUN printf '%s\n' '#!/bin/sh
-set -eu
-envsubst < /usr/share/nginx/html/env.js.tmpl > /usr/share/nginx/html/env.js
-' > /docker-entrypoint.d/40-env.sh \
- && chmod +x /docker-entrypoint.d/40-env.sh
+# 10-line startup hook (actually 3 lines via printf)
+RUN printf '%s\n' \
+  '#!/bin/sh' \
+  'set -eu' \
+  'envsubst < /usr/share/nginx/html/env.js.tmpl > /usr/share/nginx/html/env.js' \
+  > /docker-entrypoint.d/40-env.sh \
+  && chmod +x /docker-entrypoint.d/40-env.sh
 
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]
