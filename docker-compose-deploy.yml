@@ -304,10 +304,10 @@ services:
     env_file:
       - /etc/platform/env
     environment:
-      - VITE_LOGTO_APP_ID=${LOGTO_APP_ID}
-      - VITE_LOGTO_DOMAIN=${LOGTO_DOMAIN}
-      - VITE_API_DOMAIN=${API_DOMAIN}
-      - VITE_WEB_DOMAIN=${WEB_DOMAIN}
+      - LOGTO_APP_ID=${LOGTO_APP_ID}
+      - LOGTO_DOMAIN=${LOGTO_DOMAIN}
+      - API_DOMAIN=${API_DOMAIN}
+      - WEB_DOMAIN=${WEB_DOMAIN}
     networks:
       - net
     labels:
