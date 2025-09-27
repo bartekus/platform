@@ -1,5 +1,8 @@
 import { LogtoConfig } from '@logto/react'
 
+console.log('import.meta.env');
+console.log(import.meta.env)
+
 if (import.meta.env && !import.meta.env.VITE_API_DOMAIN) {
     throw new Error("You must specify a valid VITE_API_DOMAIN.");
 }
