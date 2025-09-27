@@ -40,10 +40,23 @@ services:
       - "traefik.http.routers.tkd.rule=Host(`${TRAEFIK_DOMAIN}`)"
       - "traefik.http.routers.tkd.entrypoints=websecure"
       - "traefik.http.routers.tkd.tls=true"
+      - "traefik.http.routers.tkd.tls.certresolver=myresolver"
       - "traefik.http.routers.tkd.service=api@internal"
       # BasicAuth
       - "traefik.http.middlewares.tkd-basicauth.basicauth.users=${TRAEFIK_BASIC_AUTH}"
       - "traefik.http.routers.tkd.middlewares=tkd-basicauth"
+      # redirect middleware deployd.xyz -> WEB_DOMAIN
+      - "traefik.http.middlewares.redirect-to-web.redirectregex.regex=^https://(${DOMAIN})/?(.*)"
+      - "traefik.http.middlewares.redirect-to-web.redirectregex.replacement=https://${WEB_DOMAIN}/$${2}"
+      - "traefik.http.middlewares.redirect-to-web.redirectregex.permanent=true"
+      # apex router
+      - "traefik.http.routers.apex.rule=Host(`${DOMAIN}`)"
+      - "traefik.http.routers.apex.entrypoints=websecure"
+      - "traefik.http.routers.apex.tls=true"
+      - "traefik.http.routers.apex.tls.certresolver=myresolver"
+#      - "traefik.http.routers.apex.service=noop@internal" # If you prefer redirect
+      - "traefik.http.routers.apex.service=web"
+      - "traefik.http.routers.apex.middlewares=redirect-to-web@docker"
     logging: *default-logging
 
   dozzle:
