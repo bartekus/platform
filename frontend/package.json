@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "dotenv -e ../.env.local -e .env.web -- vite",
+    "dev": "dotenv -e ../.env.local -e .env -- vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview"

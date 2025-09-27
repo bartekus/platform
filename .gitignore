@@ -31,7 +31,7 @@ dist/
 .env.production.local
 !.env.sample
 !.env.digitalocean.sample
-!frontend/.env.web
+!frontend/.env
 
 # Log files
 npm-debug.log*
