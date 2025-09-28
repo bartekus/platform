@@ -19,10 +19,10 @@ if (import.meta.env && !import.meta.env.VITE_WEB_DOMAIN) {
     throw new Error("You must specify a valid VITE_WEB_DOMAIN.");
 }
 
-const API_DOMAIN = import.meta.env.VITE_API_DOMAIN;
-const LOGTO_APP_ID = import.meta.env.VITE_LOGTO_APP_ID;
-const LOGTO_DOMAIN = import.meta.env.VITE_LOGTO_DOMAIN;
-const WEB_DOMAIN = import.meta.env.VITE_WEB_DOMAIN;
+const API_DOMAIN = import.meta.env.VITE_API_DOMAIN || window.__ENV__.VITE_API_DOMAIN;
+const LOGTO_APP_ID = import.meta.env.VITE_LOGTO_APP_ID || window.__ENV__.VITE_LOGTO_APP_ID;
+const LOGTO_DOMAIN = import.meta.env.VITE_LOGTO_DOMAIN || window.__ENV__.VITE_LOGTO_DOMAIN;
+const WEB_DOMAIN = import.meta.env.VITE_WEB_DOMAIN || window.__ENV__.VITE_WEB_DOMAIN;
 
 export const config: LogtoConfig = {
     // The public Logto endpoint (core)
