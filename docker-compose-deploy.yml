@@ -37,7 +37,7 @@ services:
       - /etc/platform/env
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.tkd.rule=Host(`${TRAEFIK_DOMAIN}`) && PathPrefix(`/api`)"
+      - "traefik.http.routers.tkd.rule=Host(`${TRAEFIK_DOMAIN}`) && (PathPrefix(`/api`) || PathPrefix(`/dashboard`))"
       - "traefik.http.routers.tkd.entrypoints=websecure"
       - "traefik.http.routers.tkd.tls=true"
       - "traefik.http.routers.tkd.tls.certresolver=myresolver"
@@ -312,6 +312,19 @@ services:
       - net
     labels:
       - "traefik.enable=true"
+      # Add security headers
+      - "traefik.http.middlewares.secure-headers.headers.stsSeconds=31536000"
+      - "traefik.http.middlewares.secure-headers.headers.forceSTSHeader=true"
+      - "traefik.http.middlewares.secure-headers.headers.stsIncludeSubdomains=true"
+      - "traefik.http.middlewares.secure-headers.headers.stsPreload=true"
+      - "traefik.http.middlewares.secure-headers.headers.contentTypeNosniff=true"
+      - "traefik.http.middlewares.secure-headers.headers.browserXssFilter=true"
+      - "traefik.http.middlewares.secure-headers.headers.customResponseHeaders.Content-Security-Policy=upgrade-insecure-requests"
+      - "traefik.http.routers.web.middlewares=secure-headers@docker"
+      # Enforce HTTPS
+      - "traefik.http.middlewares.redirect-https.redirectscheme.scheme=https"
+      - "traefik.http.routers.web.entrypoints=web"
+      - "traefik.http.routers.web.middlewares=redirect-https@docker"
       - "traefik.http.routers.web.rule=Host(`${WEB_DOMAIN}`)"
       - "traefik.http.routers.web.entrypoints=websecure"
       - "traefik.http.routers.web.tls=true"
