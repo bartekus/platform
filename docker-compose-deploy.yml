@@ -21,7 +21,7 @@ services:
       - "--entrypoints.websecure.address=:443"
       - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
       - "--entrypoints.web.http.redirections.entryPoint.scheme=https"
-      - "--entrypoints.web.http.redirections.entrypoint.permanent=true"
+      - "--entrypoints.web.http.redirections.entryPoint.permanent=true"
       - "--certificatesresolvers.myresolver.acme.tlschallenge=true"
       - "--certificatesresolvers.myresolver.acme.email=${ACME_EMAIL}"
       - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
@@ -36,22 +36,28 @@ services:
     env_file:
       - /etc/platform/env
     labels:
-      - "traefik.enable=true"
       - "traefik.http.routers.tkd.rule=Host(`${TRAEFIK_DOMAIN}`) && (PathPrefix(`/api`) || PathPrefix(`/dashboard`))"
       - "traefik.http.routers.tkd.entrypoints=websecure"
       - "traefik.http.routers.tkd.tls=true"
       - "traefik.http.routers.tkd.tls.certresolver=myresolver"
       - "traefik.http.routers.tkd.service=api@internal"
-      # BasicAuth
+      # BasicAuth + headers
       - "traefik.http.middlewares.tkd-basicauth.basicauth.users=${TRAEFIK_BASIC_AUTH}"
-      - "traefik.http.routers.tkd.middlewares=tkd-basicauth@docker"
+      - "traefik.http.middlewares.tkd-headers.headers.stsSeconds=31536000"
+      - "traefik.http.middlewares.tkd-headers.headers.stsIncludeSubdomains=true"
+      - "traefik.http.middlewares.tkd-headers.headers.stsPreload=true"
+      - "traefik.http.middlewares.tkd-headers.headers.forceSTSHeader=true"
+      - "traefik.http.middlewares.tkd-headers.headers.contentTypeNosniff=true"
+      - "traefik.http.middlewares.tkd-headers.headers.referrerPolicy=strict-origin-when-cross-origin"
+      - "traefik.http.middlewares.tkd-headers.headers.contentSecurityPolicy=upgrade-insecure-requests; block-all-mixed-content"
+      - "traefik.http.routers.tkd.middlewares=tkd-basicauth@docker,tkd-headers@docker"
       # NEW: public router just for the manifest (no auth)
-#      - "traefik.http.routers.tkd-manifest.rule=Host(`${TRAEFIK_DOMAIN}`) && Path(`/dashboard/manifest.json`)"
-#      - "traefik.http.routers.tkd-manifest.entrypoints=websecure"
-#      - "traefik.http.routers.tkd-manifest.tls=true"
-#      - "traefik.http.routers.tkd-manifest.tls.certresolver=myresolver"
-#      - "traefik.http.routers.tkd-manifest.service=api@internal"
-#      - "traefik.http.routers.tkd-manifest.priority=100"   # ensure it wins over tkd
+      - "traefik.http.routers.tkd-manifest.rule=Host(`${TRAEFIK_DOMAIN}`) && Path(`/dashboard/manifest.json`)"
+      - "traefik.http.routers.tkd-manifest.entrypoints=websecure"
+      - "traefik.http.routers.tkd-manifest.tls=true"
+      - "traefik.http.routers.tkd-manifest.tls.certresolver=myresolver"
+      - "traefik.http.routers.tkd-manifest.service=api@internal"
+      - "traefik.http.routers.tkd-manifest.priority=100"   # ensure it wins over tkd
       # Security headers
       - "traefik.http.middlewares.tkd-headers.headers.stsSeconds=31536000"
       - "traefik.http.middlewares.tkd-headers.headers.stsIncludeSubdomains=true"
@@ -312,23 +318,32 @@ services:
       - net
     labels:
       - "traefik.enable=true"
-      # Add security headers
+
+      # --- Security headers middleware (HTTPS responses)
       - "traefik.http.middlewares.secure-headers.headers.stsSeconds=31536000"
       - "traefik.http.middlewares.secure-headers.headers.forceSTSHeader=true"
       - "traefik.http.middlewares.secure-headers.headers.stsIncludeSubdomains=true"
       - "traefik.http.middlewares.secure-headers.headers.stsPreload=true"
       - "traefik.http.middlewares.secure-headers.headers.contentTypeNosniff=true"
-      - "traefik.http.middlewares.secure-headers.headers.browserXssFilter=true"
-      - "traefik.http.middlewares.secure-headers.headers.customResponseHeaders.Content-Security-Policy=upgrade-insecure-requests"
-      - "traefik.http.routers.web.middlewares=secure-headers@docker"
-      # Enforce HTTPS
+      - "traefik.http.middlewares.secure-headers.headers.referrerPolicy=strict-origin-when-cross-origin"
+      # Use Traefik's native CSP field (clearer than customResponseHeaders)
+      - "traefik.http.middlewares.secure-headers.headers.contentSecurityPolicy=upgrade-insecure-requests; block-all-mixed-content"
+
+      # --- HTTP -> HTTPS redirect middleware
       - "traefik.http.middlewares.redirect-https.redirectscheme.scheme=https"
-      - "traefik.http.routers.web.entrypoints=web"
-      - "traefik.http.routers.web.middlewares=redirect-https@docker"
+
+      # --- HTTP router (redirect only)
+      - "traefik.http.routers.web-redirect.rule=Host(`${WEB_DOMAIN}`)"
+      - "traefik.http.routers.web-redirect.entrypoints=web"
+      - "traefik.http.routers.web-redirect.middlewares=redirect-https@docker"
+      - "traefik.http.routers.web-redirect.service=web"  # points to same service
+
+      # --- HTTPS router (serve app + headers)
       - "traefik.http.routers.web.rule=Host(`${WEB_DOMAIN}`)"
       - "traefik.http.routers.web.entrypoints=websecure"
       - "traefik.http.routers.web.tls=true"
       - "traefik.http.routers.web.tls.certresolver=myresolver"
+      - "traefik.http.routers.web.middlewares=secure-headers@docker"
       - "traefik.http.services.web.loadbalancer.server.port=80"
     stop_grace_period: 45s
     healthcheck:
