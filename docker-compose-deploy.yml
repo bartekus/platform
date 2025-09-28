@@ -37,7 +37,7 @@ services:
       - /etc/platform/env
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.tkd.rule=Host(`${TRAEFIK_DOMAIN}`)"
+      - "traefik.http.routers.tkd.rule=Host(`${TRAEFIK_DOMAIN}`) && PathPrefix(`/api`)"
       - "traefik.http.routers.tkd.entrypoints=websecure"
       - "traefik.http.routers.tkd.tls=true"
       - "traefik.http.routers.tkd.tls.certresolver=myresolver"
@@ -46,12 +46,12 @@ services:
       - "traefik.http.middlewares.tkd-basicauth.basicauth.users=${TRAEFIK_BASIC_AUTH}"
       - "traefik.http.routers.tkd.middlewares=tkd-basicauth@docker"
       # NEW: public router just for the manifest (no auth)
-      - "traefik.http.routers.tkd-manifest.rule=Host(`${TRAEFIK_DOMAIN}`) && Path(`/dashboard/manifest.json`)"
-      - "traefik.http.routers.tkd-manifest.entrypoints=websecure"
-      - "traefik.http.routers.tkd-manifest.tls=true"
-      - "traefik.http.routers.tkd-manifest.tls.certresolver=myresolver"
-      - "traefik.http.routers.tkd-manifest.service=api@internal"
-      - "traefik.http.routers.tkd-manifest.priority=100"   # ensure it wins over tkd
+#      - "traefik.http.routers.tkd-manifest.rule=Host(`${TRAEFIK_DOMAIN}`) && Path(`/dashboard/manifest.json`)"
+#      - "traefik.http.routers.tkd-manifest.entrypoints=websecure"
+#      - "traefik.http.routers.tkd-manifest.tls=true"
+#      - "traefik.http.routers.tkd-manifest.tls.certresolver=myresolver"
+#      - "traefik.http.routers.tkd-manifest.service=api@internal"
+#      - "traefik.http.routers.tkd-manifest.priority=100"   # ensure it wins over tkd
       # Security headers
       - "traefik.http.middlewares.tkd-headers.headers.stsSeconds=31536000"
       - "traefik.http.middlewares.tkd-headers.headers.stsIncludeSubdomains=true"
@@ -319,6 +319,7 @@ services:
       - "traefik.http.services.web.loadbalancer.server.port=80"
     stop_grace_period: 45s
     healthcheck:
+#      test: ["CMD", "true"]
       test: ["CMD-SHELL", "wget -q -O - http://127.0.0.1:80/ >/dev/null 2>&1"]
       interval: 5s
       timeout: 3s
