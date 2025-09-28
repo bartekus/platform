@@ -26,4 +26,7 @@ if ! doctl compute image list-distribution --format Slug --no-header | awk '{pri
   echo "   Set IMAGE=ubuntu-24-04-x64 in .env.digitalocean (recommended)."
 fi
 
+command -v jq >/dev/null || { echo "❌ 'jq' not found. Install jq."; exit 1; }
+command -v dig >/dev/null || echo "ℹ️ 'dig' not found; healthcheck will skip DNS."
+
 echo "✅ All authentication checks passed."
