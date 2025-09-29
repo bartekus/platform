@@ -53,19 +53,57 @@ jobs:
 
             have() { command -v "$1" >/dev/null 2>&1; }
 
-            echo "🔎 Detecting distro..."
-            if [ -f /etc/os-release ]; then
-              . /etc/os-release
-              DISTRO="${ID:-unknown}"
-            else
-              DISTRO="unknown"
-            fi
+            apt_wait() {
+              # Wait for any apt/dpkg/unattended-upgrades activity and locks to clear.
+              echo "⏳ Waiting for apt/dpkg locks to free (up to 300s)…"
+              for i in $(seq 1 300); do
+                if ! pgrep -x apt >/dev/null 2>&1 \
+                   && ! pgrep -x apt-get >/dev/null 2>&1 \
+                   && ! pgrep -x dpkg >/dev/null 2>&1 \
+                   && ! pgrep -x unattended-upgrade >/dev/null 2>&1 \
+                   && [ ! -e /var/lib/apt/lists/lock ] \
+                   && [ ! -e /var/lib/dpkg/lock-frontend ] \
+                   && [ ! -e /var/lib/dpkg/lock ]; then
+                  echo "✅ Apt locks are free."
+                  return 0
+                fi
+                sleep 1
+              done
+              echo "⚠️  Apt locks still present; showing diagnostics:"
+              ps aux | egrep 'apt|dpkg|unattended' || true
+              ls -l /var/lib/apt/lists/lock /var/lib/dpkg/lock-frontend /var/lib/dpkg/lock 2>/dev/null || true
+              return 1
+            }
+
+            apt_safe() {
+              # Run apt-get with retries and lock waiting.
+              local cmd="$*"
+              apt_wait
+              # Stop apt-daily timers to avoid races during our install window (best-effort).
+              if command -v systemctl >/dev/null 2>&1; then
+                sudo systemctl stop apt-daily.timer apt-daily-upgrade.timer 2>/dev/null || true
+              fi
+              for attempt in 1 2 3; do
+                echo "🔧 apt attempt ${attempt}: $cmd"
+                if sudo DEBIAN_FRONTEND=noninteractive bash -c "$cmd"; then
+                  return 0
+                fi
+                echo "…retrying in 5s"
+                sleep 5
+                apt_wait || true
+              done
+              echo "❌ apt failed after retries: $cmd"
+              return 1
+            }
+
+            echo "🔎 Detecting distro…"
+            if [ -f /etc/os-release ]; then . /etc/os-release; DISTRO="${ID:-unknown}"; else DISTRO="unknown"; fi
             echo "Distro: $DISTRO"
 
             echo "🔧 Ensuring curl, ca-certificates"
             if have apt-get; then
-              sudo apt-get update -y
-              sudo DEBIAN_FRONTEND=noninteractive apt-get install -y curl ca-certificates
+              apt_safe "apt-get update -y"
+              apt_safe "apt-get install -y curl ca-certificates"
             elif have dnf; then
               sudo dnf install -y curl ca-certificates
             elif have yum; then
@@ -76,7 +114,7 @@ jobs:
             if have docker; then
               echo "✅ Docker present: $(docker --version)"
             else
-              # Use the official convenience script (works on Ubuntu/Debian most reliably)
+              # Official convenience script handles repo setup & engine install (Debian/Ubuntu)
               curl -fsSL https://get.docker.com -o get-docker.sh
               sh get-docker.sh
               echo "✅ Docker installed: $(docker --version)"
@@ -103,9 +141,9 @@ jobs:
               echo "✅ docker compose present: $(docker compose version)"
             else
               if have apt-get; then
-                sudo apt-get update -y
-                # docker-compose-plugin provides 'docker compose'
-                sudo DEBIAN_FRONTEND=noninteractive apt-get install -y docker-compose-plugin
+                apt_safe "apt-get update -y"
+                # docker-compose-plugin provides `docker compose`
+                apt_safe "apt-get install -y docker-compose-plugin"
               fi
               if ! docker compose version >/dev/null 2>&1; then
                 echo "⚠️  docker compose plugin not found via package manager; installing static binary"
