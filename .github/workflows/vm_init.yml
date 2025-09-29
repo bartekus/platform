@@ -47,11 +47,25 @@ jobs:
           host: ${{ env.TARGET_HOST }}
           username: ${{ env.TARGET_USER }}
           key: ${{ secrets.SSH_KEY }}
+          # Give it ample time; our internal waits stay under this.
+          timeout: 60s
+          command_timeout: 30m
           script_stop: true
+          envs: "DEBIAN_FRONTEND,NEEDRESTART_MODE"
+          envs_format: "export"
+          allenvs: true
           script: |
             set -Eeuo pipefail
+            export DEBIAN_FRONTEND=noninteractive
+            export NEEDRESTART_MODE=a
 
             have() { command -v "$1" >/dev/null 2>&1; }
+
+            echo "🕐 If present, waiting for cloud-init to finish…"
+            if command -v cloud-init >/dev/null 2>&1; then
+              # Wait up to 8 minutes for first-boot jobs (DO images use this)
+              cloud-init status --wait || true
+            fi
 
             show_locks() {
               echo "---- apt/dpkg activity ----"
@@ -60,9 +74,29 @@ jobs:
               echo "---------------------------"
             }
 
-            apt_wait_or_fix() {
-              local timeout="${1:-900}"   # up to 15m
-              echo "⏳ Waiting for apt/dpkg locks to free (up to ${timeout}s)…"
+            stop_auto_apt() {
+              if command -v systemctl >/dev/null 2>&1; then
+                sudo systemctl stop unattended-upgrades.service 2>/dev/null || true
+                sudo systemctl stop apt-daily.timer apt-daily-upgrade.timer 2>/dev/null || true
+                sudo systemctl kill -s KILL unattended-upgrades.service 2>/dev/null || true
+              fi
+              sudo pkill -f unattended-upgrade || true
+            }
+
+            clear_stale_locks() {
+              # Only remove zero-length locks; if nonzero, leave them.
+              for f in /var/lib/apt/lists/lock /var/lib/dpkg/lock-frontend /var/lib/dpkg/lock; do
+                if [ -e "$f" ] && [ ! -s "$f" ]; then
+                  echo "Removing stale zero-length lock $f"
+                  sudo rm -f "$f" || true
+                fi
+              done
+              sudo dpkg --configure -a || true
+            }
+
+            wait_or_fix_locks() {
+              local timeout="${1:-300}" # 5 minutes max here; we’ll hard-fix after a short grace.
+              echo "⏳ Waiting for apt/dpkg locks (up to ${timeout}s)…"
               for i in $(seq 1 "$timeout"); do
                 if ! pgrep -x apt >/dev/null 2>&1 \
                    && ! pgrep -x apt-get >/dev/null 2>&1 \
@@ -70,47 +104,40 @@ jobs:
                    && [ ! -e /var/lib/apt/lists/lock ] \
                    && [ ! -e /var/lib/dpkg/lock-frontend ] \
                    && [ ! -e /var/lib/dpkg/lock ]; then
-                  echo "✅ Apt locks are free."
+                  echo "✅ Locks are free."
                   return 0
                 fi
-                # If ONLY unattended-upgrade* is around, stop it and clean stale locks
-                if pgrep -f unattended-upgrade >/dev/null 2>&1 \
-                   && ! pgrep -x apt >/dev/null 2>&1 \
-                   && ! pgrep -x apt-get >/dev/null 2>&1 \
-                   && ! pgrep -x dpkg >/dev/null 2>&1; then
-                  echo "🧹 Detected only unattended-upgrade; stopping and clearing stale locks…"
-                  if command -v systemctl >/dev/null 2>&1; then
-                    sudo systemctl stop unattended-upgrades || true
-                    sudo systemctl stop apt-daily.timer apt-daily-upgrade.timer 2>/dev/null || true
+                # After 20s, start being assertive with unattended-upgrades (only if dpkg/apt aren't actually running)
+                if [ "$i" -eq 20 ]; then
+                  if ! pgrep -x apt >/dev/null 2>&1 && ! pgrep -x apt-get >/dev/null 2>&1 && ! pgrep -x dpkg >/dev/null 2>&1; then
+                    echo "🧹 Forcing unattended-upgrades to stop and clearing stale locks…"
+                    stop_auto_apt
+                    clear_stale_locks
                   fi
-                  sudo pkill -f unattended-upgrade || true
-                  # Remove zero-length stale locks only
-                  for f in /var/lib/apt/lists/lock /var/lib/dpkg/lock-frontend /var/lib/dpkg/lock; do
-                    [ -e "$f" ] && [ ! -s "$f" ] && echo "Removing stale lock $f" && sudo rm -f "$f" || true
-                  done
-                  sudo dpkg --configure -a || true
                 fi
                 sleep 1
               done
-              echo "⚠️  Apt locks still present after waiting."
+              echo "⚠️  Locks still present after waiting."
               show_locks
               return 1
             }
 
             apt_safe() {
               local cmd="$*"
-              apt_wait_or_fix 900
+              # Brief wait + clean; be assertive quickly to avoid long stalls
+              wait_or_fix_locks 60 || true
               if command -v systemctl >/dev/null 2>&1; then
                 sudo systemctl stop apt-daily.timer apt-daily-upgrade.timer 2>/dev/null || true
               fi
               for attempt in 1 2 3; do
                 echo "🔧 apt attempt ${attempt}: $cmd"
-                if sudo DEBIAN_FRONTEND=noninteractive bash -c "$cmd"; then
+                if sudo bash -c "$cmd"; then
                   return 0
                 fi
-                echo "…retrying in 10s"
-                sleep 10
-                apt_wait_or_fix 120 || true
+                echo "…retrying in 8s"
+                sleep 8
+                stop_auto_apt
+                clear_stale_locks
               done
               echo "❌ apt failed after retries: $cmd"
               show_locks
@@ -135,7 +162,6 @@ jobs:
             if have docker; then
               echo "✅ Docker present: $(docker --version)"
             else
-              # Official convenience script handles repo setup & engine install (Debian/Ubuntu)
               curl -fsSL https://get.docker.com -o get-docker.sh
               sh get-docker.sh
               echo "✅ Docker installed: $(docker --version)"
@@ -147,7 +173,6 @@ jobs:
               sudo systemctl restart docker || sudo systemctl start docker || true
               sudo systemctl --no-pager -l status docker | sed -n '1,8p' || true
             else
-              # SysV / other init fallbacks
               if command -v service >/dev/null 2>&1; then
                 sudo service docker restart || sudo service docker start || true
               elif [ -x /etc/init.d/docker ]; then
@@ -194,7 +219,6 @@ jobs:
 
             echo "👤 Managing user membership in 'docker' group"
             CURRENT_USER="$(id -un)"
-            # If you connected as root, there's no need to add root to docker group.
             if [ "$CURRENT_USER" != "root" ]; then
               id -nG "$CURRENT_USER" | tr ' ' '\n' | grep -qx docker || sudo usermod -aG docker "$CURRENT_USER"
             else
