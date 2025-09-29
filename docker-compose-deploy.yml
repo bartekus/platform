@@ -186,8 +186,7 @@ services:
       - "traefik.http.routers.logto-admin.service=logto-admin"
       - "traefik.http.services.logto-admin.loadbalancer.server.port=3002"
     healthcheck:
-      # Return 0 only if we get HTTP 204
-      test: [ "CMD-SHELL", "apk add --no-cache curl >/dev/null 2>&1 || true; code=$(curl -fsS -o /dev/null -w '%{http_code}' http://127.0.0.1:3001/api/status || echo x); [ \"$code\" = \"204\" ]" ]
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:3001/api/status || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 20
