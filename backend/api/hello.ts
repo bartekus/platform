@@ -5,9 +5,24 @@ interface HelloResponse { message: string; }
 
 // GET /api/hello (requires auth)
 export const hello = api<void, HelloResponse>(
+    { auth: true, method: "GET", path: "/hello" },
+    async () => {
+        const { userID } = getAuthData()!; // safe: auth:true guarantees presence
+
+        console.log('hello userID', userID)
+
+        return { message: `Hello, ${userID}!` };
+    },
+);
+
+// GET /api/hello (requires auth)
+export const apiHello = api<void, HelloResponse>(
     { auth: true, method: "GET", path: "/api/hello" },
     async () => {
         const { userID } = getAuthData()!; // safe: auth:true guarantees presence
+
+        console.log('apiHello userID', userID)
+
         return { message: `Hello, ${userID}!` };
     },
 );
