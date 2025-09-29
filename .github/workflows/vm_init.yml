@@ -53,33 +53,53 @@ jobs:
 
             have() { command -v "$1" >/dev/null 2>&1; }
 
-            apt_wait() {
-              # Wait for any apt/dpkg/unattended-upgrades activity and locks to clear.
-              echo "⏳ Waiting for apt/dpkg locks to free (up to 300s)…"
-              for i in $(seq 1 300); do
+            show_locks() {
+              echo "---- apt/dpkg activity ----"
+              ps aux | egrep -E 'apt($| )|apt-get|dpkg|unattended' || true
+              ls -l /var/lib/apt/lists/lock /var/lib/dpkg/lock-frontend /var/lib/dpkg/lock 2>/dev/null || true
+              echo "---------------------------"
+            }
+
+            apt_wait_or_fix() {
+              local timeout="${1:-900}"   # up to 15m
+              echo "⏳ Waiting for apt/dpkg locks to free (up to ${timeout}s)…"
+              for i in $(seq 1 "$timeout"); do
                 if ! pgrep -x apt >/dev/null 2>&1 \
                    && ! pgrep -x apt-get >/dev/null 2>&1 \
                    && ! pgrep -x dpkg >/dev/null 2>&1 \
-                   && ! pgrep -x unattended-upgrade >/dev/null 2>&1 \
                    && [ ! -e /var/lib/apt/lists/lock ] \
                    && [ ! -e /var/lib/dpkg/lock-frontend ] \
                    && [ ! -e /var/lib/dpkg/lock ]; then
                   echo "✅ Apt locks are free."
                   return 0
                 fi
+                # If ONLY unattended-upgrade* is around, stop it and clean stale locks
+                if pgrep -f unattended-upgrade >/dev/null 2>&1 \
+                   && ! pgrep -x apt >/dev/null 2>&1 \
+                   && ! pgrep -x apt-get >/dev/null 2>&1 \
+                   && ! pgrep -x dpkg >/dev/null 2>&1; then
+                  echo "🧹 Detected only unattended-upgrade; stopping and clearing stale locks…"
+                  if command -v systemctl >/dev/null 2>&1; then
+                    sudo systemctl stop unattended-upgrades || true
+                    sudo systemctl stop apt-daily.timer apt-daily-upgrade.timer 2>/dev/null || true
+                  fi
+                  sudo pkill -f unattended-upgrade || true
+                  # Remove zero-length stale locks only
+                  for f in /var/lib/apt/lists/lock /var/lib/dpkg/lock-frontend /var/lib/dpkg/lock; do
+                    [ -e "$f" ] && [ ! -s "$f" ] && echo "Removing stale lock $f" && sudo rm -f "$f" || true
+                  done
+                  sudo dpkg --configure -a || true
+                fi
                 sleep 1
               done
-              echo "⚠️  Apt locks still present; showing diagnostics:"
-              ps aux | egrep 'apt|dpkg|unattended' || true
-              ls -l /var/lib/apt/lists/lock /var/lib/dpkg/lock-frontend /var/lib/dpkg/lock 2>/dev/null || true
+              echo "⚠️  Apt locks still present after waiting."
+              show_locks
               return 1
             }
 
             apt_safe() {
-              # Run apt-get with retries and lock waiting.
               local cmd="$*"
-              apt_wait
-              # Stop apt-daily timers to avoid races during our install window (best-effort).
+              apt_wait_or_fix 900
               if command -v systemctl >/dev/null 2>&1; then
                 sudo systemctl stop apt-daily.timer apt-daily-upgrade.timer 2>/dev/null || true
               fi
@@ -88,11 +108,12 @@ jobs:
                 if sudo DEBIAN_FRONTEND=noninteractive bash -c "$cmd"; then
                   return 0
                 fi
-                echo "…retrying in 5s"
-                sleep 5
-                apt_wait || true
+                echo "…retrying in 10s"
+                sleep 10
+                apt_wait_or_fix 120 || true
               done
               echo "❌ apt failed after retries: $cmd"
+              show_locks
               return 1
             }
 
@@ -120,7 +141,7 @@ jobs:
               echo "✅ Docker installed: $(docker --version)"
             fi
 
-            echo "🔧 Enabling & starting docker service if systemd available"
+            echo "🔧 Enabling & starting docker service"
             if command -v systemctl >/dev/null 2>&1; then
               sudo systemctl enable docker || true
               sudo systemctl restart docker || sudo systemctl start docker || true
@@ -131,8 +152,6 @@ jobs:
                 sudo service docker restart || sudo service docker start || true
               elif [ -x /etc/init.d/docker ]; then
                 sudo /etc/init.d/docker restart || sudo /etc/init.d/docker start || true
-              else
-                echo "⚠️  Could not control docker service (no systemctl/service/init.d). Continuing."
               fi
             fi
 
@@ -142,11 +161,10 @@ jobs:
             else
               if have apt-get; then
                 apt_safe "apt-get update -y"
-                # docker-compose-plugin provides `docker compose`
                 apt_safe "apt-get install -y docker-compose-plugin"
               fi
               if ! docker compose version >/dev/null 2>&1; then
-                echo "⚠️  docker compose plugin not found via package manager; installing static binary"
+                echo "⚠️  installing static compose plugin"
                 VER="v2.29.7"
                 sudo mkdir -p /usr/local/lib/docker/cli-plugins
                 sudo curl -fsSL "https://github.com/docker/compose/releases/download/${VER}/docker-compose-$(uname -s)-$(uname -m)" \
@@ -164,35 +182,21 @@ jobs:
               echo "✅ docker-rollout already available"
             else
               RVER="v0.13"
-              if curl -fsSL "https://raw.githubusercontent.com/wowu/docker-rollout/${RVER}/docker-rollout" -o "$PLUGPATH"; then
-                echo "docker-rollout pinned ${RVER}"
-              else
-                echo "fallback to main"
-                curl -fsSL "https://raw.githubusercontent.com/wowu/docker-rollout/main/docker-rollout" -o "$PLUGPATH"
-              fi
+              curl -fsSL "https://raw.githubusercontent.com/wowu/docker-rollout/${RVER}/docker-rollout" -o "$PLUGPATH" \
+                || curl -fsSL "https://raw.githubusercontent.com/wowu/docker-rollout/main/docker-rollout" -o "$PLUGPATH"
               chmod +x "$PLUGPATH"
               docker rollout --help >/dev/null
               echo "✅ docker-rollout installed at ${PLUGPATH}"
             fi
 
             echo "👥 Ensuring 'docker' group exists"
-            if getent group docker >/dev/null 2>&1; then
-              echo "✅ group 'docker' exists"
-            else
-              sudo groupadd docker
-              echo "➕ created group 'docker'"
-            fi
+            getent group docker >/dev/null 2>&1 || sudo groupadd docker || true
 
             echo "👤 Managing user membership in 'docker' group"
             CURRENT_USER="$(id -un)"
             # If you connected as root, there's no need to add root to docker group.
             if [ "$CURRENT_USER" != "root" ]; then
-              if id -nG "$CURRENT_USER" | tr ' ' '\n' | grep -qx docker; then
-                echo "✅ $CURRENT_USER already in docker group"
-              else
-                sudo usermod -aG docker "$CURRENT_USER"
-                echo "➕ Added $CURRENT_USER to docker group (re-login required for new shell sessions)."
-              fi
+              id -nG "$CURRENT_USER" | tr ' ' '\n' | grep -qx docker || sudo usermod -aG docker "$CURRENT_USER"
             else
               echo "ℹ️  Running as root; skipping docker group membership."
             fi
