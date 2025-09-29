@@ -11,6 +11,8 @@ env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
   SERVICES_TO_PUSH: web
+  APP_PROFILE: app
+  INFRA_PROFILE: infra
 
 jobs:
   build-and-push:
@@ -46,7 +48,6 @@ jobs:
         run: echo "short_sha=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
 
       # Build/push non-API services with buildx (web,background)
-      # We’ll point at your deploy compose file explicitly
       - name: Build & push (from docker-compose-deploy.yml with fallbacks)
         env:
           COMPOSE_FILE: docker-compose-deploy.yml
@@ -276,7 +277,7 @@ jobs:
           cp -a .deploy/logto/entrypoint.sh .bundle/.deploy/logto/entrypoint.sh
           cp -a .deploy/logto/index.js .bundle/.deploy/logto/index.js
           cp -a .deploy/logto/setup.js .bundle/.deploy/logto/setup.js
-      
+          
           tar -czf platform-bundle.tgz -C .bundle .
           ls -lah platform-bundle.tgz
 
@@ -353,7 +354,7 @@ jobs:
             
             echo "✅ Files placed."
 
-      - name: Deploy with rollout (immutable tag + draining)
+      - name: Deploy with rollout (profiles-aware + immutable tag + draining)
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ vars.HOST }}
@@ -376,14 +377,14 @@ jobs:
             # Resolve immutable tag from workflow (already set to badd9dc above)
             echo "Using SHA_TAG=$SHA_TAG"
             
-            # Pull images by immutable tag
+            # Pull application images by immutable tag
             SERVICES_CSV="${SERVICES_CSV:-${{ env.SERVICES_TO_PUSH }}}"
             IFS=',' read -ra SERVICES <<< "$SERVICES_CSV"
-              for service in "${SERVICES[@]}"; do
+            for service in "${SERVICES[@]}"; do
               s="$(echo "$service" | xargs)"
               [ -n "$s" ] || continue
-            echo "Pulling ghcr.io/${{ env.IMAGE_NAME }}/$s:$SHA_TAG"
-            docker pull "ghcr.io/${{ env.IMAGE_NAME }}/$s:$SHA_TAG"
+              echo "Pulling ghcr.io/${{ env.IMAGE_NAME }}/$s:$SHA_TAG"
+              docker pull "ghcr.io/${{ env.IMAGE_NAME }}/$s:$SHA_TAG"
             done
             echo "Pulling ghcr.io/${{ env.IMAGE_NAME }}/api:$SHA_TAG"
             docker pull "ghcr.io/${{ env.IMAGE_NAME }}/api:$SHA_TAG"
@@ -396,14 +397,23 @@ jobs:
               echo "ERROR: /etc/platform/env missing"; exit 1
             fi
             
-            # Build env file with IMAGE_TAG for proper docker-rollout operation
-            echo "IMAGE_TAG=$SHA_TAG" >> .env.runtime
+            # Build env file with IMAGE_TAG for app rollout
+            echo "IMAGE_TAG=$SHA_TAG" > .env.runtime
             echo "Wrote .env.runtime:"
             sed -e 's/=.*/=<redacted>/' .env.runtime | sed 's/IMAGE_TAG=<redacted>/IMAGE_TAG='"$SHA_TAG"'/'
-  
-            # Rollout or compose fallback
+            
+            # --- NEW: Ensure/refresh INFRA profile every deploy ---
+            echo "Bringing up '${{ env.INFRA_PROFILE }}' profile (pull + up -d)"
+            docker compose \
+              --env-file /etc/platform/env --env-file ./.env.runtime \
+              --profile "${{ env.INFRA_PROFILE }}" pull
+            docker compose \
+              --env-file /etc/platform/env --env-file ./.env.runtime \
+              --profile "${{ env.INFRA_PROFILE }}" up -d
+            
+            # --- Rollout APP profile services ---
             if docker rollout --help >/dev/null 2>&1; then
-              echo "Using docker-rollout"
+              echo "Using docker-rollout for app services"
             
               docker rollout -f docker-compose.yml --env-file /etc/platform/env --env-file ./.env.runtime \
                 --pre-stop-hook "sh -c 'touch /tmp/drain && sleep 30'" api
@@ -415,18 +425,16 @@ jobs:
                 docker rollout -f docker-compose.yml --env-file /etc/platform/env --env-file ./.env.runtime background
               fi
             else
-              echo "docker-rollout not found; using docker compose fallback"
-
-              # Create/refresh containers with the new immutable tag.
+              echo "docker-rollout not found; using docker compose fallback for app profile"
             
-              # Assumes your compose uses: image: ghcr.io/...:${IMAGE_TAG}
-              docker compose --env-file /etc/platform/env --env-file ./.env.runtime pull
+              docker compose --env-file /etc/platform/env --env-file ./.env.runtime \
+                --profile "${{ env.APP_PROFILE }}" pull
             
-              # Update api first (drain hook supported in your container's preStop or entrypoint)
-              docker compose --env-file /etc/platform/env --env-file ./.env.runtime up -d api
+              docker compose --env-file /etc/platform/env --env-file ./.env.runtime \
+                --profile "${{ env.APP_PROFILE }}" up -d api
             
-              # Then web
-              docker compose --env-file /etc/platform/env --env-file ./.env.runtime up -d web
+              docker compose --env-file /etc/platform/env --env-file ./.env.runtime \
+                --profile "${{ env.APP_PROFILE }}" up -d web
             
               # Optional background
               if grep -qE '^[[:space:]]*background:' docker-compose.yml; then

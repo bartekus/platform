@@ -10,6 +10,7 @@ networks:
 
 services:
   traefik:
+    profiles: ["infra"]
     image: traefik:v3.5
     restart: always
     command:
@@ -58,6 +59,7 @@ services:
     logging: *default-logging
 
   dozzle:
+    profiles: ["infra"]
     image: amir20/dozzle:v8.14
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
@@ -87,6 +89,7 @@ services:
     logging: *default-logging
 
   db:
+    profiles: ["infra"]
     image: encoredotdev/postgres:15
     restart: always
     volumes:
@@ -115,6 +118,7 @@ services:
     logging: *default-logging
 
   redis:
+    profiles: ["infra"]
     image: redis:8
     restart: always
     volumes:
@@ -130,6 +134,7 @@ services:
     logging: *default-logging
 
   logto:
+    profiles: ["infra"]
     image: ghcr.io/logto-io/logto:1.31
     restart: always
     depends_on:
@@ -190,6 +195,7 @@ services:
     logging: *default-logging
 
   pgweb:
+    profiles: ["infra"]
     image: sosedoff/pgweb:0.16
     restart: always
     ports:
@@ -216,6 +222,7 @@ services:
       - "traefik.http.routers.pgweb.middlewares=pgweb-basicauth@docker"
 
   api:
+    profiles: ["app"]
     image: ghcr.io/bartekus/platform/api:${IMAGE_TAG:-latest}
     restart: always
     depends_on:
@@ -251,6 +258,7 @@ services:
     logging: *default-logging
 
 #  background:
+#    profiles: ["app"]
 #    image: ghcr.io/bartekus/platform/background:${IMAGE_TAG:-latest}
 #    depends_on:
 #      db:
@@ -274,6 +282,7 @@ services:
 #    logging: *default-logging
 
   web:
+    profiles: ["app"]
     image: ghcr.io/bartekus/platform/web:${IMAGE_TAG:-latest}
     restart: always
     depends_on:
