@@ -27,6 +27,38 @@ list_records() {
   doctl compute domain records list "$DOMAIN" 2>/dev/null | tail -n +2
 }
 
+# NS record (primarily for sub-delegation; apex NS usually managed by provider)
+upsert_ns_record() {
+  local name="$1"           # "@" or sub-label
+  local ns_target="$2"      # e.g., ns1.digitalocean.com.
+  local ttl="${3:-$DNS_DEFAULT_TTL}"
+
+  # DO may not allow apex NS mutation; attempt and ignore errors gracefully.
+  if ! doctl compute domain records create "$DOMAIN" \
+       --record-type "NS" --record-name "$name" --record-data "$ns_target" --record-ttl "$ttl" >/dev/null 2>&1; then
+    # Try update path: find existing NS records for this name; if present but different, replace
+    local line id cur
+    line="$(list_records | awk -v n="$name" '$2=="NS" && $3==n {print; exit}')"
+    if [[ -n "$line" ]]; then
+      id="$(awk '{print $1}' <<<"$line")"
+      cur="$(awk '{print $4}' <<<"$line" | tr -d ' ')"
+      if [[ "${cur%.}" != "${ns_target%.}" ]]; then
+        if ! doctl compute domain records update "$DOMAIN" "$id" --record-data "$ns_target" --record-ttl "$ttl" >/dev/null 2>&1; then
+          echo "ℹ️  Provider rejected NS update for ${name} → ${ns_target} (likely managed at apex)."
+        else
+          echo "🔁 Updated NS ${name} → ${ns_target}"
+        fi
+      else
+        echo "✅ NS ${name} already points to ${ns_target}"
+      fi
+    else
+      echo "ℹ️  Provider rejected NS create for ${name} → ${ns_target} (likely managed at apex)."
+    fi
+  else
+    echo "➕ Created NS ${name} → ${ns_target}"
+  fi
+}
+
 # Internal: create record with optional TTL (retry without TTL if unsupported)
 create_record() {
   local type="$1" name="$2" data="$3" ttl="${4:-$DNS_DEFAULT_TTL}"
@@ -154,6 +186,15 @@ for h in "${hosts[@]}"; do
   #   [[ -n "${DROPLET_IPV6:-}" && "$DROPLET_IPV6" != "::" ]] && upsert_aaaa_record "$label" "$DROPLET_IPV6"
   # fi
 done
+
+# Optional: attempt to ensure NS records (usually unnecessary on DO apex)
+if [[ "${CREATE_NS_RECORDS:-0}" -eq 1 ]]; then
+  echo "🧭 Ensuring NS records (DigitalOcean)…"
+  # Trailing dots required for NS targets
+  upsert_ns_record "@" "ns1.digitalocean.com."
+  upsert_ns_record "@" "ns2.digitalocean.com."
+  upsert_ns_record "@" "ns3.digitalocean.com."
+fi
 
 doctl compute domain records list "$DOMAIN"
 dig +short A "$WEB_DOMAIN"

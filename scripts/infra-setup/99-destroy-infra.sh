@@ -17,8 +17,8 @@ set -euo pipefail
 # Usage examples:
 #   DRY_RUN=1 bash scripts/infra-setup/99-destroy-infra.sh
 #   DRY_RUN=0 FORCE=1 bash scripts/infra-setup/99-destroy-infra.sh
-#   DRY_RUN=0 FORCE=1 DELETE_DOMAIN=0 DELETE_PROJECT=1 bash scripts/infra-setup/99-destroy-infra.sh # <- Reverses all infra-setup work
-#   DRY_RUN=0 FORCE=1 DELETE_DOMAIN=1 DELETE_PROJECT=1 bash scripts/infra-setup/99-destroy-infra.sh
+#   DRY_RUN=0 FORCE=1 DELETE_DOMAIN=0 DELETE_PROJECT=1 bash scripts/infra-setup/99-destroy-infra.sh
+#   DRY_RUN=0 FORCE=1 DELETE_DOMAIN=1 DELETE_PROJECT=1 bash scripts/infra-setup/99-destroy-infra.sh # <- Reverses all infra-setup default work
 # ──────────────────────────────────────────────────────────────────────────────
 
 # --- Config flags (env-overridable) ---

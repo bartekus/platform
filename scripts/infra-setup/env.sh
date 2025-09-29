@@ -7,6 +7,10 @@ BRANCH="${BRANCH:-main}"
 INFRA_ENV_FILE="${INFRA_ENV_FILE:-.env.digitalocean}"
 DNS_SAFE_REPLACE="${DNS_SAFE_REPLACE:-1}"   # 1=delete+create on change, 0=use update
 DNS_DEFAULT_TTL="${DNS_DEFAULT_TTL:-60}"
+# DNS provider & checks
+DNS_PROVIDER="${DNS_PROVIDER:-do}"   # future-proof; currently only 'do'
+SKIP_NS_CHECK="${SKIP_NS_CHECK:-0}"  # set to 1 to bypass NS delegation gate (not recommended)
+CREATE_NS_RECORDS="${CREATE_NS_RECORDS:-1}"  # 0: skip; 1: try to add NS records (recommended)
 
 # Which workflows to trigger
 WORKFLOW_FILE="${WORKFLOW_FILE:-.github/workflows/vm_init.yml}"
