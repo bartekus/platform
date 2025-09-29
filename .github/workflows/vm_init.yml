@@ -41,192 +41,84 @@ jobs:
         uses: actions/checkout@v4
 
       # Everything from here happens ON THE VM over SSH
-      - name: Install Docker, Compose v2, docker-rollout on remote (idempotent)
+      - name: Install Docker quickly (fail-fast if apt busy)
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ env.TARGET_HOST }}
           username: ${{ env.TARGET_USER }}
           key: ${{ secrets.SSH_KEY }}
-          # Give it ample time; our internal waits stay under this.
-          timeout: 60s
-          command_timeout: 30m
+          timeout: 7m
+          command_timeout: 10m
           script_stop: true
-          envs: "DEBIAN_FRONTEND,NEEDRESTART_MODE"
-          envs_format: "export"
-          allenvs: true
           script: |
             set -Eeuo pipefail
-            export DEBIAN_FRONTEND=noninteractive
-            export NEEDRESTART_MODE=a
+            export DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=a
 
             have() { command -v "$1" >/dev/null 2>&1; }
-
-            echo "🕐 If present, waiting for cloud-init to finish…"
-            if command -v cloud-init >/dev/null 2>&1; then
-              # Wait up to 8 minutes for first-boot jobs (DO images use this)
-              cloud-init status --wait || true
-            fi
-
-            show_locks() {
-              echo "---- apt/dpkg activity ----"
-              ps aux | egrep -E 'apt($| )|apt-get|dpkg|unattended' || true
-              ls -l /var/lib/apt/lists/lock /var/lib/dpkg/lock-frontend /var/lib/dpkg/lock 2>/dev/null || true
-              echo "---------------------------"
+            locks_free() {
+              ! pgrep -x apt >/dev/null 2>&1 && \
+              ! pgrep -x apt-get >/dev/null 2>&1 && \
+              ! pgrep -x dpkg >/dev/null 2>&1 && \
+              [ ! -e /var/lib/apt/lists/lock ] && \
+              [ ! -e /var/lib/dpkg/lock-frontend ] && \
+              [ ! -e /var/lib/dpkg/lock ]
             }
 
-            stop_auto_apt() {
-              if command -v systemctl >/dev/null 2>&1; then
-                sudo systemctl stop unattended-upgrades.service 2>/dev/null || true
-                sudo systemctl stop apt-daily.timer apt-daily-upgrade.timer 2>/dev/null || true
-                sudo systemctl kill -s KILL unattended-upgrades.service 2>/dev/null || true
-              fi
-              sudo pkill -f unattended-upgrade || true
-            }
-
-            clear_stale_locks() {
-              # Only remove zero-length locks; if nonzero, leave them.
-              for f in /var/lib/apt/lists/lock /var/lib/dpkg/lock-frontend /var/lib/dpkg/lock; do
-                if [ -e "$f" ] && [ ! -s "$f" ]; then
-                  echo "Removing stale zero-length lock $f"
-                  sudo rm -f "$f" || true
-                fi
-              done
-              sudo dpkg --configure -a || true
-            }
-
-            wait_or_fix_locks() {
-              local timeout="${1:-300}" # 5 minutes max here; we’ll hard-fix after a short grace.
-              echo "⏳ Waiting for apt/dpkg locks (up to ${timeout}s)…"
-              for i in $(seq 1 "$timeout"); do
-                if ! pgrep -x apt >/dev/null 2>&1 \
-                   && ! pgrep -x apt-get >/dev/null 2>&1 \
-                   && ! pgrep -x dpkg >/dev/null 2>&1 \
-                   && [ ! -e /var/lib/apt/lists/lock ] \
-                   && [ ! -e /var/lib/dpkg/lock-frontend ] \
-                   && [ ! -e /var/lib/dpkg/lock ]; then
-                  echo "✅ Locks are free."
-                  return 0
-                fi
-                # After 20s, start being assertive with unattended-upgrades (only if dpkg/apt aren't actually running)
-                if [ "$i" -eq 20 ]; then
-                  if ! pgrep -x apt >/dev/null 2>&1 && ! pgrep -x apt-get >/dev/null 2>&1 && ! pgrep -x dpkg >/dev/null 2>&1; then
-                    echo "🧹 Forcing unattended-upgrades to stop and clearing stale locks…"
-                    stop_auto_apt
-                    clear_stale_locks
-                  fi
-                fi
-                sleep 1
-              done
-              echo "⚠️  Locks still present after waiting."
-              show_locks
-              return 1
-            }
-
-            apt_safe() {
-              local cmd="$*"
-              # Brief wait + clean; be assertive quickly to avoid long stalls
-              wait_or_fix_locks 60 || true
-              if command -v systemctl >/dev/null 2>&1; then
-                sudo systemctl stop apt-daily.timer apt-daily-upgrade.timer 2>/dev/null || true
-              fi
-              for attempt in 1 2 3; do
-                echo "🔧 apt attempt ${attempt}: $cmd"
-                if sudo bash -c "$cmd"; then
-                  return 0
-                fi
-                echo "…retrying in 8s"
-                sleep 8
-                stop_auto_apt
-                clear_stale_locks
-              done
-              echo "❌ apt failed after retries: $cmd"
-              show_locks
-              return 1
-            }
-
-            echo "🔎 Detecting distro…"
-            if [ -f /etc/os-release ]; then . /etc/os-release; DISTRO="${ID:-unknown}"; else DISTRO="unknown"; fi
-            echo "Distro: $DISTRO"
-
-            echo "🔧 Ensuring curl, ca-certificates"
-            if have apt-get; then
-              apt_safe "apt-get update -y"
-              apt_safe "apt-get install -y curl ca-certificates"
-            elif have dnf; then
-              sudo dnf install -y curl ca-certificates
-            elif have yum; then
-              sudo yum install -y curl ca-certificates
-            fi
-
-            echo "🐳 Installing Docker Engine (idempotent)"
             if have docker; then
               echo "✅ Docker present: $(docker --version)"
             else
+              echo "🔎 Checking apt locks (max 25s)…"
+              for i in $(seq 1 25); do
+                if locks_free; then
+                  echo "✅ Locks are free."
+                  break
+                fi
+                sleep 1
+              done
+              if ! locks_free; then
+                echo "❌ apt is busy (unattended upgrades / dpkg). Skipping install to stay fast."
+                echo "   Re-run this job after first-boot housekeeping completes."
+                exit 85
+              fi
+
+              # Install Docker quickly via official script (uses apt under the hood)
               curl -fsSL https://get.docker.com -o get-docker.sh
               sh get-docker.sh
               echo "✅ Docker installed: $(docker --version)"
             fi
 
-            echo "🔧 Enabling & starting docker service"
-            if command -v systemctl >/dev/null 2>&1; then
-              sudo systemctl enable docker || true
-              sudo systemctl restart docker || sudo systemctl start docker || true
-              sudo systemctl --no-pager -l status docker | sed -n '1,8p' || true
-            else
-              if command -v service >/dev/null 2>&1; then
-                sudo service docker restart || sudo service docker start || true
-              elif [ -x /etc/init.d/docker ]; then
-                sudo /etc/init.d/docker restart || sudo /etc/init.d/docker start || true
-              fi
-            fi
-
-            echo "🧩 Ensuring docker 'compose' plugin (v2)"
+            # Compose v2 plugin via static download (no apt)
             if docker compose version >/dev/null 2>&1; then
               echo "✅ docker compose present: $(docker compose version)"
             else
-              if have apt-get; then
-                apt_safe "apt-get update -y"
-                apt_safe "apt-get install -y docker-compose-plugin"
-              fi
-              if ! docker compose version >/dev/null 2>&1; then
-                echo "⚠️  installing static compose plugin"
-                VER="v2.29.7"
-                sudo mkdir -p /usr/local/lib/docker/cli-plugins
-                sudo curl -fsSL "https://github.com/docker/compose/releases/download/${VER}/docker-compose-$(uname -s)-$(uname -m)" \
-                  -o /usr/local/lib/docker/cli-plugins/docker-compose
-                sudo chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
-              fi
+              VER="v2.29.7"
+              sudo mkdir -p /usr/local/lib/docker/cli-plugins
+              sudo curl -fsSL "https://github.com/docker/compose/releases/download/${VER}/docker-compose-$(uname -s)-$(uname -m)" \
+                -o /usr/local/lib/docker/cli-plugins/docker-compose
+              sudo chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
               docker compose version
             fi
 
-            echo "🔌 Ensuring docker-rollout CLI plugin"
+            # docker-rollout plugin
             PLUGDIR="${HOME}/.docker/cli-plugins"
-            PLUGPATH="${PLUGDIR}/docker-rollout"
             mkdir -p "$PLUGDIR"
-            if docker rollout --help >/dev/null 2>&1; then
-              echo "✅ docker-rollout already available"
-            else
+            if ! docker rollout --help >/dev/null 2>&1; then
               RVER="v0.13"
-              curl -fsSL "https://raw.githubusercontent.com/wowu/docker-rollout/${RVER}/docker-rollout" -o "$PLUGPATH" \
-                || curl -fsSL "https://raw.githubusercontent.com/wowu/docker-rollout/main/docker-rollout" -o "$PLUGPATH"
-              chmod +x "$PLUGPATH"
-              docker rollout --help >/dev/null
-              echo "✅ docker-rollout installed at ${PLUGPATH}"
+              curl -fsSL "https://raw.githubusercontent.com/wowu/docker-rollout/${RVER}/docker-rollout" \
+                -o "${PLUGDIR}/docker-rollout" \
+                || curl -fsSL "https://raw.githubusercontent.com/wowu/docker-rollout/main/docker-rollout" \
+                -o "${PLUGDIR}/docker-rollout"
+              chmod +x "${PLUGDIR}/docker-rollout"
+            fi
+            echo "✅ docker-rollout ready"
+
+            # Enable/start docker if systemd present
+            if command -v systemctl >/dev/null 2>&1; then
+              sudo systemctl enable docker || true
+              sudo systemctl restart docker || sudo systemctl start docker || true
             fi
 
-            echo "👥 Ensuring 'docker' group exists"
-            getent group docker >/dev/null 2>&1 || sudo groupadd docker || true
-
-            echo "👤 Managing user membership in 'docker' group"
-            CURRENT_USER="$(id -un)"
-            if [ "$CURRENT_USER" != "root" ]; then
-              id -nG "$CURRENT_USER" | tr ' ' '\n' | grep -qx docker || sudo usermod -aG docker "$CURRENT_USER"
-            else
-              echo "ℹ️  Running as root; skipping docker group membership."
-            fi
-
-            echo "🔎 Docker info summary:"
-            docker info --format '{{.ServerVersion}} (Driver: {{.Driver}}), Root: {{.DockerRootDir}}' || true
+            docker info --format 'Engine: {{.ServerVersion}}, Root: {{.DockerRootDir}}' || true
 
       - name: Validate Docker and Docker Compose on remote
         uses: appleboy/ssh-action@v1.0.3
