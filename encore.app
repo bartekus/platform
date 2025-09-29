@@ -12,25 +12,7 @@
 
     // Authenticated requests (cookies or Authorization header)
     "allow_origins_with_credentials": [
-      "https://web.deployd.xyz",
-      "https://admin.deployd.xyz",
       "https://*.deployd.xyz"
     ],
-
-    // Let the browser send these request headers
-    "allow_headers": [
-      "Authorization",
-      "Content-Type",
-      "X-Requested-With"
-    ],
-
-    // Only add what you actually read from JS (optional)
-    "expose_headers": [
-      "Content-Length",
-      "Content-Type",
-      "Location",
-      "Link",
-      "X-Request-Id"
-    ]
   }
 }
