@@ -163,7 +163,7 @@ services:
       - LOGTO_GOOGLE_CLIENT_ID=${LOGTO_GOOGLE_CLIENT_ID}
       - LOGTO_GOOGLE_CLIENT_SECRET=${LOGTO_GOOGLE_CLIENT_SECRET}
     volumes:
-      - /opt/platform/scripts/logto/custom-setup:/etc/logto/packages/cli/custom-setup:ro
+      - /opt/platform/scripts/logto:/etc/logto/packages/cli/custom-setup:ro
     networks:
       - net
     env_file:
