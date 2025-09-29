@@ -41,100 +41,111 @@ jobs:
         uses: actions/checkout@v4
 
       # Everything from here happens ON THE VM over SSH
-      - name: Install Docker quickly (fail-fast if apt busy)
+      # 0) Ensure curl exists (quick and idempotent)
+      - name: Ensure curl is installed
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ env.TARGET_HOST }}
-          username: ${{ env.TARGET_USER }}
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USER }}
           key: ${{ secrets.SSH_KEY }}
-          timeout: 7m
-          command_timeout: 10m
-          script_stop: true
           script: |
             set -Eeuo pipefail
-            export DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=a
-
-            have() { command -v "$1" >/dev/null 2>&1; }
-            locks_free() {
-              ! pgrep -x apt >/dev/null 2>&1 && \
-              ! pgrep -x apt-get >/dev/null 2>&1 && \
-              ! pgrep -x dpkg >/dev/null 2>&1 && \
-              [ ! -e /var/lib/apt/lists/lock ] && \
-              [ ! -e /var/lib/dpkg/lock-frontend ] && \
-              [ ! -e /var/lib/dpkg/lock ]
-            }
-
-            if have docker; then
-              echo "✅ Docker present: $(docker --version)"
-            else
-              echo "🔎 Checking apt locks (max 25s)…"
-              for i in $(seq 1 25); do
-                if locks_free; then
-                  echo "✅ Locks are free."
-                  break
-                fi
-                sleep 1
-              done
-              if ! locks_free; then
-                echo "❌ apt is busy (unattended upgrades / dpkg). Skipping install to stay fast."
-                echo "   Re-run this job after first-boot housekeeping completes."
-                exit 85
-              fi
-
-              # Install Docker quickly via official script (uses apt under the hood)
-              curl -fsSL https://get.docker.com -o get-docker.sh
-              sh get-docker.sh
-              echo "✅ Docker installed: $(docker --version)"
+            if ! command -v curl >/dev/null 2>&1; then
+              export DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=a
+              sudo apt-get update -y
+              sudo apt-get install -y curl
             fi
+            curl --version | head -n1
 
-            # Compose v2 plugin via static download (no apt)
-            if docker compose version >/dev/null 2>&1; then
-              echo "✅ docker compose present: $(docker compose version)"
-            else
-              VER="v2.29.7"
-              sudo mkdir -p /usr/local/lib/docker/cli-plugins
-              sudo curl -fsSL "https://github.com/docker/compose/releases/download/${VER}/docker-compose-$(uname -s)-$(uname -m)" \
-                -o /usr/local/lib/docker/cli-plugins/docker-compose
-              sudo chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
-              docker compose version
-            fi
-
-            # docker-rollout plugin
-            PLUGDIR="${HOME}/.docker/cli-plugins"
-            mkdir -p "$PLUGDIR"
-            if ! docker rollout --help >/dev/null 2>&1; then
-              RVER="v0.13"
-              curl -fsSL "https://raw.githubusercontent.com/wowu/docker-rollout/${RVER}/docker-rollout" \
-                -o "${PLUGDIR}/docker-rollout" \
-                || curl -fsSL "https://raw.githubusercontent.com/wowu/docker-rollout/main/docker-rollout" \
-                -o "${PLUGDIR}/docker-rollout"
-              chmod +x "${PLUGDIR}/docker-rollout"
-            fi
-            echo "✅ docker-rollout ready"
-
-            # Enable/start docker if systemd present
+      # 1) Docker engine + Compose v2 (if missing) + docker-rollout (pinned) — all idempotent
+      - name: Install Docker and the plugins
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USER }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            set -Eeuo pipefail
+            # Docker (idempotent)
+            curl -fsSL https://get.docker.com -o get-docker.sh
+            sudo sh get-docker.sh
+            docker --version
+            
+            # Ensure Docker service is enabled on boot
             if command -v systemctl >/dev/null 2>&1; then
               sudo systemctl enable docker || true
               sudo systemctl restart docker || sudo systemctl start docker || true
             fi
+            
+            # Compose v2 plugin (only if missing) — idempotent overwrite to standard location
+            if ! docker compose version >/dev/null 2>&1; then
+              VER="v2.29.7"
+              sudo mkdir -p /usr/local/lib/docker/cli-plugins
+              sudo curl -fsSL \
+                "https://github.com/docker/compose/releases/download/${VER}/docker-compose-$(uname -s)-$(uname -m)" \
+                -o /usr/local/lib/docker/cli-plugins/docker-compose
+              sudo chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
+            fi
+            docker compose version
+            
+            # docker-rollout plugin (pin; idempotent overwrite)
+            mkdir -p ~/.docker/cli-plugins
+            curl -fsSL https://raw.githubusercontent.com/wowu/docker-rollout/v0.13/docker-rollout \
+              -o ~/.docker/cli-plugins/docker-rollout
+            chmod +x ~/.docker/cli-plugins/docker-rollout
+            docker rollout --help >/dev/null 2>&1 && echo "docker-rollout ready"
 
-            docker info --format 'Engine: {{.ServerVersion}}, Root: {{.DockerRootDir}}' || true
-
-      - name: Validate Docker and Docker Compose on remote
+      # 2) Group membership (skip for root) + restart for good measure
+      - name: Give user ability to run docker and restart Docker
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ env.TARGET_HOST }}
-          username: ${{ env.TARGET_USER }}
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USER }}
           key: ${{ secrets.SSH_KEY }}
-          script_stop: true
           script: |
             set -Eeuo pipefail
-            command -v docker >/dev/null 2>&1 || { echo "❌ docker missing"; exit 1; }
-            command -v docker >/dev/null 2>&1 && docker --version
-            docker compose version || { echo '❌ docker compose missing'; exit 1; }
-            echo "✅ Docker & Compose are ready on $(hostname)"
-            # Confirm service is running when systemd is present
-            if command -v systemctl >/dev/null 2>&1; then
-              systemctl is-active --quiet docker && echo "✅ docker service is active" || (echo "❌ docker service not active"; systemctl --no-pager -l status docker; exit 1)
+            if [ "$(id -un)" != "root" ]; then
+              # docker group should already exist from the Docker install; just in case:
+              getent group docker >/dev/null 2>&1 || sudo groupadd docker || true
+              sudo usermod -aG docker "$USER"
+            else
+              echo "Running as root; skipping docker group membership."
             fi
-            echo "Server is ready to use 🎉"
+            
+            if command -v systemctl >/dev/null 2>&1; then
+              sudo systemctl restart docker || sudo systemctl start docker || true
+            elif command -v service >/dev/null 2>&1; then
+              sudo service docker restart || sudo service docker start || true
+            elif [ -f /etc/init.d/docker ]; then
+              sudo /etc/init.d/docker restart || sudo /etc/init.d/docker start || true
+            else
+              echo "Unable to restart Docker. Please restart it manually."
+              exit 1
+            fi
+
+      # 3) Validate
+      - name: Validate Docker and Docker Compose Installation
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USER }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            set -Eeuo pipefail
+            
+            command -v docker >/dev/null 2>&1 || { echo "Docker is not installed or not in PATH"; exit 1; }
+            docker_version=$(docker --version)
+            echo "Docker version: $docker_version"
+            
+            command -v docker >/dev/null 2>&1 && docker info >/dev/null 2>&1 || true
+            
+            if ! docker compose version >/dev/null 2>&1; then
+              echo "Docker Compose v2 is not installed or not in PATH"
+              exit 1
+            fi
+            compose_version=$(docker compose --version)
+            echo "Docker Compose version: $compose_version"
+            
+            docker rollout --help >/dev/null 2>&1 && echo "docker-rollout OK" || echo "docker-rollout missing (optional)"
+            
+            echo "Docker host is ready 🎉"
