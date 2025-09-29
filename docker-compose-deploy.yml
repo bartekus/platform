@@ -38,11 +38,11 @@ services:
       - /etc/platform/env
     labels:
       - "traefik.http.routers.dashboard.rule=Host(`${TRAEFIK_DOMAIN}`) && (PathPrefix(`/api`) || PathPrefix(`/dashboard`))"
-      - "traefik.http.routers.dashboard.service=api@internal"
       - "traefik.http.routers.dashboard.entrypoints=websecure"
       - "traefik.http.routers.dashboard.tls=true"
       - "traefik.http.routers.dashboard.tls.certresolver=myresolver"
-      - "traefik.http.routers.dashboard.middlewares=dashboard-auth"
+      - "traefik.http.routers.dashboard.service=api@internal"
+      - "traefik.http.routers.dashboard.middlewares=dashboard-auth@docker"
       - "traefik.http.middlewares.dashboard-auth.basicauth.users=${TRAEFIK_BASIC_AUTH}"
       #  redirect middleware deployd.xyz -> WEB_DOMAIN
       - "traefik.http.middlewares.redirect-to-web.redirectregex.regex=^https://(${DOMAIN})/?(.*)"
@@ -53,8 +53,7 @@ services:
       - "traefik.http.routers.apex.entrypoints=websecure"
       - "traefik.http.routers.apex.tls=true"
       - "traefik.http.routers.apex.tls.certresolver=myresolver"
-      - "traefik.http.routers.apex.service=noop@internal" # If you prefer redirect
-#      - "traefik.http.routers.apex.service=web"
+      - "traefik.http.routers.apex.service=web"
       - "traefik.http.routers.apex.middlewares=redirect-to-web@docker"
     logging: *default-logging
 
@@ -296,29 +295,13 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=net"
-      # --- Security headers middleware (HTTPS responses)
-      - "traefik.http.middlewares.secure-headers.headers.stsSeconds=31536000"
-      - "traefik.http.middlewares.secure-headers.headers.forceSTSHeader=true"
-      - "traefik.http.middlewares.secure-headers.headers.stsIncludeSubdomains=true"
-      - "traefik.http.middlewares.secure-headers.headers.stsPreload=true"
-      - "traefik.http.middlewares.secure-headers.headers.contentTypeNosniff=true"
-      - "traefik.http.middlewares.secure-headers.headers.referrerPolicy=strict-origin-when-cross-origin"
-      # Use Traefik's native CSP field (clearer than customResponseHeaders)
-      - "traefik.http.middlewares.secure-headers.headers.contentSecurityPolicy=upgrade-insecure-requests; block-all-mixed-content"
-      # --- HTTP -> HTTPS redirect middleware
-      - "traefik.http.middlewares.redirect-https.redirectscheme.scheme=https"
-      # --- HTTP router (redirect only)
-      - "traefik.http.routers.web-redirect.rule=Host(`${WEB_DOMAIN}`)"
-      - "traefik.http.routers.web-redirect.entrypoints=web"
-      - "traefik.http.routers.web-redirect.middlewares=redirect-https@docker"
-      - "traefik.http.routers.web-redirect.service=web"  # points to same service
-      # --- HTTPS router (serve app + headers)
       - "traefik.http.routers.web.rule=Host(`${WEB_DOMAIN}`)"
       - "traefik.http.routers.web.entrypoints=websecure"
       - "traefik.http.routers.web.tls=true"
       - "traefik.http.routers.web.tls.certresolver=myresolver"
-      - "traefik.http.routers.web.middlewares=secure-headers@docker"
       - "traefik.http.services.web.loadbalancer.server.port=80"
+      - "traefik.http.middlewares.csp.headers.contentSecurityPolicy=upgrade-insecure-requests; block-all-mixed-content"
+      - "traefik.http.routers.web.middlewares=csp@docker"
     stop_grace_period: 45s
     healthcheck:
 #      test: ["CMD", "true"]
