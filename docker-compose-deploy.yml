@@ -196,7 +196,7 @@ services:
 
   pgweb:
     profiles: ["infra"]
-    image: sosedoff/pgweb:0.16
+    image: sosedoff/pgweb:0.16.2
     restart: always
     ports:
       - "127.0.0.1:8081:8081"
