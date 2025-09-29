@@ -45,8 +45,8 @@ jobs:
       - name: Ensure curl is installed
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.HOST }}
-          username: ${{ secrets.USER }}
+          host: ${{ env.TARGET_HOST }}
+          username: ${{ env.TARGET_USER }}
           key: ${{ secrets.SSH_KEY }}
           script: |
             set -Eeuo pipefail
@@ -61,8 +61,8 @@ jobs:
       - name: Install Docker and the plugins
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.HOST }}
-          username: ${{ secrets.USER }}
+          host: ${{ env.TARGET_HOST }}
+          username: ${{ env.TARGET_USER }}
           key: ${{ secrets.SSH_KEY }}
           script: |
             set -Eeuo pipefail
@@ -99,8 +99,8 @@ jobs:
       - name: Give user ability to run docker and restart Docker
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.HOST }}
-          username: ${{ secrets.USER }}
+          host: ${{ env.TARGET_HOST }}
+          username: ${{ env.TARGET_USER }}
           key: ${{ secrets.SSH_KEY }}
           script: |
             set -Eeuo pipefail
@@ -127,8 +127,8 @@ jobs:
       - name: Validate Docker and Docker Compose Installation
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.HOST }}
-          username: ${{ secrets.USER }}
+          host: ${{ env.TARGET_HOST }}
+          username: ${{ env.TARGET_USER }}
           key: ${{ secrets.SSH_KEY }}
           script: |
             set -Eeuo pipefail
