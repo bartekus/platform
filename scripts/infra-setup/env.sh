@@ -16,10 +16,6 @@ CREATE_NS_RECORDS="${CREATE_NS_RECORDS:-1}"  # 0: skip; 1: try to add NS records
 WORKFLOW_FILE="${WORKFLOW_FILE:-.github/workflows/vm_init.yml}"
 DEPLOY_WORKFLOW_FILE="${DEPLOY_WORKFLOW_FILE:-.github/workflows/deploy.yml}"
 
-# Toggles (set to 0 to skip)
-TRIGGER_VM_INIT="${TRIGGER_VM_INIT:-1}"
-TRIGGER_DEPLOY="${TRIGGER_DEPLOY:-1}"
-
 # Deployment specific
 APP_ENV_FILE="${APP_ENV_FILE:-.env.prod}"
 
