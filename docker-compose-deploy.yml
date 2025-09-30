@@ -16,7 +16,7 @@ services:
     security_opt:
       - no-new-privileges:true
     command:
-      - "--api.insecure=false"
+      - "--api.insecure=true"
       - "--api.dashboard=true"
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
@@ -36,7 +36,6 @@ services:
     ports:
       - "80:80"
       - "443:443"
-      - "8080:8080"
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
       - "/var/lib/platform/letsencrypt:/letsencrypt"
@@ -52,8 +51,13 @@ services:
       - "traefik.http.routers.httpsonly.middlewares=httpsonly"
       - "traefik.http.routers.httpsonly.entrypoints=web"
 
+      # HSTS middleware
+      - "traefik.http.middlewares.hsts.headers.stsSeconds=31536000"
+      - "traefik.http.middlewares.hsts.headers.stsIncludeSubdomains=true"
+      - "traefik.http.middlewares.hsts.headers.stsPreload=true"
+
       # Dashboard configuration with enhanced security
-      - "traefik.http.routers.dashboard.rule=Host(`traefik.example.com`) && (PathPrefix(`/api`) || PathPrefix(`/dashboard`))"
+      - "traefik.http.routers.dashboard.rule=Host(`${TRAEFIK_DOMAIN}`) && (PathPrefix(`/api`) || PathPrefix(`/dashboard`))"
       - "traefik.http.routers.dashboard.entrypoints=websecure"
       - "traefik.http.routers.dashboard.service=api@internal"
       - "traefik.http.routers.dashboard.tls=true"
@@ -212,6 +216,7 @@ services:
       - "traefik.http.routers.logto.tls.certresolver=myresolver"
       - "traefik.http.routers.logto.service=logto"
       - "traefik.http.services.logto.loadbalancer.server.port=3001"
+      - "traefik.http.routers.logto.middlewares=hsts@docker"
       # Admin (port 3002)
       - "traefik.http.routers.logto-admin.rule=Host(`${LOGTO_ADMIN_DOMAIN}`)"
       - "traefik.http.routers.logto-admin.entrypoints=websecure"
@@ -219,6 +224,7 @@ services:
       - "traefik.http.routers.logto-admin.tls.certresolver=myresolver"
       - "traefik.http.routers.logto-admin.service=logto-admin"
       - "traefik.http.services.logto-admin.loadbalancer.server.port=3002"
+      - "traefik.http.routers.logto-admin.middlewares=hsts@docker"
     healthcheck:
       test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:3001/api/status || exit 1"]
       interval: 10s
@@ -252,7 +258,7 @@ services:
       - "traefik.http.services.pgweb.loadbalancer.server.port=8081"
       # BasicAuth
       - "traefik.http.middlewares.pgweb-basicauth.basicauth.users=${PGWEB_BASIC_AUTH}"
-      - "traefik.http.routers.pgweb.middlewares=pgweb-basicauth@docker"
+      - "traefik.http.routers.pgweb.middlewares=hsts@docker,pgweb-basicauth@docker"
 
   api:
     profiles: ["app"]
@@ -279,6 +285,7 @@ services:
       - "traefik.http.routers.api.tls.certresolver=myresolver"
       - "traefik.http.routers.api.service=api"
       - "traefik.http.services.api.loadbalancer.server.port=8080"
+      - "traefik.http.routers.api.middlewares=hsts@docker"
     stop_grace_period: 60s
     healthcheck:
       test: ["CMD", "true"]
@@ -337,7 +344,7 @@ services:
       - "traefik.http.routers.web.tls.certresolver=myresolver"
       - "traefik.http.services.web.loadbalancer.server.port=80"
       - "traefik.http.middlewares.csp.headers.contentSecurityPolicy=upgrade-insecure-requests; block-all-mixed-content"
-      - "traefik.http.routers.web.middlewares=csp@docker"
+      - "traefik.http.routers.web.middlewares=hsts@docker,csp@docker"
     stop_grace_period: 45s
     healthcheck:
 #      test: ["CMD", "true"]
