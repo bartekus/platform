@@ -91,19 +91,19 @@ services:
       # Chain middlewares for dashboard
       - "traefik.http.middlewares.dashboard-chain.chain.middlewares=dashboard-security@docker,dashboard-ratelimit@docker,dashboard-auth@docker"
       - "traefik.http.routers.dashboard.middlewares=dashboard-chain@docker"
-      
+
       # Redirect middleware redirect to web app host
-#      - "traefik.http.middlewares.redirect-to-web.redirectregex.regex=^https://(${DOMAIN})/?(.*)"
-#      - "traefik.http.middlewares.redirect-to-web.redirectregex.replacement=https://${WEB_DOMAIN}/$${2}"
-#      - "traefik.http.middlewares.redirect-to-web.redirectregex.permanent=true"
+      - "traefik.http.middlewares.redirect-to-web.redirectregex.regex=^https://(${DOMAIN})/?(.*)"
+      - "traefik.http.middlewares.redirect-to-web.redirectregex.replacement=https://${WEB_DOMAIN}/$${2}"
+      - "traefik.http.middlewares.redirect-to-web.redirectregex.permanent=true"
       
       # Apex router redirect to web app host
-#      - "traefik.http.routers.apex.rule=Host(`${DOMAIN}`)"
-#      - "traefik.http.routers.apex.entrypoints=websecure"
-#      - "traefik.http.routers.apex.tls=true"
-#      - "traefik.http.routers.apex.tls.certresolver=myresolver"
-#      - "traefik.http.routers.apex.service=web"
-#      - "traefik.http.routers.apex.middlewares=redirect-to-web@docker"
+      - "traefik.http.routers.apex.rule=Host(`${DOMAIN}`)"
+      - "traefik.http.routers.apex.entrypoints=websecure"
+      - "traefik.http.routers.apex.tls=true"
+      - "traefik.http.routers.apex.tls.certresolver=myresolver"
+      - "traefik.http.routers.apex.service=noop@internal"
+      - "traefik.http.routers.apex.middlewares=redirect-to-web@docker"
     logging: *default-logging
 
   dozzle:
