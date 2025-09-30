@@ -11,7 +11,7 @@ networks:
 services:
   traefik:
     profiles: ["infra"]
-    image: traefik:v3.5
+    image: traefik:v2.11.2
     restart: always
     command:
       - "--api.dashboard=true"
