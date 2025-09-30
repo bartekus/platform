@@ -451,8 +451,9 @@ jobs:
                   up -d background
               fi
             fi 
-            
+
             # Clean up dangling layers
+            docker compose --env-file /etc/platform/env --env-file ./.env.runtime --profile infra restart traefik && \
             docker image prune -f || true
             
             echo "🚀 Deployment complete @ ${SHA_TAG}"
