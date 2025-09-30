@@ -50,10 +50,7 @@ services:
       - "traefik.http.middlewares.httpsonly.redirectscheme.permanent=true"
       - "traefik.http.routers.httpsonly.rule=HostRegexp(`{any:.*}`)"
       - "traefik.http.routers.httpsonly.middlewares=httpsonly"
-
-      # Basic Auth middleware for dashboard
-      - "traefik.http.routers.dashboard.middlewares=auth@docker"
-      - "traefik.http.middlewares.auth.basicauth.users=${TRAEFIK_BASIC_AUTH}"
+      - "traefik.http.routers.httpsonly.entrypoints=web"
 
       # Dashboard configuration with enhanced security
       - "traefik.http.routers.dashboard.rule=Host(`traefik.example.com`) && (PathPrefix(`/api`) || PathPrefix(`/dashboard`))"
@@ -73,9 +70,13 @@ services:
       - "traefik.http.middlewares.dashboard-ratelimit.ratelimit.burst=10"
       - "traefik.http.middlewares.dashboard-ratelimit.ratelimit.average=5"
       - "traefik.http.middlewares.dashboard-ratelimit.ratelimit.period=1m"
-      
+
+      # Basic Auth middleware for dashboard
+      - "traefik.http.middlewares.dashboard-auth.basicauth.users=${TRAEFIK_BASIC_AUTH}"
+
       # Chain middlewares for dashboard
-      - "traefik.http.middlewares.auth.chain.middlewares=dashboard-security@docker,dashboard-ratelimit@docker"
+      - "traefik.http.middlewares.dashboard-chain.chain.middlewares=dashboard-security@docker,dashboard-ratelimit@docker,dashboard-auth@docker"
+      - "traefik.http.routers.dashboard.middlewares=dashboard-chain@docker"
       
       # Redirect middleware redirect to web app host
 #      - "traefik.http.middlewares.redirect-to-web.redirectregex.regex=^https://(${DOMAIN})/?(.*)"
