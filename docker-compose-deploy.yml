@@ -34,7 +34,7 @@ services:
     ports:
       - "80:80"
       - "443:443"
-      - "8080:8080"
+
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
       - "/var/lib/platform/letsencrypt:/letsencrypt"
@@ -43,25 +43,36 @@ services:
     env_file:
       - /etc/platform/env
     labels:
+      - # HTTPS Only for everything
+      - "traefik.http.middlewares.httpsonly.redirectscheme.scheme=https"
+      - "traefik.http.middlewares.httpsonly.redirectscheme.permanent=true"
+      - "traefik.http.routers.httpsonly.rule=HostRegexp(`{any:.*}`)"
+      - "traefik.http.routers.httpsonly.middlewares=httpsonly"
+
+      # Basic Auth middleware for dashboard
+      - "traefik.http.routers.dashboard.middlewares=dashboard-auth@docker"
+      - "traefik.http.middlewares.dashboard-auth.basicauth.users=${TRAEFIK_BASIC_AUTH}"
+
       # Dashboard configuration with enhanced security
-      - "traefik.http.routers.dashboard.rule=Host(`${TRAEFIK_DOMAIN}`) && (PathPrefix(`/dashboard`))"
       - "traefik.http.routers.dashboard.entrypoints=websecure"
+      - "traefik.http.routers.dashboard.rule=Host(`${TRAEFIK_DOMAIN}`)"
+      - "traefik.http.routers.dashboard.service=api@internal"
+      - "traefik.http.routers.dashboard.service=dashboard@internal"
+      - "traefik.http.routers.api.rule=Host(`${TRAEFIK_DOMAIN}`) && PathPrefix(`/api`)"
+      - "traefik.http.routers.api.service=api@internal"
       - "traefik.http.routers.dashboard.tls=true"
       - "traefik.http.routers.dashboard.tls.certresolver=myresolver"
-      - "traefik.http.routers.dashboard.service=api@internal"
-      - "traefik.http.routers.dashboard.middlewares=dashboard-auth@docker"
+      - "traefik.http.routers.api.tls=true"
+      - "traefik.http.routers.api.tls.certresolver=myresolver"
       
-      # Basic Auth middleware
-      - "traefik.http.middlewares.dashboard-auth.basicauth.users=${TRAEFIK_BASIC_AUTH}"
-      
-      # Security headers middleware
+      # Security headers middleware for dashboard
       - "traefik.http.middlewares.dashboard-security.headers.frameDeny=true"
       - "traefik.http.middlewares.dashboard-security.headers.contentTypeNosniff=true"
       - "traefik.http.middlewares.dashboard-security.headers.browserXssFilter=true"
       - "traefik.http.middlewares.dashboard-security.headers.referrerPolicy=strict-origin-when-cross-origin"
       - "traefik.http.middlewares.dashboard-security.headers.customRequestHeaders.X-Forwarded-Proto=https"
       
-      # Rate limiting middleware
+      # Rate limiting middleware for dashboard
       - "traefik.http.middlewares.dashboard-ratelimit.ratelimit.burst=10"
       - "traefik.http.middlewares.dashboard-ratelimit.ratelimit.average=5"
       - "traefik.http.middlewares.dashboard-ratelimit.ratelimit.period=1m"
@@ -69,12 +80,12 @@ services:
       # Chain middlewares for dashboard
       - "traefik.http.middlewares.dashboard-auth.chain.middlewares=dashboard-security@docker,dashboard-ratelimit@docker"
       
-      # Redirect middleware
+      # Redirect middleware redirect to web app host
       - "traefik.http.middlewares.redirect-to-web.redirectregex.regex=^https://(${DOMAIN})/?(.*)"
       - "traefik.http.middlewares.redirect-to-web.redirectregex.replacement=https://${WEB_DOMAIN}/$${2}"
       - "traefik.http.middlewares.redirect-to-web.redirectregex.permanent=true"
       
-      # Apex router
+      # Apex router redirect to web app host
       - "traefik.http.routers.apex.rule=Host(`${DOMAIN}`)"
       - "traefik.http.routers.apex.entrypoints=websecure"
       - "traefik.http.routers.apex.tls=true"
@@ -235,12 +246,12 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=net"
-      - "traefik.http.services.pgweb.loadbalancer.server.port=8081"
       - "traefik.http.routers.pgweb.rule=Host(`${PGWEB_DOMAIN}`)"
       - "traefik.http.routers.pgweb.entrypoints=websecure"
       - "traefik.http.routers.pgweb.tls=true"
       - "traefik.http.routers.pgweb.tls.certresolver=myresolver"
       - "traefik.http.routers.pgweb.service=pgweb"
+      - "traefik.http.services.pgweb.loadbalancer.server.port=8081"
       # BasicAuth
       - "traefik.http.middlewares.pgweb-basicauth.basicauth.users=${PGWEB_BASIC_AUTH}"
       - "traefik.http.routers.pgweb.middlewares=pgweb-basicauth@docker"
@@ -264,11 +275,12 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=net"
-      - "traefik.http.routers.app.rule=Host(`${API_DOMAIN}`)"
-      - "traefik.http.routers.app.entrypoints=websecure"
-      - "traefik.http.routers.app.tls=true"
-      - "traefik.http.routers.app.tls.certresolver=myresolver"
-      - "traefik.http.services.app.loadbalancer.server.port=8080"
+      - "traefik.http.routers.api.rule=Host(`${API_DOMAIN}`)"
+      - "traefik.http.routers.api.entrypoints=websecure"
+      - "traefik.http.routers.api.tls=true"
+      - "traefik.http.routers.api.tls.certresolver=myresolver"
+      - "traefik.http.routers.api.service=api"
+      - "traefik.http.services.api.loadbalancer.server.port=8080"
     stop_grace_period: 60s
     healthcheck:
       test: ["CMD", "true"]
