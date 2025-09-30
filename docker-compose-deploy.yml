@@ -50,6 +50,7 @@ services:
       - "traefik.http.routers.httpsonly.rule=HostRegexp(`{any:.*}`)"
       - "traefik.http.routers.httpsonly.middlewares=httpsonly"
       - "traefik.http.routers.httpsonly.entrypoints=web"
+      - "traefik.enable=true"
 
       # HSTS middleware
       - "traefik.http.middlewares.hsts.headers.stsSeconds=31536000"
