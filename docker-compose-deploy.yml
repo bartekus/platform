@@ -42,7 +42,7 @@ services:
     env_file:
       - /etc/platform/env
     labels:
-      - # HTTPS Only for everything
+      # HTTPS Only for everything
       - "traefik.http.middlewares.httpsonly.redirectscheme.scheme=https"
       - "traefik.http.middlewares.httpsonly.redirectscheme.permanent=true"
       - "traefik.http.routers.httpsonly.rule=HostRegexp(`{any:.*}`)"
