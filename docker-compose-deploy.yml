@@ -21,7 +21,6 @@ services:
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
       - "--providers.docker.network=net"
-      - "--providers.file.directory=/etc/traefik/dynamic"
       - "--entryPoints.web.address=:80"
       - "--entryPoints.websecure.address=:443"
       - "--entryPoints.websecure.http.tls=true"
@@ -76,7 +75,7 @@ services:
       - "traefik.http.middlewares.dashboard-ratelimit.ratelimit.period=1m"
       
       # Chain middlewares for dashboard
-      - "traefik.http.middlewares.dashboard-auth.chain.middlewares=dashboard-security@docker,dashboard-ratelimit@docker"
+      - "traefik.http.middlewares.auth.chain.middlewares=dashboard-security@docker,dashboard-ratelimit@docker"
       
       # Redirect middleware redirect to web app host
 #      - "traefik.http.middlewares.redirect-to-web.redirectregex.regex=^https://(${DOMAIN})/?(.*)"
