@@ -16,7 +16,7 @@ services:
     security_opt:
       - no-new-privileges:true
     command:
-      - "--api.insecure=true"
+      - "--api.insecure=false"
       - "--api.dashboard=true"
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
