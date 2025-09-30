@@ -58,6 +58,15 @@ services:
       - "traefik.http.middlewares.hsts.headers.stsPreload=true"
 
       # Dashboard configuration with enhanced security
+      # Allow unauthenticated access to the PWA manifest only (browsers often skip credentials)
+      - "traefik.http.routers.dashboard-manifest.rule=Host(`${TRAEFIK_DOMAIN}`) && Path(`/dashboard/manifest.json`)"
+      - "traefik.http.routers.dashboard-manifest.entrypoints=websecure"
+      - "traefik.http.routers.dashboard-manifest.service=api@internal"
+      - "traefik.http.routers.dashboard-manifest.tls=true"
+      - "traefik.http.routers.dashboard-manifest.tls.certresolver=myresolver"
+      - "traefik.http.routers.dashboard-manifest.priority=1001"
+      - "traefik.http.routers.dashboard-manifest.middlewares=dashboard-security@docker,dashboard-ratelimit@docker"
+
       - "traefik.http.routers.dashboard.rule=Host(`${TRAEFIK_DOMAIN}`) && (PathPrefix(`/api`) || PathPrefix(`/dashboard`))"
       - "traefik.http.routers.dashboard.entrypoints=websecure"
       - "traefik.http.routers.dashboard.service=api@internal"
