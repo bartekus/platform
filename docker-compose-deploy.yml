@@ -52,7 +52,6 @@ services:
       - "traefik.http.middlewares.dashboard-auth.basicauth.users=${TRAEFIK_BASIC_AUTH}"
 
       # Dashboard configuration with enhanced security
-      - "traefik.http.routers.dashboard.entrypoints=web"
       - "traefik.http.routers.dashboard.rule=Host(`${TRAEFIK_DOMAIN}`)"
       - "traefik.http.routers.dashboard.service=api@internal"
       - "traefik.http.routers.dashboard.service=dashboard@internal"
