@@ -14,6 +14,7 @@ services:
     image: traefik:v2.11.2
     restart: always
     command:
+      - "--api=true"
       - "--api.dashboard=true"
       - "--api.insecure=false"  # Ensure API is not accessible without auth
       - "--providers.docker=true"
@@ -48,12 +49,14 @@ services:
       - "traefik.http.routers.httpsonly.middlewares=httpsonly"
 
       # Basic Auth middleware for dashboard
-      - "traefik.http.routers.dashboard.middlewares=dashboard-auth@docker"
-      - "traefik.http.middlewares.dashboard-auth.basicauth.users=${TRAEFIK_BASIC_AUTH}"
+      - "traefik.http.routers.dashboard.middlewares=auth@docker"
+      - "traefik.http.middlewares.auth.basicauth.users=${TRAEFIK_BASIC_AUTH}"
 
       # Dashboard configuration with enhanced security
-      - "traefik.http.routers.dashboard.rule=Host(`${TRAEFIK_DOMAIN}`)"
+      - "traefik.http.routers.dashboard.rule=Host(`traefik.example.com`) && (PathPrefix(`/api`) || PathPrefix(`/dashboard`))"
       - "traefik.http.routers.dashboard.service=api@internal"
+      - "traefik.http.routers.dashboard.middlewares=auth"
+
       - "traefik.http.routers.dashboard.service=dashboard@internal"
       - "traefik.http.routers.api.rule=Host(`${TRAEFIK_DOMAIN}`) && PathPrefix(`/api`)"
       - "traefik.http.routers.api.service=api@internal"
