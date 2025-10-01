@@ -1,4 +1,4 @@
-import { LogtoConfig } from '@logto/react'
+import { LogtoConfig, UserScope, ReservedResource } from '@logto/react';
 
 console.log('import.meta.env');
 console.log(import.meta.env)
@@ -35,7 +35,17 @@ export const config: LogtoConfig = {
     appId: `${LOGTO_APP_ID}`,   // comes from Logto Admin UI
 
     // Match the API resource you registered in Logto for Encore
-    resources: [`https://${API_DOMAIN}/api`],
+    resources: [ReservedResource.Organization, `https://${API_DOMAIN}/api`],
+
+    scopes: [
+      UserScope.CustomData,
+      UserScope.Organizations,
+      'create:organization',
+      'create:resources',
+      'read:resources',
+      'edit:resources',
+      'delete:resources',
+    ],
 }
 
 export const appConfig = {

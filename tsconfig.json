@@ -7,6 +7,7 @@
     "module": "ES2022",
     "types": ["node"],
     "paths": {
+      "~/*": ["./frontend/src/*"],
       "~encore/*": ["./encore.gen/*"]
     },
 

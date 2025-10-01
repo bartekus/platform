@@ -13,7 +13,7 @@
     // Authenticated requests (cookies or Authorization header)
     "allow_origins_with_credentials": [
       "https://deployd.xyz",
-      "https://*.deployd.xyz"
+      "https://*.deployd.xyz",
     ],
 
     // Let the browser send these request headers

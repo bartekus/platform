@@ -137,7 +137,7 @@ services:
       - "host.docker.internal:host-gateway"
       - "logto.localdev.online:host-gateway"
       - "logto-admin.localdev.online:host-gateway"
-      - "api.localdev.online:host-gateway"          # optional if calling it server-side
+      - "backend.localdev.online:host-gateway"          # optional if calling it server-side
       - "web.localdev.online:host-gateway"          # optional
     entrypoint: [ "sh", "-c", "./packages/cli/custom-setup/entrypoint.sh" ]
     #    entrypoint: ["sh", "-c", "npm run cli db seed -- --swe && npm start"]
