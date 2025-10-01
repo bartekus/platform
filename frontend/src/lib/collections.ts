@@ -18,6 +18,7 @@ export const usersCollection = createCollection(
     getKey: (item) => item.id,
   })
 );
+
 export const projectCollection = createCollection(
   electricCollectionOptions({
     id: "projects",
@@ -72,7 +73,6 @@ export const todoCollection = createCollection(
     shapeOptions: {
       url: new URL(`/api/todos`, typeof window !== `undefined` ? window.location.origin : `http://localhost:5173`).toString(),
       parser: {
-        // Parse timestamp columns into JavaScript Date objects
         timestamptz: (date: string) => {
           return new Date(date);
         },

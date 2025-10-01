@@ -14,21 +14,52 @@ export const appRouter = router({
 
 export type AppRouter = typeof appRouter;
 
+// Simple JWT decode function (without verification for now)
+function decodeJWT(token: string) {
+  try {
+    const parts = token.split('.');
+    if (parts.length !== 3) {
+      throw new Error('Invalid JWT format');
+    }
+    
+    const payload = parts[1];
+    const decoded = atob(payload.replace(/-/g, '+').replace(/_/g, '/'));
+    return JSON.parse(decoded);
+  } catch (error) {
+    console.error('Failed to decode JWT:', error);
+    return null;
+  }
+}
+
 const serve = ({ request }: { request: Request }) => {
   return fetchRequestHandler({
     endpoint: "/api/trpc",
     req: request,
     router: appRouter,
     createContext: async () => {
-      // For TanStack Start with client-side auth, we'll pass user info from client
-      // The session will be available via cookies set by Logto
-      const cookieHeader = request.headers.get('cookie') || '';
+      // Extract authorization header
+      const authHeader = request.headers.get('authorization');
       
-      // TODO: Implement proper session extraction from Logto cookies
-      // For now, we'll return a basic context
+      let session = null;
+      
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        const token = authHeader.substring(7);
+        
+        // Decode the JWT to extract user info
+        const payload = decodeJWT(token);
+        
+        if (payload && payload.sub) {
+          session = {
+            user: {
+              id: payload.sub, // Use the actual user ID from the JWT
+            },
+          };
+        }
+      }
+      
       return {
         db,
-        session: null, // Will be populated from Logto session
+        session,
       };
     },
   });

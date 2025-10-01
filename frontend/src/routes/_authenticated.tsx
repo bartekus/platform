@@ -5,6 +5,7 @@ import { Outlet } from "@tanstack/react-router";
 import { useLogto } from "@logto/react";
 import { useLiveQuery } from "@tanstack/react-db";
 import { projectCollection } from "~/lib/collections";
+import { useTRPCAuth } from "~/lib/use-trpc";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -24,6 +25,9 @@ function AuthenticatedLayout() {
   const [showNewProjectForm, setShowNewProjectForm] = useState(false);
   const [newProjectName, setNewProjectName] = useState("");
   const [userInfo, setUserInfo] = useState<any>(null);
+
+  // Set up TRPC authentication
+  useTRPCAuth();
 
   const { data: projects, isLoading: projectsLoading } = useLiveQuery((q) => q.from({ projectCollection }));
 
