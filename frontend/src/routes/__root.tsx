@@ -6,6 +6,8 @@ import {
   createRootRoute,
 } from "@tanstack/react-router"
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools"
+import { LogtoProvider } from "@logto/react"
+import { config } from "~/config/logto"
 
 import appCss from "../styles.css?url"
 
@@ -20,7 +22,7 @@ export const Route = createRootRoute({
         content: `width=device-width, initial-scale=1`,
       },
       {
-        title: `TanStack Start/DB/Electric Starter`,
+        title: `TanStack DB / Electric Starter`,
       },
     ],
     links: [
@@ -46,7 +48,9 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <HeadContent />
       </head>
       <body>
-        {children}
+        <LogtoProvider config={config}>
+          {children}
+        </LogtoProvider>
         <Scripts />
       </body>
     </html>

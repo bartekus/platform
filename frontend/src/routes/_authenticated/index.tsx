@@ -3,37 +3,28 @@ import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import { useLiveQuery } from "@tanstack/react-db";
 import { useEffect } from "react";
 import { projectCollection, todoCollection } from "~/lib/collections";
-import { authClient } from "~/lib/auth-client";
+import { useLogto } from "@logto/react";
 
 export const Route = createFileRoute(`/_authenticated/`)({
   component: IndexRedirect,
   ssr: false,
-  beforeLoad: async () => {
-    const res = await authClient.getSession();
-    if (!res.data?.session) {
-      throw redirect({
-        to: `/login`,
-        search: {
-          // Use the current location to power a redirect after login
-          // (Do not use `router.state.resolvedLocation` as it can
-          // potentially lag behind the actual current location)
-          redirect: location.href,
-        },
-      });
-    }
-  },
   loader: async () => {
     await Promise.all([projectCollection.preload(), todoCollection.preload()]);
-
     return null;
   },
 });
 
 function IndexRedirect() {
   const navigate = useNavigate();
+  const { isAuthenticated, isLoading } = useLogto();
   const { data: projects } = useLiveQuery((q) => q.from({ projectCollection }));
 
   useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      navigate({ to: "/login" });
+      return;
+    }
+
     if (projects.length > 0) {
       const firstProject = projects[0];
       navigate({
@@ -42,7 +33,7 @@ function IndexRedirect() {
         replace: true,
       });
     }
-  }, [projects, navigate]);
+  }, [projects, navigate, isAuthenticated, isLoading]);
 
   return (
     <div className="p-6">

@@ -1,88 +1,75 @@
 import * as React from "react";
-import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, Link, redirect } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Outlet } from "@tanstack/react-router";
-import { authClient, authStateCollection } from "~/lib/auth-client";
+import { useLogto } from "@logto/react";
 import { useLiveQuery } from "@tanstack/react-db";
 import { projectCollection } from "~/lib/collections";
 
 export const Route = createFileRoute("/_authenticated")({
-  ssr: false, // Disable SSR - run beforeLoad only on client
+  ssr: false,
   component: AuthenticatedLayout,
-  beforeLoad: async () => {
-    if (authStateCollection.get(`auth`) && authStateCollection.get(`auth`)?.session.expiresAt > new Date()) {
-      return authStateCollection.get(`auth`)!;
-    } else {
-      const result = await authClient.getSession();
-      authStateCollection.insert({ id: `auth`, ...result.data });
-      return result.data;
+  beforeLoad: async ({ location }) => {
+    // Check auth on client side only
+    if (typeof window !== 'undefined') {
+      // This will be checked in the component
+      return;
     }
-  },
-  errorComponent: ({ error }) => {
-    const ErrorComponent = () => {
-      const { data: session } = authClient.useSession();
-
-      // Only redirect to login if user is not authenticated
-      if (!session && typeof window !== `undefined`) {
-        window.location.href = `/login`;
-        return null;
-      }
-
-      // For other errors, render an error message
-      return (
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-          <div className="text-center">
-            <h1 className="text-2xl font-bold text-red-600 mb-4">Error</h1>
-            <p className="text-gray-600 mb-4">{error?.message || `An unexpected error occurred`}</p>
-            <button onClick={() => window.location.reload()} className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
-              Retry
-            </button>
-          </div>
-        </div>
-      );
-    };
-
-    return <ErrorComponent />;
   },
 });
 
 function AuthenticatedLayout() {
-  const { data: session, isPending } = authClient.useSession();
+  const { isAuthenticated, isLoading, fetchUserInfo } = useLogto();
   const navigate = useNavigate();
   const [showNewProjectForm, setShowNewProjectForm] = useState(false);
   const [newProjectName, setNewProjectName] = useState("");
+  const [userInfo, setUserInfo] = useState<any>(null);
 
-  const { data: projects, isLoading } = useLiveQuery((q) => q.from({ projectCollection }));
+  const { data: projects, isLoading: projectsLoading } = useLiveQuery((q) => q.from({ projectCollection }));
 
-  // Create an initial default project if the user doesn't yet have any.
+  // Fetch user info when authenticated
   useEffect(() => {
-    if (session && projects && !isLoading) {
+    if (isAuthenticated && !userInfo) {
+      fetchUserInfo().then(setUserInfo).catch(console.error);
+    }
+  }, [isAuthenticated, fetchUserInfo, userInfo]);
+
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      navigate({ to: "/login" });
+    }
+  }, [isAuthenticated, isLoading, navigate]);
+
+  // Create an initial default project if the user doesn't yet have any
+  useEffect(() => {
+    if (userInfo && projects && !projectsLoading) {
       const hasProject = projects.length > 0;
       if (!hasProject) {
         projectCollection.insert({
           id: Math.floor(Math.random() * 100000),
           name: "Default",
           description: "Default project",
-          owner_id: session.user.id,
+          owner_id: userInfo.sub,
           shared_user_ids: [],
           created_at: new Date(),
         });
       }
     }
-  }, [session, projects, isLoading]);
+  }, [userInfo, projects, projectsLoading]);
 
   const handleLogout = async () => {
-    await authClient.signOut();
-    navigate({ to: "/login" });
+    const { signOut } = useLogto();
+    await signOut(`https://${import.meta.env?.VITE_WEB_DOMAIN || window?.__ENV__?.VITE_WEB_DOMAIN}/`);
   };
 
   const handleCreateProject = () => {
-    if (newProjectName.trim() && session) {
+    if (newProjectName.trim() && userInfo) {
       projectCollection.insert({
         id: Math.floor(Math.random() * 100000),
         name: newProjectName.trim(),
         description: "",
-        owner_id: session.user.id,
+        owner_id: userInfo.sub,
         shared_user_ids: [],
         created_at: new Date(),
       });
@@ -91,11 +78,17 @@ function AuthenticatedLayout() {
     }
   };
 
-  if (isPending) {
-    return null;
+  if (isLoading || !userInfo) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
   }
 
-  if (!session) {
+  if (!isAuthenticated) {
     return null;
   }
 
@@ -108,7 +101,7 @@ function AuthenticatedLayout() {
               <h1 className="text-xl font-semibold text-gray-900">TanStack DB / Electric Starter</h1>
             </div>
             <div className="flex items-center space-x-4">
-              <span className="text-sm text-gray-700">{session.user.email}</span>
+              <span className="text-sm text-gray-700">{userInfo.email || userInfo.username}</span>
               <button
                 onClick={handleLogout}
                 className="text-sm font-medium text-gray-700 hover:text-gray-900 px-3 py-2 rounded-md hover:bg-gray-100 transition-colors"

@@ -1,8 +1,8 @@
 import * as React from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useLiveQuery, eq } from "@tanstack/react-db";
-import { useState } from "react";
-import { authClient } from "~/lib/auth-client";
+import { useState, useEffect } from "react";
+import { useLogto } from "@logto/react";
 import { todoCollection, projectCollection, usersCollection } from "~/lib/collections";
 import { type Todo } from "~/db/schema";
 
@@ -17,8 +17,15 @@ export const Route = createFileRoute("/_authenticated/project/$projectId")({
 
 function ProjectPage() {
   const { projectId } = Route.useParams();
-  const { data: session } = authClient.useSession();
+  const { fetchUserInfo, isAuthenticated } = useLogto();
+  const [userInfo, setUserInfo] = useState<any>(null);
   const [newTodoText, setNewTodoText] = useState("");
+
+  useEffect(() => {
+    if (isAuthenticated && !userInfo) {
+      fetchUserInfo().then(setUserInfo).catch(console.error);
+    }
+  }, [isAuthenticated, fetchUserInfo, userInfo]);
 
   const { data: todos } = useLiveQuery(
     (q) =>
@@ -51,9 +58,9 @@ function ProjectPage() {
   const project = projects[0];
 
   const addTodo = () => {
-    if (newTodoText.trim() && session) {
+    if (newTodoText.trim() && userInfo) {
       todoCollection.insert({
-        user_id: session.user.id,
+        user_id: userInfo.sub,
         id: Math.floor(Math.random() * 100000),
         text: newTodoText.trim(),
         completed: false,
@@ -75,8 +82,8 @@ function ProjectPage() {
     todoCollection.delete(id);
   };
 
-  if (!project) {
-    return <div className="p-6">Project not found</div>;
+  if (!project || !userInfo) {
+    return <div className="p-6">Loading...</div>;
   }
 
   return (
@@ -158,11 +165,11 @@ function ProjectPage() {
         <div>
           <h3 className="text-lg font-semibold text-gray-800 mb-3">Project Members</h3>
           <div className="space-y-2">
-            {(session?.user.id === project.owner_id ? users : users?.filter((user) => usersInProject?.users.includes(user.id)))?.map(
+            {(userInfo?.sub === project.owner_id ? users : users?.filter((user) => usersInProject?.users.includes(user.id)))?.map(
               (user) => {
                 const isInProject = usersInProject?.users.includes(user.id);
                 const isOwner = user.id === usersInProject?.owner;
-                const canEditMembership = session?.user.id === project.owner_id;
+                const canEditMembership = userInfo?.sub === project.owner_id;
                 return (
                   <div key={user.id} className="flex items-center gap-3 p-2 bg-gray-50 rounded">
                     {canEditMembership && (
