@@ -17,15 +17,15 @@ export const Route = createFileRoute("/_authenticated/project/$projectId")({
 
 function ProjectPage() {
   const { projectId } = Route.useParams();
-  const { fetchUserInfo, isAuthenticated } = useLogto();
+  const { fetchUserInfo, isAuthenticated, isLoading } = useLogto();
   const [userInfo, setUserInfo] = useState<any>(null);
   const [newTodoText, setNewTodoText] = useState("");
 
   useEffect(() => {
-    if (isAuthenticated && !userInfo) {
+    if (isAuthenticated && !isLoading && !userInfo) {
       fetchUserInfo().then(setUserInfo).catch(console.error);
     }
-  }, [isAuthenticated, fetchUserInfo, userInfo]);
+  }, [isAuthenticated, fetchUserInfo, userInfo, isLoading]);
 
   const { data: todos } = useLiveQuery(
     (q) =>

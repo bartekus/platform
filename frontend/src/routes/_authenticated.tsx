@@ -11,7 +11,7 @@ export const Route = createFileRoute("/_authenticated")({
   component: AuthenticatedLayout,
   beforeLoad: async ({ location }) => {
     // Check auth on client side only
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       // This will be checked in the component
       return;
     }

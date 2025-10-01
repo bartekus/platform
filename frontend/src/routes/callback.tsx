@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useLogto } from "@logto/react";
+import { useLogto, useHandleSignInCallback } from "@logto/react";
 import { useEffect, useState } from "react";
 
 export const Route = createFileRoute("/callback")({
@@ -8,30 +8,32 @@ export const Route = createFileRoute("/callback")({
 });
 
 function CallbackPage() {
-  const { handleSignInCallback, isAuthenticated } = useLogto();
+  const { isAuthenticated } = useLogto();
   const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const processCallback = async () => {
-      try {
-        // Use handleSignInCallback to process the OAuth callback
-        await handleSignInCallback(window.location.href);
-        
-        // Navigate to home after successful callback
-        navigate({ to: "/" });
-      } catch (err) {
-        console.error("Error handling sign-in callback:", err);
-        setError(err instanceof Error ? err.message : "Authentication failed");
-      }
-    };
+  const { isLoading } = useHandleSignInCallback(() => {
+    // Redirect to home page after sign-in
+    navigate({ to: "/" });
+  });
 
-    if (!isAuthenticated) {
-      processCallback();
-    } else {
-      navigate({ to: "/" });
-    }
-  }, [handleSignInCallback, isAuthenticated, navigate]);
+  // useEffect(() => {
+  //   const processCallback = async () => {
+  //     try {
+  //       // Use handleSignInCallback to process the OAuth callback
+  //
+  //     } catch (err) {
+  //       console.error("Error handling sign-in callback:", err);
+  //       setError(err instanceof Error ? err.message : "Authentication failed");
+  //     }
+  //   };
+  //
+  //   if (!isAuthenticated) {
+  //     processCallback();
+  //   } else {
+  //     navigate({ to: "/" });
+  //   }
+  // }, [useHandleSignInCallback, isAuthenticated, navigate]);
 
   if (error) {
     return (
@@ -50,12 +52,16 @@ function CallbackPage() {
     );
   }
 
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="text-center">
-        <h2 className="text-2xl font-semibold text-gray-900 mb-4">Completing sign in...</h2>
-        <p className="text-gray-600">Please wait while we complete your authentication.</p>
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <h2 className="text-2xl font-semibold text-gray-900 mb-4">Completing sign in...</h2>
+          <p className="text-gray-600">Please wait while we complete your authentication.</p>
+        </div>
       </div>
-    </div>
-  );
+    );
+  }
+
+  return null;
 }

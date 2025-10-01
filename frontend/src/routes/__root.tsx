@@ -37,13 +37,23 @@ export const Route = createRootRoute({
 });
 
 function RootDocument({ children }: { children: React.ReactNode }) {
+  const [isClient, setIsClient] = React.useState(false);
+
+  React.useEffect(() => {
+    setIsClient(true);
+  }, []);
+
   return (
     <html lang="en">
       <head>
         <HeadContent />
       </head>
       <body>
-        <LogtoProvider config={config}>{children}</LogtoProvider>
+        {isClient ? (
+          <LogtoProvider config={config}>{children}</LogtoProvider>
+        ) : (
+          children
+        )}
         <Scripts />
       </body>
     </html>
