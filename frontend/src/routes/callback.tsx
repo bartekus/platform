@@ -2,27 +2,24 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useLogto } from "@logto/react";
 import { useEffect, useState } from "react";
 
-import { appConfig } from "~/config/logto";
-
 export const Route = createFileRoute("/callback")({
   component: CallbackPage,
   ssr: false,
 });
 
 function CallbackPage() {
-  const { signIn, isAuthenticated } = useLogto();
+  const { handleSignInCallback, isAuthenticated } = useLogto();
   const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const processCallback = async () => {
       try {
-        await signIn(appConfig.signInRedirectUri);
-
-        // Wait a moment for auth state to settle
-        setTimeout(() => {
-          navigate({ to: "/" });
-        }, 100);
+        // Use handleSignInCallback to process the OAuth callback
+        await handleSignInCallback(window.location.href);
+        
+        // Navigate to home after successful callback
+        navigate({ to: "/" });
       } catch (err) {
         console.error("Error handling sign-in callback:", err);
         setError(err instanceof Error ? err.message : "Authentication failed");
@@ -34,7 +31,7 @@ function CallbackPage() {
     } else {
       navigate({ to: "/" });
     }
-  }, [signIn, isAuthenticated, navigate]);
+  }, [handleSignInCallback, isAuthenticated, navigate]);
 
   if (error) {
     return (
@@ -62,11 +59,3 @@ function CallbackPage() {
     </div>
   );
 }
-
-// export const Route = createFileRoute("/callback")({
-//   component: RouteComponent,
-// });
-//
-// function RouteComponent() {
-//   return <div>Hello "/callback"!</div>;
-// }

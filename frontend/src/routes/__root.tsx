@@ -1,15 +1,10 @@
-import * as React from "react"
-import {
-  Outlet,
-  HeadContent,
-  Scripts,
-  createRootRoute,
-} from "@tanstack/react-router"
-import { TanStackRouterDevtools } from "@tanstack/react-router-devtools"
-import { LogtoProvider } from "@logto/react"
-import { config } from "~/config/logto"
+import * as React from "react";
+import { Outlet, HeadContent, Scripts, createRootRoute } from "@tanstack/react-router";
+import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
+import { LogtoProvider } from "@logto/react";
+import { config } from "~/config/logto";
 
-import appCss from "../styles.css?url"
+import appCss from "../styles.css?url";
 
 export const Route = createRootRoute({
   head: () => ({
@@ -39,7 +34,7 @@ export const Route = createRootRoute({
       <TanStackRouterDevtools />
     </>
   ),
-})
+});
 
 function RootDocument({ children }: { children: React.ReactNode }) {
   return (
@@ -48,11 +43,9 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <HeadContent />
       </head>
       <body>
-        <LogtoProvider config={config}>
-          {children}
-        </LogtoProvider>
+        <LogtoProvider config={config}>{children}</LogtoProvider>
         <Scripts />
       </body>
     </html>
-  )
+  );
 }

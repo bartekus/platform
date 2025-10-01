@@ -19,7 +19,6 @@
   },
   "dependencies": {
     "@logto/react": "^2.2.4",
-    "@logto/browser": "^2.2.4",
     "@electric-sql/client": "^1.0.10",
     "@tailwindcss/vite": "^4.0.6",
     "@tanstack/electric-db-collection": "^0.1.23",

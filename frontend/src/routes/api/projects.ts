@@ -1,5 +1,4 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { getLogtoAccessToken } from "~/lib/logto-client";
 import { prepareElectricUrl, proxyElectricRequest } from "~/lib/electric-proxy";
 
 const serve = async ({ request }: { request: Request }) => {
