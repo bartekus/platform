@@ -20,12 +20,8 @@ function IndexRedirect() {
   const { data: projects } = useLiveQuery((q) => q.from({ projectCollection }));
 
   useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      navigate({ to: "/login" });
-      return;
-    }
-
-    if (projects.length > 0) {
+    // Only redirect if we're authenticated and not loading
+    if (!isLoading && isAuthenticated && projects && projects.length > 0) {
       const firstProject = projects[0];
       navigate({
         to: `/project/$projectId`,

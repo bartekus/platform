@@ -10,18 +10,20 @@ export const Route = createFileRoute(`/login`)({
 });
 
 function LoginPage() {
-  const { signIn, isAuthenticated } = useLogto();
+  const { signIn, isAuthenticated, isLoading } = useLogto();
 
   useEffect(() => {
-    // If already authenticated, redirect to home
-    if (isAuthenticated) {
+    // Only redirect if we're authenticated and not loading
+    if (!isLoading && isAuthenticated) {
       window.location.href = "/";
       return;
     }
 
-    // Automatically redirect to Logto sign-in
-    signIn(appConfig.signInRedirectUri);
-  }, [signIn, isAuthenticated]);
+    // Only start sign-in if we're not loading and not authenticated
+    if (!isLoading && !isAuthenticated) {
+      signIn(appConfig.signInRedirectUri);
+    }
+  }, [signIn, isAuthenticated, isLoading]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">

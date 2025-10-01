@@ -34,7 +34,7 @@ function AuthenticatedLayout() {
     }
   }, [isAuthenticated, fetchUserInfo, userInfo]);
 
-  // Redirect to login if not authenticated
+  // Redirect to login if not authenticated (but only after loading is complete)
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
       navigate({ to: "/login" });
@@ -78,7 +78,8 @@ function AuthenticatedLayout() {
     }
   };
 
-  if (isLoading || !userInfo) {
+  // Show loading while auth is being determined
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
@@ -88,8 +89,20 @@ function AuthenticatedLayout() {
     );
   }
 
+  // Don't render anything if not authenticated (will redirect)
   if (!isAuthenticated) {
     return null;
+  }
+
+  // Show loading while user info is being fetched
+  if (!userInfo) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <p className="text-gray-600">Loading user info...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
