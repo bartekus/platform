@@ -10,7 +10,7 @@
     "test": "vitest",
     "pret": "prettier --write --ignore-unknown",
     "db:stripe": "cd apps/backend/stripe && npx drizzle-kit generate && cd - || exit",
-    "stripe:local": "dotenv -- stripe listen --forward-to localhost:4000/stripe/webhooks",
+    "stripe:local": "dotenv -- stripe listen --forward-to https://backend.localdev.online/stripe/webhooks",
     "stripe:setup": "./scripts/stripe/stripe-setup.sh",
     "stripe:sync": "./scripts/stripe/stripe-sync.sh",
     "stripe:wh-check": "./scripts/stripe/stripe-webhook-check.sh",

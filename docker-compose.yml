@@ -99,13 +99,37 @@ services:
       - DB_ADMIN_USER=${DB_ADMIN_USER}
       - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
       - DB_ADMIN_ACCESS=${DB_ADMIN_ACCESS}
-      - LOGTO_DB_NAME=${POSTGRES_LOGTO_DB}
+      - SUPERUSER_PRIVILEGE_DB_NAMES=${SUPERUSER_PRIVILEGE_DB_NAMES}
     networks:
       - net
     env_file:
       - .env.local
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    logging: *default-logging
+
+  electric:
+    image: electricsql/electric:latest
+    container_name: electric
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_API_USER}:${POSTGRES_API_PASSWORD}@db:5432/${POSTGRES_API_DB}?sslmode=disable
+      # Not suitable for production. Only use insecure mode in development or if you've otherwise secured the Electric API.
+      # See https://electric-sql.com/docs/guides/security
+      ELECTRIC_INSECURE: true
+      ELECTRIC_USAGE_REPORTING: false
+    ports:
+      - "3000:3000"
+    depends_on:
+      - db
+    networks:
+      - net
+    env_file:
+      - .env.local
+    healthcheck:
+      test: [ "CMD", "true" ]
       interval: 10s
       timeout: 5s
       retries: 5
