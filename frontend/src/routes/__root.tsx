@@ -47,7 +47,7 @@ export const rootRoute = createRootRouteBase({
   ),
 });
 
-function RootDocument({ children }: { children: React.ReactNode }) {
+export function RootDocument({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
       <head>

@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Button } from "~/components/ui/button";
 import { Shield, Users, Zap } from "lucide-react";
 
-export const Route = createFileRoute("/welcome")({
+export const Route = createFileRoute("/")({
   component: LandingPage,
 });
 
