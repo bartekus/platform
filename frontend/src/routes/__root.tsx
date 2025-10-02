@@ -1,5 +1,6 @@
-import { Outlet, createRootRoute as createRootRouteBase, HeadContent, Scripts } from "@tanstack/react-router";
+import { Outlet, createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
+import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { LogtoProvider } from "@logto/react";
 
 import { config } from "~/config/logto";
@@ -7,7 +8,7 @@ import LayoutRoot from "~/components/LayoutRoot";
 
 import appCss from "../index.css?url";
 
-export const rootRoute = createRootRouteBase({
+export const Route = createRootRoute({
   head: () => ({
     meta: [
       {
@@ -33,6 +34,7 @@ export const rootRoute = createRootRouteBase({
     <LogtoProvider config={config}>
       <LayoutRoot>
         <Outlet />
+        <ReactQueryDevtools buttonPosition="top-right" />
         <TanStackRouterDevtools position="bottom-right" />
       </LayoutRoot>
     </LogtoProvider>

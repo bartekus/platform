@@ -3,6 +3,7 @@ import { defineConfig } from "vite";
 import viteReact from "@vitejs/plugin-react";
 import viteTsConfigPaths from "vite-tsconfig-paths";
 import tailwindcss from "@tailwindcss/vite";
+import { tanstackRouter } from "@tanstack/router-plugin/vite";
 
 if (process.env && process.env.NODE_ENV === "development" && !process.env.VITE_WEB_DOMAIN) {
   throw new Error("You must specify a valid VITE_WEB_DOMAIN.");
@@ -27,6 +28,7 @@ export default defineConfig(({ mode }) => ({
     //     enabled: true,
     //   },
     // }),
+    tanstackRouter({ target: "react", autoCodeSplitting: true }),
     viteReact(),
   ],
 }));
