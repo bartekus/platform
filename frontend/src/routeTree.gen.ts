@@ -16,8 +16,10 @@ import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/
 import { Route as ApiUsersRouteImport } from './routes/api/users'
 import { Route as ApiTodosRouteImport } from './routes/api/todos'
 import { Route as ApiProjectsRouteImport } from './routes/api/projects'
-import { Route as ApiTrpcSplatRouteImport } from './routes/api/trpc/$'
+import { Route as AuthenticatedOrganizationIndexRouteImport } from './routes/_authenticated/organization/index'
 import { Route as AuthenticatedProjectProjectIdRouteImport } from './routes/_authenticated/project/$projectId'
+import { Route as AuthenticatedOrganizationOrgIdIndexRouteImport } from './routes/_authenticated/organization/$orgId/index'
+import { Route as AuthenticatedOrganizationOrgIdWorkspaceWorkspaceIdIndexRouteImport } from './routes/_authenticated/organization/$orgId/workspace/$workspaceId/index'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -53,15 +55,28 @@ const ApiProjectsRoute = ApiProjectsRouteImport.update({
   path: '/api/projects',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiTrpcSplatRoute = ApiTrpcSplatRouteImport.update({
-  id: '/api/trpc/$',
-  path: '/api/trpc/$',
-  getParentRoute: () => rootRouteImport,
-} as any)
+const AuthenticatedOrganizationIndexRoute =
+  AuthenticatedOrganizationIndexRouteImport.update({
+    id: '/organization/',
+    path: '/organization/',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedProjectProjectIdRoute =
   AuthenticatedProjectProjectIdRouteImport.update({
     id: '/project/$projectId',
     path: '/project/$projectId',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedOrganizationOrgIdIndexRoute =
+  AuthenticatedOrganizationOrgIdIndexRouteImport.update({
+    id: '/organization/$orgId/',
+    path: '/organization/$orgId/',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedOrganizationOrgIdWorkspaceWorkspaceIdIndexRoute =
+  AuthenticatedOrganizationOrgIdWorkspaceWorkspaceIdIndexRouteImport.update({
+    id: '/organization/$orgId/workspace/$workspaceId/',
+    path: '/organization/$orgId/workspace/$workspaceId/',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
 
@@ -73,7 +88,9 @@ export interface FileRoutesByFullPath {
   '/api/users': typeof ApiUsersRoute
   '/': typeof AuthenticatedIndexRoute
   '/project/$projectId': typeof AuthenticatedProjectProjectIdRoute
-  '/api/trpc/$': typeof ApiTrpcSplatRoute
+  '/organization': typeof AuthenticatedOrganizationIndexRoute
+  '/organization/$orgId': typeof AuthenticatedOrganizationOrgIdIndexRoute
+  '/organization/$orgId/workspace/$workspaceId': typeof AuthenticatedOrganizationOrgIdWorkspaceWorkspaceIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/callback': typeof CallbackRoute
@@ -83,7 +100,9 @@ export interface FileRoutesByTo {
   '/api/users': typeof ApiUsersRoute
   '/': typeof AuthenticatedIndexRoute
   '/project/$projectId': typeof AuthenticatedProjectProjectIdRoute
-  '/api/trpc/$': typeof ApiTrpcSplatRoute
+  '/organization': typeof AuthenticatedOrganizationIndexRoute
+  '/organization/$orgId': typeof AuthenticatedOrganizationOrgIdIndexRoute
+  '/organization/$orgId/workspace/$workspaceId': typeof AuthenticatedOrganizationOrgIdWorkspaceWorkspaceIdIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -95,7 +114,9 @@ export interface FileRoutesById {
   '/api/users': typeof ApiUsersRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/_authenticated/project/$projectId': typeof AuthenticatedProjectProjectIdRoute
-  '/api/trpc/$': typeof ApiTrpcSplatRoute
+  '/_authenticated/organization/': typeof AuthenticatedOrganizationIndexRoute
+  '/_authenticated/organization/$orgId/': typeof AuthenticatedOrganizationOrgIdIndexRoute
+  '/_authenticated/organization/$orgId/workspace/$workspaceId/': typeof AuthenticatedOrganizationOrgIdWorkspaceWorkspaceIdIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -107,7 +128,9 @@ export interface FileRouteTypes {
     | '/api/users'
     | '/'
     | '/project/$projectId'
-    | '/api/trpc/$'
+    | '/organization'
+    | '/organization/$orgId'
+    | '/organization/$orgId/workspace/$workspaceId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/callback'
@@ -117,7 +140,9 @@ export interface FileRouteTypes {
     | '/api/users'
     | '/'
     | '/project/$projectId'
-    | '/api/trpc/$'
+    | '/organization'
+    | '/organization/$orgId'
+    | '/organization/$orgId/workspace/$workspaceId'
   id:
     | '__root__'
     | '/_authenticated'
@@ -128,7 +153,9 @@ export interface FileRouteTypes {
     | '/api/users'
     | '/_authenticated/'
     | '/_authenticated/project/$projectId'
-    | '/api/trpc/$'
+    | '/_authenticated/organization/'
+    | '/_authenticated/organization/$orgId/'
+    | '/_authenticated/organization/$orgId/workspace/$workspaceId/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -138,7 +165,6 @@ export interface RootRouteChildren {
   ApiProjectsRoute: typeof ApiProjectsRoute
   ApiTodosRoute: typeof ApiTodosRoute
   ApiUsersRoute: typeof ApiUsersRoute
-  ApiTrpcSplatRoute: typeof ApiTrpcSplatRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -192,12 +218,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiProjectsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/trpc/$': {
-      id: '/api/trpc/$'
-      path: '/api/trpc/$'
-      fullPath: '/api/trpc/$'
-      preLoaderRoute: typeof ApiTrpcSplatRouteImport
-      parentRoute: typeof rootRouteImport
+    '/_authenticated/organization/': {
+      id: '/_authenticated/organization/'
+      path: '/organization'
+      fullPath: '/organization'
+      preLoaderRoute: typeof AuthenticatedOrganizationIndexRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/project/$projectId': {
       id: '/_authenticated/project/$projectId'
@@ -206,17 +232,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedProjectProjectIdRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/organization/$orgId/': {
+      id: '/_authenticated/organization/$orgId/'
+      path: '/organization/$orgId'
+      fullPath: '/organization/$orgId'
+      preLoaderRoute: typeof AuthenticatedOrganizationOrgIdIndexRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/organization/$orgId/workspace/$workspaceId/': {
+      id: '/_authenticated/organization/$orgId/workspace/$workspaceId/'
+      path: '/organization/$orgId/workspace/$workspaceId'
+      fullPath: '/organization/$orgId/workspace/$workspaceId'
+      preLoaderRoute: typeof AuthenticatedOrganizationOrgIdWorkspaceWorkspaceIdIndexRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
   }
 }
 
 interface AuthenticatedRouteChildren {
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
   AuthenticatedProjectProjectIdRoute: typeof AuthenticatedProjectProjectIdRoute
+  AuthenticatedOrganizationIndexRoute: typeof AuthenticatedOrganizationIndexRoute
+  AuthenticatedOrganizationOrgIdIndexRoute: typeof AuthenticatedOrganizationOrgIdIndexRoute
+  AuthenticatedOrganizationOrgIdWorkspaceWorkspaceIdIndexRoute: typeof AuthenticatedOrganizationOrgIdWorkspaceWorkspaceIdIndexRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
   AuthenticatedProjectProjectIdRoute: AuthenticatedProjectProjectIdRoute,
+  AuthenticatedOrganizationIndexRoute: AuthenticatedOrganizationIndexRoute,
+  AuthenticatedOrganizationOrgIdIndexRoute:
+    AuthenticatedOrganizationOrgIdIndexRoute,
+  AuthenticatedOrganizationOrgIdWorkspaceWorkspaceIdIndexRoute:
+    AuthenticatedOrganizationOrgIdWorkspaceWorkspaceIdIndexRoute,
 }
 
 const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
@@ -230,7 +278,6 @@ const rootRouteChildren: RootRouteChildren = {
   ApiProjectsRoute: ApiProjectsRoute,
   ApiTodosRoute: ApiTodosRoute,
   ApiUsersRoute: ApiUsersRoute,
-  ApiTrpcSplatRoute: ApiTrpcSplatRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

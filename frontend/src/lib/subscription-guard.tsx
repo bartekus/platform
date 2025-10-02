@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useLogto } from '@logto/react';
-import { Outlet, useNavigate } from 'react-router';
+import { Outlet } from 'react-router';
 
 interface UserSubscription {
   id: string;
@@ -15,7 +15,6 @@ interface UserCustomData {
 }
 
 export function SubscriptionGuard() {
-  const navigate = useNavigate();
   const { isAuthenticated, fetchUserInfo } = useLogto();
   const [hasSubscription, setHasSubscription] = useState<boolean | null>(null);
 
@@ -36,9 +35,9 @@ export function SubscriptionGuard() {
 
         console.log('hasActiveSubscription', hasActiveSubscription);
 
-        if (!hasActiveSubscription) {
-          navigate('/subscription/subscribe');
-        }
+        // if (!hasActiveSubscription) {
+        //   window.location.href = '/subscription/subscribe';
+        // }
       } catch (error) {
         console.error('Error checking subscription:', error);
         setHasSubscription(false);

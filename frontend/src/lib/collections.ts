@@ -1,7 +1,10 @@
+// Legacy collections - these are being replaced by the new organization-based collections
+// This file is kept for backward compatibility during migration
+// TODO: Remove this file after migration is complete
+
 import { createCollection } from "@tanstack/react-db";
 import { electricCollectionOptions } from "@tanstack/electric-db-collection";
 import { selectTodoSchema, selectProjectSchema, selectUsersSchema } from "~/db/schema";
-import { trpc } from "~/lib/trpc-client";
 
 export const usersCollection = createCollection(
   electricCollectionOptions({
@@ -32,46 +35,7 @@ export const projectCollection = createCollection(
     },
     schema: selectProjectSchema,
     getKey: (item) => item.id,
-    onInsert: async ({ transaction }) => {
-      const { modified: newProject } = transaction.mutations[0];
-      
-      // Get user info from the current Logto session
-      // This is a bit hacky since we can't access React context here
-      // We'll need to pass user info through the transaction somehow
-      const result = await trpc.projects.create.mutate({
-        name: newProject.name,
-        description: newProject.description,
-        owner_id: newProject.owner_id,
-        shared_user_ids: newProject.shared_user_ids,
-        userInfo: {
-          name: "User", // This will be updated to get real user info
-          email: "user@example.com",
-        },
-      });
-
-      return { txid: result.txid };
-    },
-    onUpdate: async ({ transaction }) => {
-      const { modified: updatedProject } = transaction.mutations[0];
-      const result = await trpc.projects.update.mutate({
-        id: updatedProject.id,
-        data: {
-          name: updatedProject.name,
-          description: updatedProject.description,
-          shared_user_ids: updatedProject.shared_user_ids,
-        },
-      });
-
-      return { txid: result.txid };
-    },
-    onDelete: async ({ transaction }) => {
-      const { original: deletedProject } = transaction.mutations[0];
-      const result = await trpc.projects.delete.mutate({
-        id: deletedProject.id,
-      });
-
-      return { txid: result.txid };
-    },
+    // Legacy project operations - no longer used
   })
 );
 
@@ -88,37 +52,6 @@ export const todoCollection = createCollection(
     },
     schema: selectTodoSchema,
     getKey: (item) => item.id,
-    onInsert: async ({ transaction }) => {
-      const { modified: newTodo } = transaction.mutations[0];
-      const result = await trpc.todos.create.mutate({
-        user_id: newTodo.user_id,
-        text: newTodo.text,
-        completed: newTodo.completed,
-        project_id: newTodo.project_id,
-        user_ids: newTodo.user_ids,
-      });
-
-      return { txid: result.txid };
-    },
-    onUpdate: async ({ transaction }) => {
-      const { modified: updatedTodo } = transaction.mutations[0];
-      const result = await trpc.todos.update.mutate({
-        id: updatedTodo.id,
-        data: {
-          text: updatedTodo.text,
-          completed: updatedTodo.completed,
-        },
-      });
-
-      return { txid: result.txid };
-    },
-    onDelete: async ({ transaction }) => {
-      const { original: deletedTodo } = transaction.mutations[0];
-      const result = await trpc.todos.delete.mutate({
-        id: deletedTodo.id,
-      });
-
-      return { txid: result.txid };
-    },
+    // Legacy todo operations - no longer used
   })
 );

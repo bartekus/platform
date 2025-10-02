@@ -1,7 +1,7 @@
-import * as React from "react";
-import { createFileRoute } from "@tanstack/react-router";
-import { useLogto } from "@logto/react";
 import { useEffect } from "react";
+import { useLogto } from "@logto/react";
+import { createFileRoute } from "@tanstack/react-router";
+
 import { appConfig } from "~/config/logto";
 
 export const Route = createFileRoute(`/login`)({
