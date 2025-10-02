@@ -4,7 +4,7 @@ import { requireAuth } from "~/lib/guards";
 import getRequestClient from "~/lib/get-request-client";
 import { Loader2 } from "lucide-react";
 
-export const Route = (createFileRoute as any)("/onboarding/verify")({
+export const Route = createFileRoute("/onboarding/verify")({
   beforeLoad: requireAuth,
   component: VerifyPage,
 });

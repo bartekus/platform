@@ -1,9 +1,9 @@
-import { createFileRoute } from '@tanstack/react-router';
-import { useLogto } from '@logto/react';
-import { Button } from '../components/ui/button';
-import { LogIn } from 'lucide-react';
+import { createFileRoute } from "@tanstack/react-router";
+import { useLogto } from "@logto/react";
+import { Button } from "../components/ui/button";
+import { LogIn } from "lucide-react";
 
-export const Route = (createFileRoute as any)('/signin')({
+export const Route = createFileRoute("/signin")({
   component: SignInPage,
 });
 
@@ -27,9 +27,7 @@ function SignInPage() {
           Continue with Logto
         </Button>
 
-        <p className="text-sm text-muted-foreground text-center mt-6">
-          Don't have an account? You'll create one during sign-in.
-        </p>
+        <p className="text-sm text-muted-foreground text-center mt-6">Don't have an account? You'll create one during sign-in.</p>
       </div>
     </div>
   );

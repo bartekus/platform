@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import getRequestClient from "~/lib/get-request-client";
 import { Activity, Users, FolderOpen } from "lucide-react";
 
-export const Route = (createFileRoute as any)("/org/$orgId/")({
+export const Route = createFileRoute("/org/$orgId/")({
   component: OrgHomePage,
 });
 

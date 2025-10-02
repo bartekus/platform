@@ -4,7 +4,7 @@ import { requireOnboarding } from "~/lib/guards";
 import { loadSession, Session, Role } from "~/lib/session";
 import OrgSwitcher from "~/components/OrgSwitcher";
 
-export const Route = (createFileRoute as any)("/org/$orgId")({
+export const Route = createFileRoute("/org/$orgId")({
   beforeLoad: requireOnboarding,
   component: OrgLayout,
 });

@@ -3,7 +3,7 @@ import { requireAuth } from "~/lib/guards";
 import PlanCard from "~/components/PlanCard";
 import getRequestClient from "~/lib/get-request-client";
 
-export const Route = (createFileRoute as any)("/onboarding/subscription")({
+export const Route = createFileRoute("/onboarding/subscription")({
   beforeLoad: requireAuth,
   component: SubscriptionPage,
 });

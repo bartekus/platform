@@ -1,10 +1,38 @@
-@tailwind base;
-@tailwind components;
+@import "tailwindcss/preflight";
+
+@reference "tailwindcss";
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here.
 All colors MUST be HSL.
 */
+
+@layer base {
+  :root {
+    --color-border: hsl(var(--border));
+    --color-background: hsl(var(--background));
+    --color-foreground: hsl(var(--foreground));
+    --color-primary: hsl(var(--primary));
+    --color-secondary: hsl(var(--secondary));
+    --color-muted: hsl(var(--muted));
+    --color-accent: hsl(var(--accent));
+    --color-destructive: hsl(var(--destructive));
+    --color-card: hsl(var(--card));
+    --color-popover: hsl(var(--popover));
+  }
+  .dark {
+    /*--color-border: hsl(var(--border));*/
+    --color-background: hsl(var(--background));
+    --color-foreground: hsl(var(--foreground));
+    --color-primary: hsl(var(--primary));
+    --color-secondary: hsl(var(--secondary));
+    --color-muted: hsl(var(--muted));
+    --color-accent: hsl(var(--accent));
+    --color-destructive: hsl(var(--destructive));
+    --color-card: hsl(var(--card));
+    --color-popover: hsl(var(--popover));
+  }
+}
 
 @layer base {
   :root {
@@ -90,16 +118,19 @@ All colors MUST be HSL.
 
 @layer base {
   * {
-    @apply border-border;
+    @apply border;
+    border-color: hsl(var(--border));
   }
 
   body {
-    @apply bg-background text-foreground antialiased;
-    font-feature-settings: "rlig" 1, "calt" 1;
+    @apply antialiased;
+    background-color: var(--color-background);
+    color: var(--color-foreground);
   }
 
   h1, h2, h3, h4, h5, h6 {
-    @apply font-semibold tracking-tight;
+    font-weight: 600;          /* font-semibold */
+    letter-spacing: -0.025em;  /* tracking-tight */
   }
 }
 
@@ -107,7 +138,7 @@ All colors MUST be HSL.
   .gradient-hero {
     background: var(--gradient-hero);
   }
-  
+
   .gradient-card {
     background: var(--gradient-card);
   }
