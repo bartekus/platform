@@ -34,8 +34,8 @@ export const Route = createRootRoute({
     <LogtoProvider config={config}>
       <LayoutRoot>
         <Outlet />
-        <ReactQueryDevtools buttonPosition="top-right" />
-        <TanStackRouterDevtools position="bottom-right" />
+        <ReactQueryDevtools buttonPosition="bottom-right" />
+        <TanStackRouterDevtools position="bottom-left" />
       </LayoutRoot>
     </LogtoProvider>
   ),
