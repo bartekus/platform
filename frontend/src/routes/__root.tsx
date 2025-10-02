@@ -1,4 +1,4 @@
-import { Outlet, createRootRoute as createRootRouteBase } from "@tanstack/react-router";
+import { Outlet, createRootRoute as createRootRouteBase, HeadContent, Scripts } from "@tanstack/react-router";
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
 import { LogtoProvider } from "@logto/react";
 
@@ -33,7 +33,7 @@ export const rootRoute = createRootRouteBase({
     <LogtoProvider config={config}>
       <LayoutRoot>
         <Outlet />
-        <TanStackRouterDevtools />
+        <TanStackRouterDevtools position="bottom-right" />
       </LayoutRoot>
     </LogtoProvider>
   ),
