@@ -1,8 +1,9 @@
-import { router, authedProcedure, generateTxId } from "~/lib/trpc";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { eq, and, arrayContains } from "drizzle-orm";
+
 import { todosTable, createTodoSchema, updateTodoSchema } from "~/db/schema";
+import { router, authedProcedure, generateTxId } from "~/lib/trpc";
 
 export const todosRouter = router({
   create: authedProcedure.input(createTodoSchema).mutation(async ({ ctx, input }) => {

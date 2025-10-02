@@ -16,7 +16,6 @@ import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/
 import { Route as ApiUsersRouteImport } from './routes/api/users'
 import { Route as ApiTodosRouteImport } from './routes/api/todos'
 import { Route as ApiProjectsRouteImport } from './routes/api/projects'
-import { Route as ApiAuthRouteImport } from './routes/api/auth'
 import { Route as ApiTrpcSplatRouteImport } from './routes/api/trpc/$'
 import { Route as AuthenticatedProjectProjectIdRouteImport } from './routes/_authenticated/project/$projectId'
 
@@ -54,11 +53,6 @@ const ApiProjectsRoute = ApiProjectsRouteImport.update({
   path: '/api/projects',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiAuthRoute = ApiAuthRouteImport.update({
-  id: '/api/auth',
-  path: '/api/auth',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ApiTrpcSplatRoute = ApiTrpcSplatRouteImport.update({
   id: '/api/trpc/$',
   path: '/api/trpc/$',
@@ -74,7 +68,6 @@ const AuthenticatedProjectProjectIdRoute =
 export interface FileRoutesByFullPath {
   '/callback': typeof CallbackRoute
   '/login': typeof LoginRoute
-  '/api/auth': typeof ApiAuthRoute
   '/api/projects': typeof ApiProjectsRoute
   '/api/todos': typeof ApiTodosRoute
   '/api/users': typeof ApiUsersRoute
@@ -85,7 +78,6 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/callback': typeof CallbackRoute
   '/login': typeof LoginRoute
-  '/api/auth': typeof ApiAuthRoute
   '/api/projects': typeof ApiProjectsRoute
   '/api/todos': typeof ApiTodosRoute
   '/api/users': typeof ApiUsersRoute
@@ -98,7 +90,6 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/callback': typeof CallbackRoute
   '/login': typeof LoginRoute
-  '/api/auth': typeof ApiAuthRoute
   '/api/projects': typeof ApiProjectsRoute
   '/api/todos': typeof ApiTodosRoute
   '/api/users': typeof ApiUsersRoute
@@ -111,7 +102,6 @@ export interface FileRouteTypes {
   fullPaths:
     | '/callback'
     | '/login'
-    | '/api/auth'
     | '/api/projects'
     | '/api/todos'
     | '/api/users'
@@ -122,7 +112,6 @@ export interface FileRouteTypes {
   to:
     | '/callback'
     | '/login'
-    | '/api/auth'
     | '/api/projects'
     | '/api/todos'
     | '/api/users'
@@ -134,7 +123,6 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/callback'
     | '/login'
-    | '/api/auth'
     | '/api/projects'
     | '/api/todos'
     | '/api/users'
@@ -147,7 +135,6 @@ export interface RootRouteChildren {
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   CallbackRoute: typeof CallbackRoute
   LoginRoute: typeof LoginRoute
-  ApiAuthRoute: typeof ApiAuthRoute
   ApiProjectsRoute: typeof ApiProjectsRoute
   ApiTodosRoute: typeof ApiTodosRoute
   ApiUsersRoute: typeof ApiUsersRoute
@@ -205,13 +192,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiProjectsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/auth': {
-      id: '/api/auth'
-      path: '/api/auth'
-      fullPath: '/api/auth'
-      preLoaderRoute: typeof ApiAuthRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/api/trpc/$': {
       id: '/api/trpc/$'
       path: '/api/trpc/$'
@@ -247,7 +227,6 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
   CallbackRoute: CallbackRoute,
   LoginRoute: LoginRoute,
-  ApiAuthRoute: ApiAuthRoute,
   ApiProjectsRoute: ApiProjectsRoute,
   ApiTodosRoute: ApiTodosRoute,
   ApiUsersRoute: ApiUsersRoute,

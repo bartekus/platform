@@ -1,5 +1,6 @@
 import { useLogto } from "@logto/react";
 import { useEffect } from "react";
+
 import { config } from "~/config/logto";
 import { setGlobalAccessToken } from "./trpc-client";
 

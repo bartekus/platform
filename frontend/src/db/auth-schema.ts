@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, boolean } from "drizzle-orm/pg-core"
+import { pgTable, text, timestamp, boolean } from "drizzle-orm/pg-core";
 
 export const users = pgTable("users", {
   id: text("id").primaryKey(),
@@ -14,7 +14,7 @@ export const users = pgTable("users", {
   updatedAt: timestamp("updated_at")
     .$defaultFn(() => /* @__PURE__ */ new Date())
     .notNull(),
-})
+});
 
 export const sessions = pgTable("sessions", {
   id: text("id").primaryKey(),
@@ -27,7 +27,7 @@ export const sessions = pgTable("sessions", {
   userId: text("user_id")
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
-})
+});
 
 export const accounts = pgTable("accounts", {
   id: text("id").primaryKey(),
@@ -45,17 +45,13 @@ export const accounts = pgTable("accounts", {
   password: text("password"),
   createdAt: timestamp("created_at").notNull(),
   updatedAt: timestamp("updated_at").notNull(),
-})
+});
 
 export const verifications = pgTable("verifications", {
   id: text("id").primaryKey(),
   identifier: text("identifier").notNull(),
   value: text("value").notNull(),
   expiresAt: timestamp("expires_at").notNull(),
-  createdAt: timestamp("created_at").$defaultFn(
-    () => /* @__PURE__ */ new Date()
-  ),
-  updatedAt: timestamp("updated_at").$defaultFn(
-    () => /* @__PURE__ */ new Date()
-  ),
-})
+  createdAt: timestamp("created_at").$defaultFn(() => /* @__PURE__ */ new Date()),
+  updatedAt: timestamp("updated_at").$defaultFn(() => /* @__PURE__ */ new Date()),
+});

@@ -28,9 +28,7 @@ function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="text-center">
-        <h2 className="text-2xl font-semibold text-gray-900 mb-4">
-          Redirecting to sign in...
-        </h2>
+        <h2 className="text-2xl font-semibold text-gray-900 mb-4">Redirecting to sign in...</h2>
         <p className="text-gray-600">Please wait while we redirect you to the login page.</p>
       </div>
     </div>

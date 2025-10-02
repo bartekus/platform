@@ -1,4 +1,5 @@
 import { createTRPCProxyClient, httpBatchLink } from "@trpc/client";
+
 import type { AppRouter } from "~/routes/api/trpc/$";
 
 // Global variable to store the access token

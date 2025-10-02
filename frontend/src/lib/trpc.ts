@@ -1,6 +1,7 @@
-import { initTRPC, TRPCError } from "@trpc/server";
-import { db } from "~/db/connection";
 import { sql } from "drizzle-orm";
+import { initTRPC, TRPCError } from "@trpc/server";
+
+import { db } from "~/db/connection";
 
 export type Context = {
   session: {

@@ -1,8 +1,8 @@
-import * as React from "react";
-import { createFileRoute } from "@tanstack/react-router";
-import { useLiveQuery, eq } from "@tanstack/react-db";
-import { useState, useEffect } from "react";
 import { useLogto } from "@logto/react";
+import { useState, useEffect } from "react";
+import { useLiveQuery, eq } from "@tanstack/react-db";
+import { createFileRoute } from "@tanstack/react-router";
+
 import { todoCollection, projectCollection, usersCollection } from "~/lib/collections";
 import { type Todo } from "~/db/schema";
 

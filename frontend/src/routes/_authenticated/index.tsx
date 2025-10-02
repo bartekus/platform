@@ -1,9 +1,9 @@
-import * as React from "react";
-import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
-import { useLiveQuery } from "@tanstack/react-db";
 import { useEffect } from "react";
-import { projectCollection, todoCollection } from "~/lib/collections";
 import { useLogto } from "@logto/react";
+import { useLiveQuery } from "@tanstack/react-db";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+
+import { projectCollection, todoCollection } from "~/lib/collections";
 
 export const Route = createFileRoute(`/_authenticated/`)({
   component: IndexRedirect,

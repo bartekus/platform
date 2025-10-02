@@ -17,16 +17,16 @@ export type AppRouter = typeof appRouter;
 // Simple JWT decode function (without verification for now)
 function decodeJWT(token: string) {
   try {
-    const parts = token.split('.');
+    const parts = token.split(".");
     if (parts.length !== 3) {
-      throw new Error('Invalid JWT format');
+      throw new Error("Invalid JWT format");
     }
-    
+
     const payload = parts[1];
-    const decoded = atob(payload.replace(/-/g, '+').replace(/_/g, '/'));
+    const decoded = atob(payload.replace(/-/g, "+").replace(/_/g, "/"));
     return JSON.parse(decoded);
   } catch (error) {
-    console.error('Failed to decode JWT:', error);
+    console.error("Failed to decode JWT:", error);
     return null;
   }
 }
@@ -38,16 +38,16 @@ const serve = ({ request }: { request: Request }) => {
     router: appRouter,
     createContext: async () => {
       // Extract authorization header
-      const authHeader = request.headers.get('authorization');
-      
+      const authHeader = request.headers.get("authorization");
+
       let session = null;
-      
-      if (authHeader && authHeader.startsWith('Bearer ')) {
+
+      if (authHeader && authHeader.startsWith("Bearer ")) {
         const token = authHeader.substring(7);
-        
+
         // Decode the JWT to extract user info
         const payload = decodeJWT(token);
-        
+
         if (payload && payload.sub) {
           session = {
             user: {
@@ -56,7 +56,7 @@ const serve = ({ request }: { request: Request }) => {
           };
         }
       }
-      
+
       return {
         db,
         session,

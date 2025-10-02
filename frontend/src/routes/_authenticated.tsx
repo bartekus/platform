@@ -6,6 +6,7 @@ import { useLogto } from "@logto/react";
 import { useLiveQuery } from "@tanstack/react-db";
 import { projectCollection } from "~/lib/collections";
 import { useTRPCAuth } from "~/lib/use-trpc";
+import { syncUserToDatabase } from "~/lib/user-sync";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -34,7 +35,13 @@ function AuthenticatedLayout() {
   // Fetch user info when authenticated
   useEffect(() => {
     if (isAuthenticated && !userInfo) {
-      fetchUserInfo().then(setUserInfo).catch(console.error);
+      fetchUserInfo()
+        .then((info) => {
+          setUserInfo(info);
+          // Sync user to database
+          syncUserToDatabase(info);
+        })
+        .catch(console.error);
     }
   }, [isAuthenticated, fetchUserInfo, userInfo]);
 

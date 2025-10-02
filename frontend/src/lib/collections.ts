@@ -34,11 +34,19 @@ export const projectCollection = createCollection(
     getKey: (item) => item.id,
     onInsert: async ({ transaction }) => {
       const { modified: newProject } = transaction.mutations[0];
+      
+      // Get user info from the current Logto session
+      // This is a bit hacky since we can't access React context here
+      // We'll need to pass user info through the transaction somehow
       const result = await trpc.projects.create.mutate({
         name: newProject.name,
         description: newProject.description,
         owner_id: newProject.owner_id,
         shared_user_ids: newProject.shared_user_ids,
+        userInfo: {
+          name: "User", // This will be updated to get real user info
+          email: "user@example.com",
+        },
       });
 
       return { txid: result.txid };

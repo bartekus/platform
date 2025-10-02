@@ -49,11 +49,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <HeadContent />
       </head>
       <body>
-        {isClient ? (
-          <LogtoProvider config={config}>{children}</LogtoProvider>
-        ) : (
-          children
-        )}
+        {isClient ? <LogtoProvider config={config}>{children}</LogtoProvider> : children}
         <Scripts />
       </body>
     </html>
