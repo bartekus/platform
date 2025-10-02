@@ -1,7 +1,7 @@
-import { Outlet, createRootRoute as createRootRouteBase } from '@tanstack/react-router';
-import { LogtoProvider } from '@logto/react';
-import { config } from '@/config/logto';
-import LayoutRoot from '@/components/LayoutRoot';
+import { Outlet, createRootRoute as createRootRouteBase } from "@tanstack/react-router";
+import { LogtoProvider } from "@logto/react";
+import { config } from "~/config/logto";
+import LayoutRoot from "~/components/LayoutRoot";
 
 export const rootRoute = createRootRouteBase({
   component: () => (

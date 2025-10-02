@@ -1,10 +1,10 @@
-import { createFileRoute } from '@tanstack/react-router';
-import { useEffect, useState } from 'react';
-import { useLogto } from '@logto/react';
-import { loadSession } from '@/lib/session';
-import { Loader2 } from 'lucide-react';
+import { createFileRoute } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+import { useLogto } from "@logto/react";
+import { loadSession } from "~/lib/session";
+import { Loader2 } from "lucide-react";
 
-export const Route = (createFileRoute as any)('/callback')({
+export const Route = (createFileRoute as any)("/callback")({
   component: CallbackPage,
 });
 
@@ -20,29 +20,29 @@ function CallbackPage() {
           const s = await loadSession();
 
           if (!s.user) {
-            window.location.href = '/';
+            window.location.href = "/";
             return;
           }
 
-          if (s.subscription.status !== 'active') {
-            window.location.href = '/onboarding/subscription';
+          if (s.subscription.status !== "active") {
+            window.location.href = "/onboarding/subscription";
             return;
           }
 
           if (!s.onboarding.completed) {
-            window.location.href = '/onboarding/profile';
+            window.location.href = "/onboarding/profile";
             return;
           }
 
           if (!s.defaultOrgId) {
-            window.location.href = '/onboarding/organization';
+            window.location.href = "/onboarding/organization";
             return;
           }
 
           window.location.replace(`/org/${s.defaultOrgId}`);
         }
       } catch (e: any) {
-        setError(e.message ?? 'Authentication error');
+        setError(e.message ?? "Authentication error");
       }
     })();
   }, [logto]);

@@ -1,16 +1,16 @@
-import { createFileRoute, useSearch } from '@tanstack/react-router';
-import { useEffect } from 'react';
-import { requireAuth } from '@/lib/guards';
-import getRequestClient from '@/lib/get-request-client';
-import { Loader2 } from 'lucide-react';
+import { createFileRoute, useSearch } from "@tanstack/react-router";
+import { useEffect } from "react";
+import { requireAuth } from "~/lib/guards";
+import getRequestClient from "~/lib/get-request-client";
+import { Loader2 } from "lucide-react";
 
-export const Route = (createFileRoute as any)('/onboarding/verify')({
+export const Route = (createFileRoute as any)("/onboarding/verify")({
   beforeLoad: requireAuth,
   component: VerifyPage,
 });
 
 function VerifyPage() {
-  const search = useSearch({ from: '/onboarding/verify' });
+  const search = useSearch({ from: "/onboarding/verify" });
   const sessionId = (search as any).session_id;
 
   useEffect(() => {
@@ -20,13 +20,13 @@ function VerifyPage() {
     (async () => {
       for (let i = 0; i < 12 && !stop; i++) {
         try {
-          const r = await api.billing.inspectCheckoutSession({ sessionId: sessionId ?? '' });
-          if (r.status === 'active') {
-            window.location.replace('/onboarding/profile');
+          const r = await api.billing.inspectCheckoutSession({ sessionId: sessionId ?? "" });
+          if (r.status === "active") {
+            window.location.replace("/onboarding/profile");
             return;
           }
         } catch (e) {
-          console.error('Error checking session:', e);
+          console.error("Error checking session:", e);
         }
         await new Promise((r) => setTimeout(r, 1500));
       }

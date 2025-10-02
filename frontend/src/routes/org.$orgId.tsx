@@ -1,10 +1,10 @@
-import { createFileRoute, Link, Outlet } from '@tanstack/react-router';
-import { useEffect, useState } from 'react';
-import { requireOnboarding } from '@/lib/guards';
-import { loadSession, Session, Role } from '@/lib/session';
-import OrgSwitcher from '@/components/OrgSwitcher';
+import { createFileRoute, Link, Outlet } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+import { requireOnboarding } from "~/lib/guards";
+import { loadSession, Session, Role } from "~/lib/session";
+import OrgSwitcher from "~/components/OrgSwitcher";
 
-export const Route = (createFileRoute as any)('/org/$orgId')({
+export const Route = (createFileRoute as any)("/org/$orgId")({
   beforeLoad: requireOnboarding,
   component: OrgLayout,
 });
@@ -18,7 +18,7 @@ function OrgLayout() {
       const session = await loadSession();
       const org = session.orgs.find((o) => o.id === orgId);
       if (!org) {
-        window.location.href = '/onboarding/organization';
+        window.location.href = "/onboarding/organization";
         return;
       }
       setData({ session, org });
@@ -47,36 +47,36 @@ function OrgLayout() {
               <Link
                 to={`/org/${org.id}`}
                 className="text-sm text-muted-foreground hover:text-foreground transition-smooth"
-                activeProps={{ className: 'text-foreground font-medium' }}
+                activeProps={{ className: "text-foreground font-medium" }}
               >
                 Overview
               </Link>
               <Link
                 to={`/org/${org.id}/workspaces`}
                 className="text-sm text-muted-foreground hover:text-foreground transition-smooth"
-                activeProps={{ className: 'text-foreground font-medium' }}
+                activeProps={{ className: "text-foreground font-medium" }}
               >
                 Workspaces
               </Link>
               <Link
                 to={`/org/${org.id}/members`}
                 className="text-sm text-muted-foreground hover:text-foreground transition-smooth"
-                activeProps={{ className: 'text-foreground font-medium' }}
+                activeProps={{ className: "text-foreground font-medium" }}
               >
                 Members
               </Link>
               <Link
                 to={`/org/${org.id}/settings`}
                 className="text-sm text-muted-foreground hover:text-foreground transition-smooth"
-                activeProps={{ className: 'text-foreground font-medium' }}
+                activeProps={{ className: "text-foreground font-medium" }}
               >
                 Settings
               </Link>
-              {org.role === 'admin' && (
+              {org.role === "admin" && (
                 <Link
                   to={`/org/${org.id}/admin`}
                   className="text-sm text-muted-foreground hover:text-foreground transition-smooth"
-                  activeProps={{ className: 'text-foreground font-medium' }}
+                  activeProps={{ className: "text-foreground font-medium" }}
                 >
                   Admin
                 </Link>
@@ -84,10 +84,7 @@ function OrgLayout() {
             </nav>
             <div className="ml-auto flex items-center gap-4">
               <OrgSwitcher orgs={session.orgs} currentId={org.id} />
-              <Link
-                to="/signout"
-                className="text-sm text-muted-foreground hover:text-foreground transition-smooth"
-              >
+              <Link to="/signout" className="text-sm text-muted-foreground hover:text-foreground transition-smooth">
                 Sign out
               </Link>
             </div>
