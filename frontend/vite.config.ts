@@ -1,17 +1,32 @@
-import { tanstackStart } from '@tanstack/react-start/plugin/vite'
-import { defineConfig } from 'vite'
-import tsConfigPaths from 'vite-tsconfig-paths'
-import viteReact from '@vitejs/plugin-react'
+import { defineConfig } from "vite";
+import { tanstackStart } from "@tanstack/react-start/plugin/vite";
+import viteReact from "@vitejs/plugin-react";
+import viteTsConfigPaths from "vite-tsconfig-paths";
+import tailwindcss from "@tailwindcss/vite";
 
-export default defineConfig({
+if (process.env && process.env.NODE_ENV === "development" && !process.env.VITE_WEB_DOMAIN) {
+  throw new Error("You must specify a valid VITE_WEB_DOMAIN.");
+}
+
+// https://vitejs.dev/config/
+export default defineConfig(({ mode }) => ({
   server: {
-    port: 3000,
+    host: true,
+    hmr: { host: `${process.env.VITE_WEB_DOMAIN}` }, // helpful when behind Traefik
+    origin: `https://${process.env.VITE_WEB_DOMAIN}`, // fixes HMR ws origin in some setups
   },
   plugins: [
-    tsConfigPaths({
-      projects: ['./tsconfig.json'],
+    // this is the plugin that enables path aliases
+    viteTsConfigPaths({
+      projects: [`./tsconfig.json`],
     }),
-    tanstackStart(),
+    tailwindcss(),
+    // TanStack Start must come before viteReact
+    tanstackStart({
+      spa: {
+        enabled: true,
+      },
+    }),
     viteReact(),
   ],
-})
+}));

@@ -1,72 +1,73 @@
-# Welcome to TanStack.com!
+# Welcome to your Lovable project
 
-This site is built with TanStack Router!
+## Project info
 
-- [TanStack Router Docs](https://tanstack.com/router)
+**URL**: https://lovable.dev/projects/42c07ca6-54ec-4f35-84a7-57d42db434bf
 
-It's deployed automagically with Netlify!
+## How can I edit this code?
 
-- [Netlify](https://netlify.com/)
+There are several ways of editing your application.
 
-## Development
+**Use Lovable**
 
-From your terminal:
+Simply visit the [Lovable Project](https://lovable.dev/projects/42c07ca6-54ec-4f35-84a7-57d42db434bf) and start prompting.
 
-```sh
-pnpm install
-pnpm dev
-```
+Changes made via Lovable will be committed automatically to this repo.
 
-This starts your app in development mode, rebuilding assets on file changes.
+**Use your preferred IDE**
 
-## Editing and previewing the docs of TanStack projects locally
+If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
 
-The documentations for all TanStack projects except for `React Charts` are hosted on [https://tanstack.com](https://tanstack.com), powered by this TanStack Router app.
-In production, the markdown doc pages are fetched from the GitHub repos of the projects, but in development they are read from the local file system.
+The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
 
-Follow these steps if you want to edit the doc pages of a project (in these steps we'll assume it's [`TanStack/form`](https://github.com/tanstack/form)) and preview them locally :
-
-1. Create a new directory called `tanstack`.
+Follow these steps:
 
 ```sh
-mkdir tanstack
+# Step 1: Clone the repository using the project's Git URL.
+git clone <YOUR_GIT_URL>
+
+# Step 2: Navigate to the project directory.
+cd <YOUR_PROJECT_NAME>
+
+# Step 3: Install the necessary dependencies.
+npm i
+
+# Step 4: Start the development server with auto-reloading and an instant preview.
+npm run dev
 ```
 
-2. Enter the directory and clone this repo and the repo of the project there.
+**Edit a file directly in GitHub**
 
-```sh
-cd tanstack
-git clone git@github.com:TanStack/tanstack.com.git
-git clone git@github.com:TanStack/form.git
-```
+- Navigate to the desired file(s).
+- Click the "Edit" button (pencil icon) at the top right of the file view.
+- Make your changes and commit the changes.
 
-> [!NOTE]
-> Your `tanstack` directory should look like this:
->
-> ```
-> tanstack/
->    |
->    +-- form/
->    |
->    +-- tanstack.com/
-> ```
+**Use GitHub Codespaces**
 
-> [!WARNING]
-> Make sure the name of the directory in your local file system matches the name of the project's repo. For example, `tanstack/form` must be cloned into `form` (this is the default) instead of `some-other-name`, because that way, the doc pages won't be found.
+- Navigate to the main page of your repository.
+- Click on the "Code" button (green button) near the top right.
+- Select the "Codespaces" tab.
+- Click on "New codespace" to launch a new Codespace environment.
+- Edit files directly within the Codespace and commit and push your changes once you're done.
 
-3. Enter the `tanstack/tanstack.com` directory, install the dependencies and run the app in dev mode:
+## What technologies are used for this project?
 
-```sh
-cd tanstack.com
-pnpm i
-# The app will run on https://localhost:3000 by default
-pnpm dev
-```
+This project is built with:
 
-4. Now you can visit http://localhost:3000/form/latest/docs/overview in the browser and see the changes you make in `tanstack/form/docs`.
+- Vite
+- TypeScript
+- React
+- shadcn-ui
+- Tailwind CSS
 
-> [!NOTE]
-> The updated pages need to be manually reloaded in the browser.
+## How can I deploy this project?
 
-> [!WARNING]
-> You will need to update the `docs/config.json` file (in the project's repo) if you add a new doc page!
+Simply open [Lovable](https://lovable.dev/projects/42c07ca6-54ec-4f35-84a7-57d42db434bf) and click on Share -> Publish.
+
+## Can I connect a custom domain to my Lovable project?
+
+Yes, you can!
+
+To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+
+Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
