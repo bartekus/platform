@@ -11,7 +11,7 @@ export const usersRouter = router({
       z.object({
         id: z.string(),
         name: z.string(),
-        email: z.string().email(),
+        email: z.string().email().or(z.string().min(1)), // Allow non-email strings
         image: z.string().optional(),
       })
     )
