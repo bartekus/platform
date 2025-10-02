@@ -9,286 +9,171 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as LoginRouteImport } from './routes/login'
-import { Route as CallbackRouteImport } from './routes/callback'
-import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
-import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
-import { Route as ApiUsersRouteImport } from './routes/api/users'
-import { Route as ApiTodosRouteImport } from './routes/api/todos'
-import { Route as ApiProjectsRouteImport } from './routes/api/projects'
-import { Route as AuthenticatedOrganizationIndexRouteImport } from './routes/_authenticated/organization/index'
-import { Route as AuthenticatedProjectProjectIdRouteImport } from './routes/_authenticated/project/$projectId'
-import { Route as AuthenticatedOrganizationOrgIdIndexRouteImport } from './routes/_authenticated/organization/$orgId/index'
-import { Route as AuthenticatedOrganizationOrgIdWorkspaceWorkspaceIdIndexRouteImport } from './routes/_authenticated/organization/$orgId/workspace/$workspaceId/index'
+import { Route as AuthedRouteImport } from './routes/_authed'
+import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthedPostsRouteImport } from './routes/_authed/posts'
+import { Route as AuthedPostsIndexRouteImport } from './routes/_authed/posts.index'
+import { Route as AuthedProfileSplatRouteImport } from './routes/_authed/profile.$'
+import { Route as AuthedPostsPostIdRouteImport } from './routes/_authed/posts.$postId'
 
-const LoginRoute = LoginRouteImport.update({
-  id: '/login',
-  path: '/login',
+const AuthedRoute = AuthedRouteImport.update({
+  id: '/_authed',
   getParentRoute: () => rootRouteImport,
 } as any)
-const CallbackRoute = CallbackRouteImport.update({
-  id: '/callback',
-  path: '/callback',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthenticatedRoute = AuthenticatedRouteImport.update({
-  id: '/_authenticated',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
+const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => AuthenticatedRoute,
-} as any)
-const ApiUsersRoute = ApiUsersRouteImport.update({
-  id: '/api/users',
-  path: '/api/users',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiTodosRoute = ApiTodosRouteImport.update({
-  id: '/api/todos',
-  path: '/api/todos',
-  getParentRoute: () => rootRouteImport,
+const AuthedPostsRoute = AuthedPostsRouteImport.update({
+  id: '/posts',
+  path: '/posts',
+  getParentRoute: () => AuthedRoute,
 } as any)
-const ApiProjectsRoute = ApiProjectsRouteImport.update({
-  id: '/api/projects',
-  path: '/api/projects',
-  getParentRoute: () => rootRouteImport,
+const AuthedPostsIndexRoute = AuthedPostsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthedPostsRoute,
 } as any)
-const AuthenticatedOrganizationIndexRoute =
-  AuthenticatedOrganizationIndexRouteImport.update({
-    id: '/organization/',
-    path: '/organization/',
-    getParentRoute: () => AuthenticatedRoute,
-  } as any)
-const AuthenticatedProjectProjectIdRoute =
-  AuthenticatedProjectProjectIdRouteImport.update({
-    id: '/project/$projectId',
-    path: '/project/$projectId',
-    getParentRoute: () => AuthenticatedRoute,
-  } as any)
-const AuthenticatedOrganizationOrgIdIndexRoute =
-  AuthenticatedOrganizationOrgIdIndexRouteImport.update({
-    id: '/organization/$orgId/',
-    path: '/organization/$orgId/',
-    getParentRoute: () => AuthenticatedRoute,
-  } as any)
-const AuthenticatedOrganizationOrgIdWorkspaceWorkspaceIdIndexRoute =
-  AuthenticatedOrganizationOrgIdWorkspaceWorkspaceIdIndexRouteImport.update({
-    id: '/organization/$orgId/workspace/$workspaceId/',
-    path: '/organization/$orgId/workspace/$workspaceId/',
-    getParentRoute: () => AuthenticatedRoute,
-  } as any)
+const AuthedProfileSplatRoute = AuthedProfileSplatRouteImport.update({
+  id: '/profile/$',
+  path: '/profile/$',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedPostsPostIdRoute = AuthedPostsPostIdRouteImport.update({
+  id: '/$postId',
+  path: '/$postId',
+  getParentRoute: () => AuthedPostsRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
-  '/callback': typeof CallbackRoute
-  '/login': typeof LoginRoute
-  '/api/projects': typeof ApiProjectsRoute
-  '/api/todos': typeof ApiTodosRoute
-  '/api/users': typeof ApiUsersRoute
-  '/': typeof AuthenticatedIndexRoute
-  '/project/$projectId': typeof AuthenticatedProjectProjectIdRoute
-  '/organization': typeof AuthenticatedOrganizationIndexRoute
-  '/organization/$orgId': typeof AuthenticatedOrganizationOrgIdIndexRoute
-  '/organization/$orgId/workspace/$workspaceId': typeof AuthenticatedOrganizationOrgIdWorkspaceWorkspaceIdIndexRoute
+  '/': typeof IndexRoute
+  '/posts': typeof AuthedPostsRouteWithChildren
+  '/posts/$postId': typeof AuthedPostsPostIdRoute
+  '/profile/$': typeof AuthedProfileSplatRoute
+  '/posts/': typeof AuthedPostsIndexRoute
 }
 export interface FileRoutesByTo {
-  '/callback': typeof CallbackRoute
-  '/login': typeof LoginRoute
-  '/api/projects': typeof ApiProjectsRoute
-  '/api/todos': typeof ApiTodosRoute
-  '/api/users': typeof ApiUsersRoute
-  '/': typeof AuthenticatedIndexRoute
-  '/project/$projectId': typeof AuthenticatedProjectProjectIdRoute
-  '/organization': typeof AuthenticatedOrganizationIndexRoute
-  '/organization/$orgId': typeof AuthenticatedOrganizationOrgIdIndexRoute
-  '/organization/$orgId/workspace/$workspaceId': typeof AuthenticatedOrganizationOrgIdWorkspaceWorkspaceIdIndexRoute
+  '/': typeof IndexRoute
+  '/posts/$postId': typeof AuthedPostsPostIdRoute
+  '/profile/$': typeof AuthedProfileSplatRoute
+  '/posts': typeof AuthedPostsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/_authenticated': typeof AuthenticatedRouteWithChildren
-  '/callback': typeof CallbackRoute
-  '/login': typeof LoginRoute
-  '/api/projects': typeof ApiProjectsRoute
-  '/api/todos': typeof ApiTodosRoute
-  '/api/users': typeof ApiUsersRoute
-  '/_authenticated/': typeof AuthenticatedIndexRoute
-  '/_authenticated/project/$projectId': typeof AuthenticatedProjectProjectIdRoute
-  '/_authenticated/organization/': typeof AuthenticatedOrganizationIndexRoute
-  '/_authenticated/organization/$orgId/': typeof AuthenticatedOrganizationOrgIdIndexRoute
-  '/_authenticated/organization/$orgId/workspace/$workspaceId/': typeof AuthenticatedOrganizationOrgIdWorkspaceWorkspaceIdIndexRoute
+  '/': typeof IndexRoute
+  '/_authed': typeof AuthedRouteWithChildren
+  '/_authed/posts': typeof AuthedPostsRouteWithChildren
+  '/_authed/posts/$postId': typeof AuthedPostsPostIdRoute
+  '/_authed/profile/$': typeof AuthedProfileSplatRoute
+  '/_authed/posts/': typeof AuthedPostsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths:
-    | '/callback'
-    | '/login'
-    | '/api/projects'
-    | '/api/todos'
-    | '/api/users'
-    | '/'
-    | '/project/$projectId'
-    | '/organization'
-    | '/organization/$orgId'
-    | '/organization/$orgId/workspace/$workspaceId'
+  fullPaths: '/' | '/posts' | '/posts/$postId' | '/profile/$' | '/posts/'
   fileRoutesByTo: FileRoutesByTo
-  to:
-    | '/callback'
-    | '/login'
-    | '/api/projects'
-    | '/api/todos'
-    | '/api/users'
-    | '/'
-    | '/project/$projectId'
-    | '/organization'
-    | '/organization/$orgId'
-    | '/organization/$orgId/workspace/$workspaceId'
+  to: '/' | '/posts/$postId' | '/profile/$' | '/posts'
   id:
     | '__root__'
-    | '/_authenticated'
-    | '/callback'
-    | '/login'
-    | '/api/projects'
-    | '/api/todos'
-    | '/api/users'
-    | '/_authenticated/'
-    | '/_authenticated/project/$projectId'
-    | '/_authenticated/organization/'
-    | '/_authenticated/organization/$orgId/'
-    | '/_authenticated/organization/$orgId/workspace/$workspaceId/'
+    | '/'
+    | '/_authed'
+    | '/_authed/posts'
+    | '/_authed/posts/$postId'
+    | '/_authed/profile/$'
+    | '/_authed/posts/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
-  CallbackRoute: typeof CallbackRoute
-  LoginRoute: typeof LoginRoute
-  ApiProjectsRoute: typeof ApiProjectsRoute
-  ApiTodosRoute: typeof ApiTodosRoute
-  ApiUsersRoute: typeof ApiUsersRoute
+  IndexRoute: typeof IndexRoute
+  AuthedRoute: typeof AuthedRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/login': {
-      id: '/login'
-      path: '/login'
-      fullPath: '/login'
-      preLoaderRoute: typeof LoginRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/callback': {
-      id: '/callback'
-      path: '/callback'
-      fullPath: '/callback'
-      preLoaderRoute: typeof CallbackRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_authenticated': {
-      id: '/_authenticated'
+    '/_authed': {
+      id: '/_authed'
       path: ''
       fullPath: ''
-      preLoaderRoute: typeof AuthenticatedRouteImport
+      preLoaderRoute: typeof AuthedRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/': {
-      id: '/_authenticated/'
+    '/': {
+      id: '/'
       path: '/'
       fullPath: '/'
-      preLoaderRoute: typeof AuthenticatedIndexRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/api/users': {
-      id: '/api/users'
-      path: '/api/users'
-      fullPath: '/api/users'
-      preLoaderRoute: typeof ApiUsersRouteImport
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/todos': {
-      id: '/api/todos'
-      path: '/api/todos'
-      fullPath: '/api/todos'
-      preLoaderRoute: typeof ApiTodosRouteImport
-      parentRoute: typeof rootRouteImport
+    '/_authed/posts': {
+      id: '/_authed/posts'
+      path: '/posts'
+      fullPath: '/posts'
+      preLoaderRoute: typeof AuthedPostsRouteImport
+      parentRoute: typeof AuthedRoute
     }
-    '/api/projects': {
-      id: '/api/projects'
-      path: '/api/projects'
-      fullPath: '/api/projects'
-      preLoaderRoute: typeof ApiProjectsRouteImport
-      parentRoute: typeof rootRouteImport
+    '/_authed/posts/': {
+      id: '/_authed/posts/'
+      path: '/'
+      fullPath: '/posts/'
+      preLoaderRoute: typeof AuthedPostsIndexRouteImport
+      parentRoute: typeof AuthedPostsRoute
     }
-    '/_authenticated/organization/': {
-      id: '/_authenticated/organization/'
-      path: '/organization'
-      fullPath: '/organization'
-      preLoaderRoute: typeof AuthenticatedOrganizationIndexRouteImport
-      parentRoute: typeof AuthenticatedRoute
+    '/_authed/profile/$': {
+      id: '/_authed/profile/$'
+      path: '/profile/$'
+      fullPath: '/profile/$'
+      preLoaderRoute: typeof AuthedProfileSplatRouteImport
+      parentRoute: typeof AuthedRoute
     }
-    '/_authenticated/project/$projectId': {
-      id: '/_authenticated/project/$projectId'
-      path: '/project/$projectId'
-      fullPath: '/project/$projectId'
-      preLoaderRoute: typeof AuthenticatedProjectProjectIdRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/organization/$orgId/': {
-      id: '/_authenticated/organization/$orgId/'
-      path: '/organization/$orgId'
-      fullPath: '/organization/$orgId'
-      preLoaderRoute: typeof AuthenticatedOrganizationOrgIdIndexRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/organization/$orgId/workspace/$workspaceId/': {
-      id: '/_authenticated/organization/$orgId/workspace/$workspaceId/'
-      path: '/organization/$orgId/workspace/$workspaceId'
-      fullPath: '/organization/$orgId/workspace/$workspaceId'
-      preLoaderRoute: typeof AuthenticatedOrganizationOrgIdWorkspaceWorkspaceIdIndexRouteImport
-      parentRoute: typeof AuthenticatedRoute
+    '/_authed/posts/$postId': {
+      id: '/_authed/posts/$postId'
+      path: '/$postId'
+      fullPath: '/posts/$postId'
+      preLoaderRoute: typeof AuthedPostsPostIdRouteImport
+      parentRoute: typeof AuthedPostsRoute
     }
   }
 }
 
-interface AuthenticatedRouteChildren {
-  AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
-  AuthenticatedProjectProjectIdRoute: typeof AuthenticatedProjectProjectIdRoute
-  AuthenticatedOrganizationIndexRoute: typeof AuthenticatedOrganizationIndexRoute
-  AuthenticatedOrganizationOrgIdIndexRoute: typeof AuthenticatedOrganizationOrgIdIndexRoute
-  AuthenticatedOrganizationOrgIdWorkspaceWorkspaceIdIndexRoute: typeof AuthenticatedOrganizationOrgIdWorkspaceWorkspaceIdIndexRoute
+interface AuthedPostsRouteChildren {
+  AuthedPostsPostIdRoute: typeof AuthedPostsPostIdRoute
+  AuthedPostsIndexRoute: typeof AuthedPostsIndexRoute
 }
 
-const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
-  AuthenticatedIndexRoute: AuthenticatedIndexRoute,
-  AuthenticatedProjectProjectIdRoute: AuthenticatedProjectProjectIdRoute,
-  AuthenticatedOrganizationIndexRoute: AuthenticatedOrganizationIndexRoute,
-  AuthenticatedOrganizationOrgIdIndexRoute:
-    AuthenticatedOrganizationOrgIdIndexRoute,
-  AuthenticatedOrganizationOrgIdWorkspaceWorkspaceIdIndexRoute:
-    AuthenticatedOrganizationOrgIdWorkspaceWorkspaceIdIndexRoute,
+const AuthedPostsRouteChildren: AuthedPostsRouteChildren = {
+  AuthedPostsPostIdRoute: AuthedPostsPostIdRoute,
+  AuthedPostsIndexRoute: AuthedPostsIndexRoute,
 }
 
-const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
-  AuthenticatedRouteChildren,
+const AuthedPostsRouteWithChildren = AuthedPostsRoute._addFileChildren(
+  AuthedPostsRouteChildren,
 )
 
+interface AuthedRouteChildren {
+  AuthedPostsRoute: typeof AuthedPostsRouteWithChildren
+  AuthedProfileSplatRoute: typeof AuthedProfileSplatRoute
+}
+
+const AuthedRouteChildren: AuthedRouteChildren = {
+  AuthedPostsRoute: AuthedPostsRouteWithChildren,
+  AuthedProfileSplatRoute: AuthedProfileSplatRoute,
+}
+
+const AuthedRouteWithChildren =
+  AuthedRoute._addFileChildren(AuthedRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
-  AuthenticatedRoute: AuthenticatedRouteWithChildren,
-  CallbackRoute: CallbackRoute,
-  LoginRoute: LoginRoute,
-  ApiProjectsRoute: ApiProjectsRoute,
-  ApiTodosRoute: ApiTodosRoute,
-  ApiUsersRoute: ApiUsersRoute,
+  IndexRoute: IndexRoute,
+  AuthedRoute: AuthedRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
 
 import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.tsx'
+import type { createStart } from '@tanstack/react-start'
 declare module '@tanstack/react-start' {
   interface Register {
-    ssr: true
     router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
   }
 }
