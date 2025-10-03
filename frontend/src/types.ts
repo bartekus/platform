@@ -33,7 +33,7 @@ export interface FetchOptions extends RequestInit {
 export interface OrganizationData {
   id: string;
   name: string;
-  description: string | null;
+  description?: string;
   logo?: LucideIcon;
   plan?: string;
   role?: string;
