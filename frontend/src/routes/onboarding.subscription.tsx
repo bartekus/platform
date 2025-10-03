@@ -5,9 +5,12 @@ import { createFileRoute } from "@tanstack/react-router";
 
 import getRequestClient from "~/lib/get-request-client";
 import { useSubscriptionApi } from "~/api/subsciption";
+import { fallbackToRoot } from "~/config/constants";
 import PlanCard from "~/components/PlanCard";
 import { appConfig } from "~/config/logto";
 import { stripe } from "~/lib/client";
+
+import type { UserCustomData } from "~/types";
 
 export const Route = createFileRoute("/onboarding/subscription")({
   // beforeLoad: requireAuth,
@@ -15,17 +18,6 @@ export const Route = createFileRoute("/onboarding/subscription")({
 });
 
 function SubscriptionPage() {
-  // const startCheckout = async (planId: string) => {
-  //   const accessToken = await getAccessToken(appConfig.apiResourceIndicator);
-  //
-  //   const api = getRequestClient();
-  //   const { checkoutUrl } = await api.stripe.getSubscriptionUrl({
-  //     planId,
-  //     returnUrl: `${window.location.origin}/onboarding/verify`,
-  //   });
-  //   window.location.href = checkoutUrl;
-  // };
-
   const navigate = Route.useNavigate();
   const { getAccessToken, fetchUserInfo } = useLogto();
   const { createUserSubscription } = useSubscriptionApi();
@@ -62,25 +54,30 @@ function SubscriptionPage() {
     try {
       const userInfo = await fetchUserInfo();
 
-      console.log("userInfo", userInfo);
+      const customData = userInfo?.custom_data as UserCustomData;
 
-      if (!userInfo?.custom_data?.stripeCustomerId) {
+      if (!customData?.stripeCustomerId) {
         console.error("No Stripe customer ID found");
+        await navigate({ to: fallbackToRoot });
         return;
       }
 
       const session = await createUserSubscription({
         priceId,
-        customerId: userInfo.custom_data.stripeCustomerId,
+        customerId: customData.stripeCustomerId,
         successUrl: `${window.location.origin}/onboarding/verify`,
         cancelUrl: `${window.location.origin}/onboarding/subscription`,
       });
 
       console.log("session", session);
 
-      // if (session.success && session.result?.url) {
-      //   window.location.href = session.result.url;
-      // }
+      if (session.success && session.result?.url) {
+        await navigate({ to: session.result.url });
+        return;
+      } else if (session.error && session.result?.url) {
+        await navigate({ to: session.result.url });
+        return;
+      }
     } catch (error) {
       console.error("Subscription error:", error);
     }

@@ -18,9 +18,22 @@ export type { FileMetadata };
 export interface OrganizationData {
   id: string;
   name: string;
-  description: string;
+  description: string | null;
   logo?: LucideIcon;
   plan?: string;
+  role?: string;
+}
+
+export interface UserSubscription {
+  id: string;
+  status: string;
+  priceId: string;
+  currentPeriodEnd: number;
+}
+
+export interface UserCustomData {
+  subscription?: UserSubscription;
+  stripeCustomerId?: string;
 }
 
 export interface NavItem {

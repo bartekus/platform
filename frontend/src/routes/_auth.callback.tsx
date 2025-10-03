@@ -1,44 +1,26 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import { useLogto, useHandleSignInCallback } from "@logto/react";
+import { useEffect } from "react";
 import { Loader2 } from "lucide-react";
+import { createFileRoute } from "@tanstack/react-router";
+import { useLogto, useHandleSignInCallback } from "@logto/react";
 
 import { appConfig, encoreApiEndpoint } from "~/config/logto";
+import { fallbackToRoot, onboardingProfile, onboardingSubscription } from "~/config/constants";
+import type { OrganizationData, UserSubscription, UserCustomData } from "~/types";
 
 export const Route = createFileRoute("/_auth/callback")({
   component: CallbackPage,
 });
 
-interface UserSubscription {
-  id: string;
-  status: string;
-  priceId: string;
-  currentPeriodEnd: number;
-}
-
-interface UserCustomData {
-  subscription?: UserSubscription;
-  stripeCustomerId?: string;
-}
-
-type OrganizationData = {
-  id: string;
-  name: string;
-  description: string | null;
-  role?: string;
-};
-
-const fallback = "/" as const;
-const onboardingSubscription = "/onboarding/subscription" as const;
-const onboardingProfile = "/onboarding/profile" as const;
-const onboardingOrganization = "/onboarding/organization" as const;
-
 function CallbackPage() {
   const navigate = Route.useNavigate();
 
   const { isLoading, error } = useHandleSignInCallback(() => {
-    // After successful sign-in, redirect to verification
-    // navigate("/");
+    // Generally you would put the navigate("/<somewhere>") here.
+    // However we want a more granual approach to properly implement onboarding.
+    // For that we are going to rely on useEffect which requires placement outside of this function scope.
+    // Please note that we are not importing isAuthenticated from this handler.
+    // This is due to isAuthenticated state not being reliable at this stage.
+    // We are going to use useLogto provided hooks to get most up-to-date state of our auth.
   });
 
   const { isAuthenticated, getAccessToken, fetchUserInfo } = useLogto();
@@ -58,7 +40,7 @@ function CallbackPage() {
           const customData = userInfo?.custom_data as UserCustomData;
 
           if (!customData?.stripeCustomerId) {
-            await navigate({ to: fallback });
+            await navigate({ to: fallbackToRoot });
             return;
           }
 
@@ -71,6 +53,11 @@ function CallbackPage() {
 
           if (!hasActiveSubscription) {
             await navigate({ to: onboardingSubscription });
+            return;
+          }
+
+          if (hasActiveSubscription) {
+            await navigate({ to: onboardingProfile });
             return;
           }
 
@@ -99,12 +86,8 @@ function CallbackPage() {
       }
     };
 
-    resolveLogtoProvided();
+    void resolveLogtoProvided();
   }, [isLoading, isAuthenticated, fetchUserInfo, getAccessToken, navigate]);
-
-  // useEffect(() => {
-  //
-  // }, [logto]);
 
   if (error) {
     return (
