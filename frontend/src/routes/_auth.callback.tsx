@@ -1,11 +1,12 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useLogto, useHandleSignInCallback } from "@logto/react";
 
 import { appConfig, encoreApiEndpoint } from "~/config/logto";
 import { callback, fallbackToRoot, onboardingProfile, onboardingSubscription } from "~/config/constants";
-import type { OrganizationData, UserSubscription, UserCustomData } from "~/types";
+import type { OrganizationData, UserSubscription, UserCustomData, UserData } from "~/types";
+import { sleep } from "~/lib/utils";
 
 export const Route = createFileRoute("/_auth/callback")({
   component: CallbackPage,
@@ -13,6 +14,7 @@ export const Route = createFileRoute("/_auth/callback")({
 
 function CallbackPage() {
   const navigate = Route.useNavigate();
+  const [isResolving, setIsResolving] = useState<boolean>(false);
 
   const { isLoading, error } = useHandleSignInCallback(() => {
     // Generally you would put the navigate("/<somewhere>") here.
@@ -33,30 +35,27 @@ function CallbackPage() {
 
       if (!isLoading && isAuthenticated) {
         try {
+          setIsResolving(true);
+          await sleep(5000);
+
           const accessToken = await getAccessToken(appConfig.apiResourceIndicator);
           console.log("accessToken", accessToken);
 
-          const userInfo = await fetchUserInfo();
+          const userInfo = (await fetchUserInfo()) as UserData;
           const customData = userInfo?.custom_data as UserCustomData;
-
-          if (!customData?.stripeCustomerId) {
-            await navigate({ to: fallbackToRoot });
-            return;
-          }
-
-          console.log("userInfo");
-          console.dir(userInfo);
 
           // Check subscription status from custom_data
           const hasActiveSubscription = customData?.subscription?.status === "active";
 
+          setIsResolving(false);
+
           if (!hasActiveSubscription) {
-            await navigate({ to: onboardingSubscription, from: callback });
+            await navigate({ to: onboardingSubscription, replace: true });
             return;
           }
 
           if (hasActiveSubscription) {
-            await navigate({ to: onboardingProfile, from: callback });
+            await navigate({ to: onboardingProfile, replace: true });
             return;
           }
 
@@ -79,14 +78,12 @@ function CallbackPage() {
           // console.log(organizationData);
         } catch (error) {
           console.error("Failed to fetch organizations:", error);
-        } finally {
-          console.log("done");
         }
       }
     };
 
     void resolveLogtoProvided();
-  }, [isLoading, isAuthenticated, fetchUserInfo, getAccessToken, navigate]);
+  }, [isLoading, isAuthenticated, fetchUserInfo, getAccessToken, navigate, setIsResolving]);
 
   if (error) {
     return (
@@ -99,7 +96,7 @@ function CallbackPage() {
     );
   }
 
-  if (isLoading) {
+  if (isLoading || isResolving) {
     return (
       <div className="container mx-auto px-4 py-20 text-center">
         <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-accent" />
