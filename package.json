@@ -28,7 +28,7 @@
   },
   "dependencies": {
     "drizzle-orm": "^0.44.5",
-    "encore.dev": "^1.50.0",
+    "encore.dev": "^1.50.4",
     "lru-cache": "^11.2.2",
     "jose": "^6.1.0",
     "busboy": "^1.6.0",
