@@ -1,0 +1,47 @@
+import type { LucideIcon } from "lucide-react";
+import { file_upload, organization, workspace } from "~/lib/client";
+
+import Organization = organization.Organization;
+import CreateOrganizationParams = organization.CreateOrganizationParams;
+export type { Organization, CreateOrganizationParams };
+
+import Workspace = workspace.Workspace;
+import CreateWorkspaceParams = workspace.CreateWorkspaceRequest;
+// import GetWorkspaceParams = workspace.GetWorkspaceRequest;
+import UpdateWorkspaceParams = workspace.UpdateWorkspaceRequest;
+
+export type { Workspace, CreateWorkspaceParams, UpdateWorkspaceParams };
+
+import FileMetadata = file_upload.FileMetadata;
+export type { FileMetadata };
+
+export interface OrganizationData {
+  id: string;
+  name: string;
+  description: string;
+  logo?: LucideIcon;
+  plan?: string;
+}
+
+export interface NavItem {
+  title: string;
+  url: string;
+  icon?: LucideIcon;
+  isActive?: boolean;
+  items?: {
+    title: string;
+    url: string;
+  }[];
+}
+
+export interface Project {
+  name: string;
+  url: string;
+  icon: LucideIcon;
+}
+
+export interface UserData {
+  name: string;
+  email: string;
+  avatar?: string;
+}
