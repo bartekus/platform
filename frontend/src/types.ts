@@ -15,6 +15,21 @@ export type { Workspace, CreateWorkspaceParams, UpdateWorkspaceParams };
 import FileMetadata = file_upload.FileMetadata;
 export type { FileMetadata };
 
+export class ApiRequestError extends Error {
+  status?: number;
+
+  constructor(message: string, status?: number) {
+    super(message);
+    this.name = "ApiRequestError";
+    this.status = status;
+  }
+}
+
+export interface FetchOptions extends RequestInit {
+  skipContentType?: boolean;
+  rawBody?: boolean;
+}
+
 export interface OrganizationData {
   id: string;
   name: string;

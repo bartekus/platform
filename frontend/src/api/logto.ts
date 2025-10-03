@@ -3,20 +3,8 @@ import { useCallback } from "react";
 
 import { appConfig, encoreApiEndpoint } from "~/config/logto";
 
-export class ApiRequestError extends Error {
-  status?: number;
-
-  constructor(message: string, status?: number) {
-    super(message);
-    this.name = "ApiRequestError";
-    this.status = status;
-  }
-}
-
-interface FetchOptions extends RequestInit {
-  skipContentType?: boolean;
-  rawBody?: boolean;
-}
+import { ApiRequestError } from "~/types";
+import type { FetchOptions } from "~/types";
 
 export const useApi = () => {
   const { getAccessToken, getOrganizationToken } = useLogto();
@@ -85,7 +73,7 @@ export const useApi = () => {
         throw new ApiRequestError(error instanceof Error ? error.message : String(error));
       }
     },
-    [getAccessToken, getOrganizationToken]
+    [getToken]
   );
 
   return { getToken, fetchWithToken };
