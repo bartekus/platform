@@ -4,6 +4,8 @@ import { useLogto } from "@logto/react";
 import getRequestClient from "~/lib/get-request-client";
 import { useApi } from "~/api/logto";
 
+import type { FileMetadata } from "~/types";
+
 export const useFileApi = () => {
   const { fetchWithToken } = useApi();
   const { getOrganizationToken } = useLogto();
@@ -15,14 +17,14 @@ export const useFileApi = () => {
         if (!token) throw new Error("User is not a member of the organization");
 
         const client = getRequestClient(token);
-        const response = await client.file_upload.getAll(workspaceId);
+        const response = await client.file_upload.getAllFiles(workspaceId);
         return response.files;
       },
       [getOrganizationToken]
     ),
 
     uploadFile: useCallback(
-      async (orgId: string, workspaceId: string, formData: FormData): Promise<FileMetadata> => {
+      async (orgId: string, workspaceId: string, formData: FormData): Promise<any> => {
         const token = await getOrganizationToken(orgId);
         if (!token) throw new Error("User is not a member of the organization");
 
@@ -31,7 +33,7 @@ export const useFileApi = () => {
         // Don't set content-type manually as it needs the boundary parameter
 
         const response = await fetchWithToken(
-          `/upload/${workspaceId}`,
+          `/file/upload/${workspaceId}`,
           {
             method: "POST",
             body: formData,
@@ -58,7 +60,7 @@ export const useFileApi = () => {
         if (!token) throw new Error("User is not a member of the organization");
 
         const client = getRequestClient(token);
-        await client.file_upload.deleteOne(workspaceId, fileName);
+        await client.file_upload.deleteOneFile(workspaceId, fileName);
       },
       [getOrganizationToken]
     ),
