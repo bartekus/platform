@@ -1,4 +1,4 @@
-import { ReactNode } from "react";
+// import { ReactNode } from "react";
 import { LogtoProvider } from "@logto/react";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
@@ -42,28 +42,28 @@ export const Route = createRootRoute({
 
 function RootComponent() {
   return (
-    <RootDocument>
-      <LogtoProvider config={config}>
-        <LayoutRoot>
-          <Outlet />
-          <ReactQueryDevtools buttonPosition="bottom-right" />
-          <TanStackRouterDevtools position="bottom-left" />
-        </LayoutRoot>
-      </LogtoProvider>
-    </RootDocument>
+    // <RootDocument>
+    <LogtoProvider config={config}>
+      <LayoutRoot>
+        <Outlet />
+        <ReactQueryDevtools buttonPosition="bottom-right" />
+        <TanStackRouterDevtools position="bottom-left" />
+      </LayoutRoot>
+    </LogtoProvider>
+    // </RootDocument>
   );
 }
-
-function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
-  return (
-    <html>
-      <head>
-        <HeadContent />
-      </head>
-      <body>
-        {children}
-        <Scripts />
-      </body>
-    </html>
-  );
-}
+// Not available in SPA mode
+// function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
+//   return (
+//     <html>
+//       <head>
+//         <HeadContent />
+//       </head>
+//       <body>
+//         {children}
+//         <Scripts />
+//       </body>
+//     </html>
+//   );
+// }
