@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "gen:": "encore gen client --output=./src/lib/client.ts --env=development",
+    "gen": "encore gen client --output=./src/lib/client.ts --env=local",
     "gen:openapi": "encore gen client --lang=openapi --output=./src/libs/openapi.json",
     "dev": "dotenv -e ../.env.local -e .env -- vite",
     "build": "vite build",
