@@ -4,7 +4,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useLogto, useHandleSignInCallback } from "@logto/react";
 
 import { appConfig, encoreApiEndpoint } from "~/config/logto";
-import { fallbackToRoot, onboardingProfile, onboardingSubscription } from "~/config/constants";
+import { callback, fallbackToRoot, onboardingProfile, onboardingSubscription } from "~/config/constants";
 import type { OrganizationData, UserSubscription, UserCustomData } from "~/types";
 
 export const Route = createFileRoute("/_auth/callback")({
@@ -44,20 +44,19 @@ function CallbackPage() {
             return;
           }
 
-          console.log("customData", customData);
+          console.log("userInfo");
+          console.dir(userInfo);
 
           // Check subscription status from custom_data
           const hasActiveSubscription = customData?.subscription?.status === "active";
 
-          console.log("hasActiveSubscription", hasActiveSubscription);
-
           if (!hasActiveSubscription) {
-            await navigate({ to: onboardingSubscription });
+            await navigate({ to: onboardingSubscription, from: callback });
             return;
           }
 
           if (hasActiveSubscription) {
-            await navigate({ to: onboardingProfile });
+            await navigate({ to: onboardingProfile, from: callback });
             return;
           }
 

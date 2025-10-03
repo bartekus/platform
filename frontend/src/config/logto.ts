@@ -32,7 +32,12 @@ export const config: LogtoConfig = {
   appId: `${LOGTO_APP_ID}`,
   resources: [ReservedResource.Organization, `https://${API_DOMAIN}/api`],
   scopes: [
-    UserScope.CustomData,
+    UserScope.Email, // For `{POST,DELETE} /api/my-account/primary-email` APIs
+    UserScope.Phone, // For `{POST,DELETE} /api/my-account/primary-phone` APIs
+    UserScope.CustomData, // To manage custom data
+    UserScope.Address, // To manage address
+    UserScope.Identities, // For identity and MFA related APIs
+    UserScope.Profile, // To manage user profile
     UserScope.Organizations,
     "create:organization",
     "create:resources",
