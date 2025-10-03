@@ -39,6 +39,10 @@ export interface OrganizationData {
   role?: string;
 }
 
+export interface OrganizationCreateFormProps {
+  onSuccess: (orgId: string) => void;
+}
+
 export interface UserSubscription {
   id: string;
   status: string;

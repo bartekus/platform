@@ -6,7 +6,7 @@ export interface CreateOrganizationParams {
 export interface Organization {
   id: string;
   name: string;
-  description: string;
+  description?: string;
 }
 
 export interface OrganizationsResponse {
@@ -23,4 +23,113 @@ export interface Role {
     name: string;
   }>;
   resourceScopes?: Array<unknown>;
+}
+
+// Organization Invitation Types
+// GET/POST /api/organization-invitations
+// GET /api/organization-invitations/{id}
+export interface OrganizationInvitation {
+  id: string;
+  organizationId: string;
+  email: string;
+  status: "pending" | "accepted";
+  createdAt: string;
+  updatedAt: string;
+}
+
+// GET /api/organization-invitations
+export interface OrganizationInvitationsResponse {
+  totalCount: number;
+  list: OrganizationInvitation[];
+}
+
+// Organization Role Types
+// Used in OrganizationRole and UserScopesResponse
+export interface OrganizationScope {
+  id: string;
+  name: string;
+  description?: string;
+}
+
+// Used in OrganizationRole and UserScopesResponse
+export interface ResourceScope {
+  resource: string;
+  scopes: string[];
+}
+
+// GET/POST /api/organization-roles
+// GET/PATCH /api/organization-roles/{id}
+export interface OrganizationRole {
+  id: string;
+  name: string;
+  description?: string;
+  type: "User" | "Application";
+  organizationScopes?: OrganizationScope[];
+  resourceScopes?: ResourceScope[];
+}
+
+// GET /api/organization-roles
+export interface OrganizationRolesResponse {
+  totalCount: number;
+  list: OrganizationRole[];
+}
+
+// GET /api/organization-scopes
+export interface OrganizationScopesResponse {
+  totalCount: number;
+  list: OrganizationScope[];
+}
+
+// GET/POST /api/organizations
+// GET/PATCH /api/organizations/{id}
+export interface Organization {
+  id: string;
+  name: string;
+  description?: string;
+  createdAt: string;
+}
+
+// GET /api/organizations
+export interface OrganizationsResponse {
+  totalCount: number;
+  list: Organization[];
+}
+
+// Organization User Types
+// Used in OrganizationUser
+export interface UserIdentity {
+  userId: string;
+  details?: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// GET /api/organizations/{id}/users response item
+export interface OrganizationUser {
+  id: string;
+  name?: string;
+  avatar?: string;
+  email?: string;
+  phone?: string;
+  username?: string;
+  customData?: Record<string, unknown>;
+  identities?: UserIdentity[];
+  lastSignInAt?: string;
+  createdAt: string;
+  updatedAt: string;
+  applicationId?: string;
+  isSuspended: boolean;
+  roleNames: string[];
+}
+
+// GET /api/organizations/{id}/users
+export interface OrganizationUsersResponse {
+  totalCount: number;
+  list: OrganizationUser[];
+}
+
+// GET /api/organizations/{id}/users/{userId}/scopes
+export interface UserScopesResponse {
+  organizationScopes: OrganizationScope[];
+  resourceScopes: ResourceScope[];
 }
