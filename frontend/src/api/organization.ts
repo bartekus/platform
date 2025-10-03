@@ -5,7 +5,7 @@ import getRequestClient from "~/lib/get-request-client";
 
 import type { Organization, CreateOrganizationParams, OrganizationData } from "~/types";
 
-export const useResourceApi = () => {
+export const useOrganizationApi = () => {
   const { getAccessToken, getOrganizationToken, getOrganizationTokenClaims, fetchUserInfo } = useLogto();
 
   return {

@@ -6,7 +6,7 @@ import { appConfig, encoreApiEndpoint } from "~/config/logto";
 import { ApiRequestError } from "~/types";
 import type { FetchOptions } from "~/types";
 
-export const useApi = () => {
+export const useRawApi = () => {
   const { getAccessToken, getOrganizationToken } = useLogto();
 
   const getToken = useCallback(

@@ -2,12 +2,12 @@ import { useCallback } from "react";
 import { useLogto } from "@logto/react";
 
 import getRequestClient from "~/lib/get-request-client";
-import { useApi } from "~/api/logto";
+import { useRawApi } from "~/api/raw";
 
 import type { FileMetadata } from "~/types";
 
 export const useFileApi = () => {
-  const { fetchWithToken } = useApi();
+  const { fetchWithToken } = useRawApi();
   const { getOrganizationToken } = useLogto();
 
   return {
