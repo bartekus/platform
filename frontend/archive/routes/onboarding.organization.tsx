@@ -1,13 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-// import { requireActiveSub } from "~/lib/guards";
+import { requireActiveSub } from "~/lib/guards";
 import getRequestClient from "~/lib/get-request-client";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 
 export const Route = createFileRoute("/onboarding/organization")({
-  // beforeLoad: requireActiveSub,
+  beforeLoad: requireActiveSub,
   component: OrganizationPage,
 });
 

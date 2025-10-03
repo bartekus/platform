@@ -1,43 +1,39 @@
 import { createFileRoute, Link, Outlet } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-// import { requireOnboarding } from "~/lib/guards";
-// import { loadSession, Session, Role } from "~/lib/session";
+import { requireOnboarding } from "~/lib/guards";
+import { loadSession, Session, Role } from "~/lib/session";
 import OrgSwitcher from "~/components/OrgSwitcher";
 
 export const Route = createFileRoute("/org/$orgId")({
-  // beforeLoad: requireOnboarding,
+  beforeLoad: requireOnboarding,
   component: OrgLayout,
 });
 
 function OrgLayout() {
   const { orgId } = Route.useParams();
-  // const [data, setData] = useState<{ session: Session; org: { id: string; name: string; slug: string; role: Role } } | null>(null);
-  //
-  // useEffect(() => {
-  //   (async () => {
-  //     const session = await loadSession();
-  //     const org = session.orgs.find((o) => o.id === orgId);
-  //     if (!org) {
-  //       window.location.href = "/onboarding/organization";
-  //       return;
-  //     }
-  //     setData({ session, org });
-  //   })();
-  // }, [orgId]);
+  const [data, setData] = useState<{ session: Session; org: { id: string; name: string; slug: string; role: Role } } | null>(null);
 
-  // if (!data) {
-  //   return (
-  //     <div className="container mx-auto px-4 py-20 text-center">
-  //       <p className="text-muted-foreground">Loading organization...</p>
-  //     </div>
-  //   );
-  // }
-  //
-  // const { session, org } = data;
+  useEffect(() => {
+    (async () => {
+      const session = await loadSession();
+      const org = session.orgs.find((o) => o.id === orgId);
+      if (!org) {
+        window.location.href = "/onboarding/organization";
+        return;
+      }
+      setData({ session, org });
+    })();
+  }, [orgId]);
 
-  const org = {
-    id: "DefaultOrg",
-  };
+  if (!data) {
+    return (
+      <div className="container mx-auto px-4 py-20 text-center">
+        <p className="text-muted-foreground">Loading organization...</p>
+      </div>
+    );
+  }
+
+  const { session, org } = data;
 
   return (
     <div className="min-h-screen flex flex-col">
