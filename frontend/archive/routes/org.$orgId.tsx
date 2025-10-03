@@ -1,3 +1,4 @@
+/*
 import { createFileRoute, Link, Outlet } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { requireOnboarding } from "~/lib/guards";
@@ -97,3 +98,4 @@ function OrgLayout() {
     </div>
   );
 }
+*/

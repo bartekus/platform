@@ -1,4 +1,5 @@
-import getRequestClient from "./get-request-client";
+/*
+import getRequestClient from "~/lib/get-request-client";
 
 export type Role = "admin" | "editor" | "member";
 
@@ -11,8 +12,6 @@ export type Session = {
 };
 
 export async function loadSession(): Promise<Session> {
-  console.log("loadSession start");
-
   const api = getRequestClient();
 
   const [me, subscription, onboarding, orgs] = await Promise.all([
@@ -30,3 +29,4 @@ export async function loadSession(): Promise<Session> {
     defaultOrgId: orgs?.[0]?.id,
   };
 }
+*/

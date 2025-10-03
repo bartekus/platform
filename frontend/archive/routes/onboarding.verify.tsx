@@ -1,3 +1,4 @@
+/*
 import { createFileRoute, useSearch } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { requireAuth } from "~/lib/guards";
@@ -45,3 +46,4 @@ function VerifyPage() {
     </div>
   );
 }
+*/

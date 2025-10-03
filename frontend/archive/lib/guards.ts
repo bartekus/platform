@@ -1,8 +1,6 @@
-import { useEffect } from "react";
-import { useLogto } from "@logto/react";
+/*
 import { redirect } from "@tanstack/react-router";
-
-import { appConfig } from "~/config/logto";
+import { loadSession } from "./session";
 
 export async function requireAuth() {
   const s = await loadSession();
@@ -39,3 +37,4 @@ export async function requireOrgChosen() {
   if (!orgId) throw redirect({ to: "/onboarding/organization" });
   return { session: s, orgId };
 }
+*/

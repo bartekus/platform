@@ -1,3 +1,4 @@
+/*
 import { createFileRoute } from "@tanstack/react-router";
 import { requireAuth } from "~/lib/guards";
 import PlanCard from "~/components/PlanCard";
@@ -42,3 +43,4 @@ function SubscriptionPage() {
     </div>
   );
 }
+*/

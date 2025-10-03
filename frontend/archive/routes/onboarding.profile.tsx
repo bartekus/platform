@@ -1,3 +1,4 @@
+/*
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { requireActiveSub } from "~/lib/guards";
@@ -55,3 +56,4 @@ function ProfilePage() {
     </div>
   );
 }
+*/
