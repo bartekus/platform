@@ -1,11 +1,11 @@
-import { Outlet, createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
-import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
-import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
+import { ReactNode } from "react";
 import { LogtoProvider } from "@logto/react";
+import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
+import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
+import { Outlet, createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
 
-import { config } from "~/config/logto";
 import LayoutRoot from "~/components/LayoutRoot";
-
+import { config } from "~/config/logto";
 import appCss from "../index.css?url";
 
 export const Route = createRootRoute({
@@ -29,16 +29,7 @@ export const Route = createRootRoute({
       },
     ],
   }),
-  shellComponent: RootDocument,
-  component: () => (
-    <LogtoProvider config={config}>
-      <LayoutRoot>
-        <Outlet />
-        <ReactQueryDevtools buttonPosition="bottom-right" />
-        <TanStackRouterDevtools position="bottom-left" />
-      </LayoutRoot>
-    </LogtoProvider>
-  ),
+  component: RootComponent,
   notFoundComponent: () => (
     <div className="p-8">
       <h1 className="text-2xl font-semibold mb-4">Not found</h1>
@@ -49,9 +40,23 @@ export const Route = createRootRoute({
   ),
 });
 
-export function RootDocument({ children }: { children: React.ReactNode }) {
+function RootComponent() {
   return (
-    <html lang="en">
+    <RootDocument>
+      <LogtoProvider config={config}>
+        <LayoutRoot>
+          <Outlet />
+          <ReactQueryDevtools buttonPosition="bottom-right" />
+          <TanStackRouterDevtools position="bottom-left" />
+        </LayoutRoot>
+      </LogtoProvider>
+    </RootDocument>
+  );
+}
+
+function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
+  return (
+    <html>
       <head>
         <HeadContent />
       </head>

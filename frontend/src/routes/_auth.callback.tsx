@@ -4,7 +4,7 @@ import { useLogto } from "@logto/react";
 import { loadSession } from "~/lib/session";
 import { Loader2 } from "lucide-react";
 
-export const Route = createFileRoute("/callback")({
+export const Route = createFileRoute("/_auth/callback")({
   component: CallbackPage,
 });
 

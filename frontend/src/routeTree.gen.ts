@@ -9,36 +9,21 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as SignoutRouteImport } from './routes/signout'
-import { Route as SigninRouteImport } from './routes/signin'
-import { Route as CallbackRouteImport } from './routes/callback'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as OrgOrgIdRouteImport } from './routes/org.$orgId'
 import { Route as OnboardingVerifyRouteImport } from './routes/onboarding.verify'
 import { Route as OnboardingSubscriptionRouteImport } from './routes/onboarding.subscription'
 import { Route as OnboardingProfileRouteImport } from './routes/onboarding.profile'
 import { Route as OnboardingOrganizationRouteImport } from './routes/onboarding.organization'
+import { Route as AuthSignoutRouteImport } from './routes/_auth.signout'
+import { Route as AuthSigninRouteImport } from './routes/_auth.signin'
+import { Route as AuthCallbackRouteImport } from './routes/_auth.callback'
 import { Route as OrgOrgIdIndexRouteImport } from './routes/org.$orgId.index'
 import { Route as OrgOrgIdWorkspacesRouteImport } from './routes/org.$orgId.workspaces'
 import { Route as OrgOrgIdSettingsRouteImport } from './routes/org.$orgId.settings'
 import { Route as OrgOrgIdMembersRouteImport } from './routes/org.$orgId.members'
 import { Route as OrgOrgIdAdminRouteImport } from './routes/org.$orgId.admin'
 
-const SignoutRoute = SignoutRouteImport.update({
-  id: '/signout',
-  path: '/signout',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SigninRoute = SigninRouteImport.update({
-  id: '/signin',
-  path: '/signin',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const CallbackRoute = CallbackRouteImport.update({
-  id: '/callback',
-  path: '/callback',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -69,6 +54,21 @@ const OnboardingOrganizationRoute = OnboardingOrganizationRouteImport.update({
   path: '/onboarding/organization',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthSignoutRoute = AuthSignoutRouteImport.update({
+  id: '/_auth/signout',
+  path: '/signout',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthSigninRoute = AuthSigninRouteImport.update({
+  id: '/_auth/signin',
+  path: '/signin',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthCallbackRoute = AuthCallbackRouteImport.update({
+  id: '/_auth/callback',
+  path: '/callback',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const OrgOrgIdIndexRoute = OrgOrgIdIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -97,9 +97,9 @@ const OrgOrgIdAdminRoute = OrgOrgIdAdminRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/callback': typeof CallbackRoute
-  '/signin': typeof SigninRoute
-  '/signout': typeof SignoutRoute
+  '/callback': typeof AuthCallbackRoute
+  '/signin': typeof AuthSigninRoute
+  '/signout': typeof AuthSignoutRoute
   '/onboarding/organization': typeof OnboardingOrganizationRoute
   '/onboarding/profile': typeof OnboardingProfileRoute
   '/onboarding/subscription': typeof OnboardingSubscriptionRoute
@@ -113,9 +113,9 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/callback': typeof CallbackRoute
-  '/signin': typeof SigninRoute
-  '/signout': typeof SignoutRoute
+  '/callback': typeof AuthCallbackRoute
+  '/signin': typeof AuthSigninRoute
+  '/signout': typeof AuthSignoutRoute
   '/onboarding/organization': typeof OnboardingOrganizationRoute
   '/onboarding/profile': typeof OnboardingProfileRoute
   '/onboarding/subscription': typeof OnboardingSubscriptionRoute
@@ -129,9 +129,9 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/callback': typeof CallbackRoute
-  '/signin': typeof SigninRoute
-  '/signout': typeof SignoutRoute
+  '/_auth/callback': typeof AuthCallbackRoute
+  '/_auth/signin': typeof AuthSigninRoute
+  '/_auth/signout': typeof AuthSignoutRoute
   '/onboarding/organization': typeof OnboardingOrganizationRoute
   '/onboarding/profile': typeof OnboardingProfileRoute
   '/onboarding/subscription': typeof OnboardingSubscriptionRoute
@@ -178,9 +178,9 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
-    | '/callback'
-    | '/signin'
-    | '/signout'
+    | '/_auth/callback'
+    | '/_auth/signin'
+    | '/_auth/signout'
     | '/onboarding/organization'
     | '/onboarding/profile'
     | '/onboarding/subscription'
@@ -195,9 +195,9 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  CallbackRoute: typeof CallbackRoute
-  SigninRoute: typeof SigninRoute
-  SignoutRoute: typeof SignoutRoute
+  AuthCallbackRoute: typeof AuthCallbackRoute
+  AuthSigninRoute: typeof AuthSigninRoute
+  AuthSignoutRoute: typeof AuthSignoutRoute
   OnboardingOrganizationRoute: typeof OnboardingOrganizationRoute
   OnboardingProfileRoute: typeof OnboardingProfileRoute
   OnboardingSubscriptionRoute: typeof OnboardingSubscriptionRoute
@@ -207,27 +207,6 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/signout': {
-      id: '/signout'
-      path: '/signout'
-      fullPath: '/signout'
-      preLoaderRoute: typeof SignoutRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/signin': {
-      id: '/signin'
-      path: '/signin'
-      fullPath: '/signin'
-      preLoaderRoute: typeof SigninRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/callback': {
-      id: '/callback'
-      path: '/callback'
-      fullPath: '/callback'
-      preLoaderRoute: typeof CallbackRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/': {
       id: '/'
       path: '/'
@@ -268,6 +247,27 @@ declare module '@tanstack/react-router' {
       path: '/onboarding/organization'
       fullPath: '/onboarding/organization'
       preLoaderRoute: typeof OnboardingOrganizationRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_auth/signout': {
+      id: '/_auth/signout'
+      path: '/signout'
+      fullPath: '/signout'
+      preLoaderRoute: typeof AuthSignoutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_auth/signin': {
+      id: '/_auth/signin'
+      path: '/signin'
+      fullPath: '/signin'
+      preLoaderRoute: typeof AuthSigninRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_auth/callback': {
+      id: '/_auth/callback'
+      path: '/callback'
+      fullPath: '/callback'
+      preLoaderRoute: typeof AuthCallbackRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/org/$orgId/': {
@@ -330,9 +330,9 @@ const OrgOrgIdRouteWithChildren = OrgOrgIdRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  CallbackRoute: CallbackRoute,
-  SigninRoute: SigninRoute,
-  SignoutRoute: SignoutRoute,
+  AuthCallbackRoute: AuthCallbackRoute,
+  AuthSigninRoute: AuthSigninRoute,
+  AuthSignoutRoute: AuthSignoutRoute,
   OnboardingOrganizationRoute: OnboardingOrganizationRoute,
   OnboardingProfileRoute: OnboardingProfileRoute,
   OnboardingSubscriptionRoute: OnboardingSubscriptionRoute,

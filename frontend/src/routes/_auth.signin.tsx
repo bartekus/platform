@@ -3,7 +3,7 @@ import { useLogto } from "@logto/react";
 import { Button } from "../components/ui/button";
 import { LogIn } from "lucide-react";
 
-export const Route = createFileRoute("/signin")({
+export const Route = createFileRoute("/_auth/signin")({
   component: SignInPage,
 });
 
