@@ -1,5 +1,7 @@
 import { LogtoConfig, UserScope, ReservedResource } from "@logto/react";
 
+import * as routePath from "./constants";
+import { onboardingOrganization, onboardingProfile, onboardingSubscription } from "./constants";
 console.log("import.meta.env");
 console.log(import.meta.env);
 
@@ -49,8 +51,12 @@ export const config: LogtoConfig = {
 
 export const authConfig = {
   apiResourceIndicator: `https://${API_DOMAIN}/api`,
-  signInRedirectUri: `https://${WEB_DOMAIN}/callback`,
-  signOutRedirectUri: `https://${WEB_DOMAIN}/`,
+  signInRedirectUri: `https://${WEB_DOMAIN}${routePath.callback}`,
+  signOutRedirectUri: `https://${WEB_DOMAIN}${routePath.fallbackToRoot}`,
+  onboardingSubscriptionUri: `https://${WEB_DOMAIN}${routePath.onboardingSubscription}`,
+  onboardingVerifyUri: `https://${WEB_DOMAIN}${routePath.onboardingVerify}`,
+  onboardingProfileUri: `https://${WEB_DOMAIN}${routePath.onboardingProfile}`,
+  onboardingOrganizationUri: `https://${WEB_DOMAIN}${routePath.onboardingOrganization}`,
 };
 
 export const encoreApiEndpoint = `https://${API_DOMAIN}`;

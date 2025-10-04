@@ -7,7 +7,7 @@ import getRequestClient from "~/lib/get-request-client";
 import { useSubscriptionApi } from "~/api/subsciption";
 import { fallbackToRoot } from "~/config/constants";
 import PlanCard from "~/components/PlanCard";
-import { appConfig } from "~/config/logto";
+import { authConfig } from "~/config/logto";
 import { stripe } from "~/lib/client";
 
 import type { UserCustomData } from "~/types";
@@ -16,6 +16,8 @@ export const Route = createFileRoute("/onboarding/subscription")({
   // beforeLoad: requireAuth,
   component: SubscriptionPage,
 });
+
+const { signInRedirectUri, signOutRedirectUri } = authConfig;
 
 function SubscriptionPage() {
   const navigate = Route.useNavigate();
@@ -28,7 +30,7 @@ function SubscriptionPage() {
   useEffect(() => {
     const loadPlans = async () => {
       try {
-        const token = await getAccessToken(appConfig.apiResourceIndicator);
+        const token = await getAccessToken(authConfig.apiResourceIndicator);
         if (!token) {
           console.error("No access token available");
           return;
@@ -65,16 +67,16 @@ function SubscriptionPage() {
       const session = await createUserSubscription({
         priceId,
         customerId: customData.stripeCustomerId,
-        successUrl: `${window.location.origin}/onboarding/verify`,
-        cancelUrl: `${window.location.origin}/onboarding/subscription`,
+        successUrl: `${authConfig.onboardingVerifyUri}`,
+        cancelUrl: `${authConfig.onboardingSubscriptionUri}`,
       });
 
-      console.log("session", session);
-
       if (session.success && session.result?.url) {
+        console.log("session success", session);
         await navigate({ to: session.result.url });
         return;
       } else if (session.error && session.result?.url) {
+        console.log("session error", session);
         await navigate({ to: session.result.url });
         return;
       }
