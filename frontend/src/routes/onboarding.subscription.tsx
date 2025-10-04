@@ -17,7 +17,7 @@ export const Route = createFileRoute("/onboarding/subscription")({
   component: SubscriptionPage,
 });
 
-const { signInRedirectUri, signOutRedirectUri } = authConfig;
+const { onboardingVerifyUri, onboardingSubscriptionUri } = authConfig;
 
 function SubscriptionPage() {
   const navigate = Route.useNavigate();
@@ -67,17 +67,17 @@ function SubscriptionPage() {
       const session = await createUserSubscription({
         priceId,
         customerId: customData.stripeCustomerId,
-        successUrl: `${authConfig.onboardingVerifyUri}`,
-        cancelUrl: `${authConfig.onboardingSubscriptionUri}`,
+        successUrl: `${onboardingVerifyUri}`,
+        cancelUrl: `${onboardingSubscriptionUri}`,
       });
 
       if (session.success && session.result?.url) {
         console.log("session success", session);
-        await navigate({ to: session.result.url });
+        window.location.href = session.result.url;
         return;
       } else if (session.error && session.result?.url) {
         console.log("session error", session);
-        await navigate({ to: session.result.url });
+        window.location.href = session.result.url;
         return;
       }
     } catch (error) {
