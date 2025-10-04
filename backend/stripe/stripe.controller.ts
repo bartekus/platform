@@ -1,5 +1,5 @@
-import { api, APIError } from 'encore.dev/api';
-import log from 'encore.dev/log';
+import { api, APIError } from "encore.dev/api";
+import log from "encore.dev/log";
 import {
   SyncableResource,
   SyncOptions,
@@ -45,23 +45,23 @@ import {
   StripePromotionCode,
   GetSubscriptionUrlRequest,
   GetSubscriptionUrl,
-} from './stripe.interface';
-import StripeService from './stripe.service';
-import { stripe } from './stripe.config';
-import { InvalidWebhookSignatureError } from './stripe.errors';
-import { STRIPE_WEBHOOK_SECRET } from './stripe.config';
-import type { IncomingMessage, ServerResponse } from 'http';
-import { handleStripeError } from './stripe.errors';
-import { stripeLogger } from './monitoring.service';
-import { monitorStripeOperation } from './monitoring.service';
-import { logto } from '~encore/clients';
-import { LogtoAPIResponse } from '../api/logto/types';
-import { secret } from 'encore.dev/config';
+} from "./stripe.interface";
+import StripeService from "./stripe.service";
+import { stripe } from "./stripe.config";
+import { InvalidWebhookSignatureError } from "./stripe.errors";
+import { STRIPE_WEBHOOK_SECRET } from "./stripe.config";
+import type { IncomingMessage, ServerResponse } from "http";
+import { handleStripeError } from "./stripe.errors";
+import { stripeLogger } from "./monitoring.service";
+import { monitorStripeOperation } from "./monitoring.service";
+import { logto } from "~encore/clients";
+import { LogtoAPIResponse } from "../api/logto/types";
+import { secret } from "encore.dev/config";
 
 // Secret declarations
-const LOGTO_DOMAIN = secret('LOGTO_DOMAIN');
-const LOGTO_MANAGEMENT_API_APPLICATION_ID = secret('LOGTO_MANAGEMENT_API_APPLICATION_ID');
-const LOGTO_MANAGEMENT_API_APPLICATION_SECRET = secret('LOGTO_MANAGEMENT_API_APPLICATION_SECRET');
+const LOGTO_DOMAIN = secret("LOGTO_DOMAIN");
+const LOGTO_MANAGEMENT_API_APPLICATION_ID = secret("LOGTO_MANAGEMENT_API_APPLICATION_ID");
+const LOGTO_MANAGEMENT_API_APPLICATION_SECRET = secret("LOGTO_MANAGEMENT_API_APPLICATION_SECRET");
 
 interface LogtoWebhookEvent {
   event: string;
@@ -89,16 +89,16 @@ interface LogtoWebhookEvent {
 // Webhook handler
 export const webhook = api.raw(
   {
-    method: 'POST',
-    path: '/stripe/webhooks',
+    method: "POST",
+    path: "/stripe/webhooks",
     bodyLimit: null, // Allow unlimited body size for webhook payloads
   },
   async (req: IncomingMessage, resp: ServerResponse) => {
-    return monitorStripeOperation('webhook_handler', async () => {
+    return monitorStripeOperation("webhook_handler", async () => {
       try {
-        const signature = req.headers['stripe-signature'];
+        const signature = req.headers["stripe-signature"];
         if (!signature) {
-          throw APIError.invalidArgument('Missing stripe signature');
+          throw APIError.invalidArgument("Missing stripe signature");
         }
 
         let event: WebhookEvent;
@@ -109,11 +109,11 @@ export const webhook = api.raw(
           for await (const chunk of req) {
             chunks.push(chunk);
           }
-          const rawBody = Buffer.concat(chunks).toString('utf8');
+          const rawBody = Buffer.concat(chunks).toString("utf8");
 
           event = stripe.webhooks.constructEvent(rawBody, signature, STRIPE_WEBHOOK_SECRET()) as WebhookEvent;
         } catch (err) {
-          stripeLogger.error('Webhook signature verification failed:', err);
+          stripeLogger.error("Webhook signature verification failed:", err);
           throw new InvalidWebhookSignatureError();
         }
 
@@ -160,12 +160,12 @@ export const webhook = api.raw(
           }
 
           // Send response
-          resp.setHeader('Content-Type', 'application/json');
+          resp.setHeader("Content-Type", "application/json");
           resp.end(JSON.stringify({ success: true }));
         } catch (err) {
-          stripeLogger.error('Error processing webhook:', err);
+          stripeLogger.error("Error processing webhook:", err);
           stripeLogger.info(`webhook type: ${event.type}`);
-          throw APIError.internal('Failed to process webhook');
+          throw APIError.internal("Failed to process webhook");
         }
       } catch (err) {
         if (err instanceof APIError) {
@@ -174,34 +174,34 @@ export const webhook = api.raw(
             JSON.stringify({
               success: false,
               error: err.message,
-            }),
+            })
           );
           return;
         }
 
-        stripeLogger.error('Webhook handler error:', err);
+        stripeLogger.error("Webhook handler error:", err);
         resp.statusCode = 500;
         resp.end(
           JSON.stringify({
             success: false,
-            error: 'Internal server error',
-          }),
+            error: "Internal server error",
+          })
         );
       }
     });
-  },
+  }
 );
 
 export const checkLogtoWebhook = api(
-  { method: 'GET', path: '/stripe/logto/webhooks', expose: true }, // ensure reachable on gateway
-  async () => ({ ok: true }), // returns 200
+  { method: "GET", path: "/stripe/logto/webhooks", expose: true }, // ensure reachable on gateway
+  async () => ({ ok: true }) // returns 200
 );
 
 // Logto webhook handler
 export const logtoWebhook = api.raw(
   {
-    method: 'POST',
-    path: '/stripe/logto/webhook',
+    method: "POST",
+    path: "/stripe/logto/webhook",
     bodyLimit: null, // Allow unlimited body size for webhook payloads
     expose: true,
   },
@@ -209,22 +209,22 @@ export const logtoWebhook = api.raw(
     console.log(req);
 
     try {
-      stripeLogger.info('Starting Logto webhook handler');
+      stripeLogger.info("Starting Logto webhook handler");
 
       // Read request body
       const chunks: Uint8Array[] = [];
       for await (const chunk of req) {
         chunks.push(chunk);
       }
-      const rawBody = Buffer.concat(chunks).toString('utf8');
+      const rawBody = Buffer.concat(chunks).toString("utf8");
 
-      stripeLogger.info('Received webhook body:', { rawBody });
+      stripeLogger.info("Received webhook body:", { rawBody });
 
       // Parse JSON body
       const webhookData = JSON.parse(rawBody);
       const { event, user, userId } = webhookData;
 
-      stripeLogger.info('Processing Logto webhook:', {
+      stripeLogger.info("Processing Logto webhook:", {
         event,
         userId,
         email: user?.primaryEmail,
@@ -233,20 +233,20 @@ export const logtoWebhook = api.raw(
       });
 
       // Handle user creation event
-      if (event === 'PostRegister') {
+      if (event === "PostRegister") {
         const email = user?.primaryEmail;
 
         if (!email) {
-          stripeLogger.error('LogtoToStripe', 'Missing email in webhook data');
-          throw APIError.invalidArgument('Email is required for Stripe customer creation');
+          stripeLogger.error("LogtoToStripe", "Missing email in webhook data");
+          throw APIError.invalidArgument("Email is required for Stripe customer creation");
         }
 
         if (!userId) {
-          stripeLogger.error('LogtoToStripe', 'Missing userId in webhook data');
-          throw APIError.invalidArgument('userId is required for Stripe customer creation');
+          stripeLogger.error("LogtoToStripe", "Missing userId in webhook data");
+          throw APIError.invalidArgument("userId is required for Stripe customer creation");
         }
 
-        stripeLogger.info('Creating Stripe customer:', {
+        stripeLogger.info("Creating Stripe customer:", {
           email,
           accountId: userId,
         });
@@ -257,7 +257,7 @@ export const logtoWebhook = api.raw(
           accountId: userId,
         });
 
-        stripeLogger.info('Created Stripe customer, updating Logto user:', {
+        stripeLogger.info("Created Stripe customer, updating Logto user:", {
           stripeCustomerId: customer.id,
         });
 
@@ -265,17 +265,17 @@ export const logtoWebhook = api.raw(
         const accessToken = await logto.getManagementApiToken();
         const logtoUrl = `https://${LOGTO_DOMAIN()}`;
 
-        stripeLogger.info('Got management API token, updating Logto user:', {
+        stripeLogger.info("Got management API token, updating Logto user:", {
           url: `${logtoUrl}/api/users/${userId}`,
           hasToken: !!accessToken,
         });
 
         // Update Logto user's custom data using Management API
         const response = await fetch(`${logtoUrl}/api/users/${userId}`, {
-          method: 'PATCH',
+          method: "PATCH",
           headers: {
             Authorization: `Bearer ${accessToken.token}`, // Use accessToken.token instead of the whole object
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
           body: JSON.stringify({
             customData: {
@@ -286,7 +286,7 @@ export const logtoWebhook = api.raw(
         });
 
         const responseText = await response.text();
-        stripeLogger.info('Logto API response:', {
+        stripeLogger.info("Logto API response:", {
           status: response.status,
           ok: response.ok,
           headers: response.headers,
@@ -295,7 +295,7 @@ export const logtoWebhook = api.raw(
         });
 
         if (!response.ok) {
-          stripeLogger.error('Failed to update Logto user custom data:', {
+          stripeLogger.error("Failed to update Logto user custom data:", {
             status: response.status,
             response: responseText,
             headers: Object.fromEntries(response.headers),
@@ -303,20 +303,20 @@ export const logtoWebhook = api.raw(
           throw new Error(`Failed to update Logto user custom data: ${responseText}`);
         }
 
-        stripeLogger.info('Successfully created Stripe customer and updated Logto user:', {
+        stripeLogger.info("Successfully created Stripe customer and updated Logto user:", {
           userId,
           email,
           stripeCustomerId: customer.id,
         });
       } else {
-        stripeLogger.info('Ignoring non-PostRegister event:', { event });
+        stripeLogger.info("Ignoring non-PostRegister event:", { event });
       }
 
       resp.statusCode = 200;
-      resp.setHeader('Content-Type', 'application/json');
+      resp.setHeader("Content-Type", "application/json");
       resp.end(JSON.stringify({ success: true }));
     } catch (err) {
-      stripeLogger.error('Error processing Logto webhook:', err);
+      stripeLogger.error("Error processing Logto webhook:", err);
 
       if (err instanceof APIError) {
         resp.statusCode = Number(err.code);
@@ -324,7 +324,7 @@ export const logtoWebhook = api.raw(
           JSON.stringify({
             success: false,
             error: err.message,
-          }),
+          })
         );
         return;
       }
@@ -333,11 +333,11 @@ export const logtoWebhook = api.raw(
       resp.end(
         JSON.stringify({
           success: false,
-          error: 'Internal server error',
-        }),
+          error: "Internal server error",
+        })
       );
     }
-  },
+  }
 );
 
 /*
@@ -350,8 +350,8 @@ export const logtoWebhook = api.raw(
 // Customer creation endpoint
 export const createCustomer = api(
   {
-    method: 'POST',
-    path: '/stripe/customers',
+    method: "POST",
+    path: "/stripe/customers",
     auth: true,
   },
   async (params: CreateCustomerRequest): Promise<StripeResponse<StripeCustomer>> => {
@@ -359,17 +359,17 @@ export const createCustomer = api(
       const customer = await StripeService.customers.create(params);
       return { success: true, result: customer };
     } catch (error) {
-      stripeLogger.error('Failed to create customer', error);
+      stripeLogger.error("Failed to create customer", error);
       throw handleStripeError(error);
     }
-  },
+  }
 );
 
 // Product creation endpoint
 export const createProduct = api(
   {
-    method: 'POST',
-    path: '/stripe/products',
+    method: "POST",
+    path: "/stripe/products",
     auth: true,
   },
   async (params: CreateProductRequest): Promise<StripeResponse<StripeProduct>> => {
@@ -377,17 +377,17 @@ export const createProduct = api(
       const product = await StripeService.products.create(params);
       return { success: true, result: product };
     } catch (error) {
-      stripeLogger.error('Failed to create product', error);
+      stripeLogger.error("Failed to create product", error);
       throw handleStripeError(error);
     }
-  },
+  }
 );
 
 // Price creation endpoint
 export const createPrice = api(
   {
-    method: 'POST',
-    path: '/stripe/prices',
+    method: "POST",
+    path: "/stripe/prices",
     auth: true,
   },
   async (params: CreatePriceRequest) => {
@@ -395,17 +395,17 @@ export const createPrice = api(
       const price = await StripeService.prices.create(params);
       return { success: true, result: price };
     } catch (error) {
-      stripeLogger.error('Failed to create price:', error);
+      stripeLogger.error("Failed to create price:", error);
       throw handleStripeError(error);
     }
-  },
+  }
 );
 
 // List products endpoint
 export const listProducts = api(
   {
-    method: 'GET',
-    path: '/stripe/products',
+    method: "GET",
+    path: "/stripe/products",
     auth: true,
   },
   async (params: ListProductsRequest): Promise<StripeResponse<StripeProduct[]>> => {
@@ -418,17 +418,17 @@ export const listProducts = api(
         nextPageToken: products[products.length - 1]?.id,
       };
     } catch (error) {
-      stripeLogger.error('Failed to list products:', error);
+      stripeLogger.error("Failed to list products:", error);
       throw handleStripeError(error);
     }
-  },
+  }
 );
 
 // List prices endpoint
 export const listPrices = api(
   {
-    method: 'GET',
-    path: '/stripe/prices',
+    method: "GET",
+    path: "/stripe/prices",
     auth: true,
   },
   async (params: ListPricesRequest): Promise<StripeResponse<StripePrice[]>> => {
@@ -436,17 +436,17 @@ export const listPrices = api(
       const prices = await StripeService.prices.list(params);
       return { success: true, result: prices };
     } catch (error) {
-      stripeLogger.error('Failed to list prices:', error);
+      stripeLogger.error("Failed to list prices:", error);
       throw handleStripeError(error);
     }
-  },
+  }
 );
 
 // Update billing portal endpoint
 export const createBillingPortalSession = api(
   {
-    method: 'POST',
-    path: '/stripe/billing-portal',
+    method: "POST",
+    path: "/stripe/billing-portal",
     auth: true,
   },
   async (params: CreateBillingPortalSessionRequest): Promise<StripeResponse<StripeBillingPortalSession>> => {
@@ -454,17 +454,17 @@ export const createBillingPortalSession = api(
       const session = await StripeService.billingPortal.createSession(params);
       return { success: true, result: session };
     } catch (error) {
-      stripeLogger.error('Failed to create billing portal session:', error);
+      stripeLogger.error("Failed to create billing portal session:", error);
       throw handleStripeError(error);
     }
-  },
+  }
 );
 
 // Update checkout session endpoint
 export const createCheckoutSession = api(
   {
-    method: 'POST',
-    path: '/stripe/checkout',
+    method: "POST",
+    path: "/stripe/checkout",
     auth: true,
   },
   async (params: CreateCheckoutSessionRequest): Promise<StripeResponse<StripeCheckoutSession>> => {
@@ -472,17 +472,17 @@ export const createCheckoutSession = api(
       const session = await StripeService.checkout.create(params);
       return { success: true, result: session };
     } catch (error) {
-      stripeLogger.error('Failed to create checkout session:', error);
+      stripeLogger.error("Failed to create checkout session:", error);
       throw handleStripeError(error);
     }
-  },
+  }
 );
 
 // Update subscription update endpoint
 export const updateSubscription = api(
   {
-    method: 'PATCH',
-    path: '/stripe/subscriptions/:id',
+    method: "PATCH",
+    path: "/stripe/subscriptions/:id",
     auth: true,
   },
   async (params: UpdateSubscriptionRequest): Promise<StripeResponse<StripeSubscription>> => {
@@ -491,17 +491,17 @@ export const updateSubscription = api(
       const subscription = await StripeService.subscriptions.update(id, updateData);
       return { success: true, result: subscription };
     } catch (error) {
-      stripeLogger.error('Failed to update subscription:', error);
+      stripeLogger.error("Failed to update subscription:", error);
       throw handleStripeError(error);
     }
-  },
+  }
 );
 
 // Update sync endpoint
 export const syncStripeData = api(
   {
-    method: 'POST',
-    path: '/stripe/sync',
+    method: "POST",
+    path: "/stripe/sync",
     auth: true,
   },
   async (params: SyncStripeDataRequest): Promise<StripeResponse<SyncResult[]>> => {
@@ -514,17 +514,17 @@ export const syncStripeData = api(
       }));
       return { success: true, result: results };
     } catch (error) {
-      stripeLogger.error('Failed to sync Stripe data:', error);
+      stripeLogger.error("Failed to sync Stripe data:", error);
       throw handleStripeError(error);
     }
-  },
+  }
 );
 
 // Update setup intent endpoint
 export const createSetupIntent = api(
   {
-    method: 'POST',
-    path: '/stripe/setup-intents',
+    method: "POST",
+    path: "/stripe/setup-intents",
     auth: true,
   },
   async (params: CreateSetupIntentRequest): Promise<StripeResponse<StripeSetupIntent>> => {
@@ -532,17 +532,17 @@ export const createSetupIntent = api(
       const setupIntent = await StripeService.setupIntents.create(params);
       return { success: true, result: setupIntent };
     } catch (error) {
-      stripeLogger.error('Failed to create setup intent:', error);
+      stripeLogger.error("Failed to create setup intent:", error);
       throw handleStripeError(error);
     }
-  },
+  }
 );
 
 // Update tax ID endpoints
 export const createTaxId = api(
   {
-    method: 'POST',
-    path: '/stripe/customers/:customerId/tax-ids',
+    method: "POST",
+    path: "/stripe/customers/:customerId/tax-ids",
     auth: true,
   },
   async (params: CreateTaxIdRequest): Promise<StripeResponse<StripeTaxId>> => {
@@ -550,16 +550,16 @@ export const createTaxId = api(
       const taxId = await StripeService.taxIds.create(params);
       return { success: true, result: taxId };
     } catch (error) {
-      stripeLogger.error('Failed to create tax ID:', error);
+      stripeLogger.error("Failed to create tax ID:", error);
       throw handleStripeError(error);
     }
-  },
+  }
 );
 
 export const listTaxIds = api(
   {
-    method: 'GET',
-    path: '/stripe/customers/:customerId/tax-ids',
+    method: "GET",
+    path: "/stripe/customers/:customerId/tax-ids",
     auth: true,
   },
   async (params: { customerId: string }) => {
@@ -567,16 +567,16 @@ export const listTaxIds = api(
       const taxIds = await StripeService.taxIds.list(params.customerId);
       return { success: true, result: taxIds };
     } catch (error) {
-      stripeLogger.error('Failed to list tax IDs:', error);
+      stripeLogger.error("Failed to list tax IDs:", error);
       throw handleStripeError(error);
     }
-  },
+  }
 );
 
 export const deleteTaxId = api(
   {
-    method: 'DELETE',
-    path: '/stripe/customers/:customerId/tax-ids/:taxIdId',
+    method: "DELETE",
+    path: "/stripe/customers/:customerId/tax-ids/:taxIdId",
     auth: true,
   },
   async (params: { customerId: string; taxIdId: string }) => {
@@ -584,17 +584,17 @@ export const deleteTaxId = api(
       await StripeService.taxIds.delete(params.customerId, params.taxIdId);
       return { success: true };
     } catch (error) {
-      stripeLogger.error('Failed to delete tax ID:', error);
+      stripeLogger.error("Failed to delete tax ID:", error);
       throw handleStripeError(error);
     }
-  },
+  }
 );
 
 // Add subscription schedule endpoints
 export const createSubscriptionSchedule = api(
   {
-    method: 'POST',
-    path: '/stripe/subscription-schedules',
+    method: "POST",
+    path: "/stripe/subscription-schedules",
     auth: true,
   },
   async (params: {
@@ -621,16 +621,16 @@ export const createSubscriptionSchedule = api(
       const schedule = await StripeService.subscriptionSchedules.create(convertedParams);
       return { success: true, result: schedule };
     } catch (error) {
-      stripeLogger.error('Failed to create subscription schedule:', error);
+      stripeLogger.error("Failed to create subscription schedule:", error);
       throw handleStripeError(error);
     }
-  },
+  }
 );
 
 export const cancelSubscriptionSchedule = api(
   {
-    method: 'POST',
-    path: '/stripe/subscription-schedules/:id/cancel',
+    method: "POST",
+    path: "/stripe/subscription-schedules/:id/cancel",
     auth: true,
   },
   async (params: { id: string }) => {
@@ -638,16 +638,16 @@ export const cancelSubscriptionSchedule = api(
       const schedule = await StripeService.subscriptionSchedules.cancel(params.id);
       return { success: true, result: schedule };
     } catch (error) {
-      stripeLogger.error('Failed to cancel subscription schedule:', error);
+      stripeLogger.error("Failed to cancel subscription schedule:", error);
       throw handleStripeError(error);
     }
-  },
+  }
 );
 
 export const releaseSubscriptionSchedule = api(
   {
-    method: 'POST',
-    path: '/stripe/subscription-schedules/:id/release',
+    method: "POST",
+    path: "/stripe/subscription-schedules/:id/release",
     auth: true,
   },
   async (params: { id: string }) => {
@@ -655,17 +655,17 @@ export const releaseSubscriptionSchedule = api(
       const schedule = await StripeService.subscriptionSchedules.release(params.id);
       return { success: true, result: schedule };
     } catch (error) {
-      stripeLogger.error('Failed to release subscription schedule:', error);
+      stripeLogger.error("Failed to release subscription schedule:", error);
       throw handleStripeError(error);
     }
-  },
+  }
 );
 
 // Update subscription item endpoints
 export const createSubscriptionItem = api(
   {
-    method: 'POST',
-    path: '/stripe/subscriptions/:subscriptionId/items',
+    method: "POST",
+    path: "/stripe/subscriptions/:subscriptionId/items",
     auth: true,
   },
   async (params: CreateSubscriptionItemRequest): Promise<StripeResponse<StripeSubscriptionItem>> => {
@@ -673,16 +673,16 @@ export const createSubscriptionItem = api(
       const item = await StripeService.subscriptionItems.create(params);
       return { success: true, result: item };
     } catch (error) {
-      stripeLogger.error('Failed to create subscription item:', error);
+      stripeLogger.error("Failed to create subscription item:", error);
       throw handleStripeError(error);
     }
-  },
+  }
 );
 
 export const updateSubscriptionItem = api(
   {
-    method: 'PATCH',
-    path: '/stripe/subscription-items/:id',
+    method: "PATCH",
+    path: "/stripe/subscription-items/:id",
     auth: true,
   },
   async (params: UpdateSubscriptionItemRequest): Promise<StripeResponse<StripeSubscriptionItem>> => {
@@ -691,16 +691,16 @@ export const updateSubscriptionItem = api(
       const item = await StripeService.subscriptionItems.update(id, updateData);
       return { success: true, result: item };
     } catch (error) {
-      stripeLogger.error('Failed to update subscription item:', error);
+      stripeLogger.error("Failed to update subscription item:", error);
       throw handleStripeError(error);
     }
-  },
+  }
 );
 
 export const deleteSubscriptionItem = api(
   {
-    method: 'DELETE',
-    path: '/stripe/subscription-items/:id',
+    method: "DELETE",
+    path: "/stripe/subscription-items/:id",
     auth: true,
   },
   async (params: { id: string }) => {
@@ -708,16 +708,16 @@ export const deleteSubscriptionItem = api(
       await StripeService.subscriptionItems.delete(params.id);
       return { success: true };
     } catch (error) {
-      stripeLogger.error('Failed to delete subscription item:', error);
+      stripeLogger.error("Failed to delete subscription item:", error);
       throw handleStripeError(error);
     }
-  },
+  }
 );
 
 export const listSubscriptionItems = api(
   {
-    method: 'GET',
-    path: '/stripe/subscriptions/:subscriptionId/items',
+    method: "GET",
+    path: "/stripe/subscriptions/:subscriptionId/items",
     auth: true,
   },
   async (params: { subscriptionId: string }) => {
@@ -725,17 +725,17 @@ export const listSubscriptionItems = api(
       const items = await StripeService.subscriptionItems.list(params.subscriptionId);
       return { success: true, result: items };
     } catch (error) {
-      stripeLogger.error('Failed to list subscription items:', error);
+      stripeLogger.error("Failed to list subscription items:", error);
       throw handleStripeError(error);
     }
-  },
+  }
 );
 
 // Update refund endpoints
 export const createRefund = api(
   {
-    method: 'POST',
-    path: '/stripe/refunds',
+    method: "POST",
+    path: "/stripe/refunds",
     auth: true,
   },
   async (params: {
@@ -748,16 +748,16 @@ export const createRefund = api(
       const refund = await StripeService.refunds.create(params);
       return { success: true, result: refund };
     } catch (error) {
-      stripeLogger.error('Failed to create refund:', error);
+      stripeLogger.error("Failed to create refund:", error);
       throw handleStripeError(error);
     }
-  },
+  }
 );
 
 export const getRefund = api(
   {
-    method: 'GET',
-    path: '/stripe/refunds/:id',
+    method: "GET",
+    path: "/stripe/refunds/:id",
     auth: true,
   },
   async (params: { id: string }) => {
@@ -765,16 +765,16 @@ export const getRefund = api(
       const refund = await StripeService.refunds.retrieve(params.id);
       return { success: true, result: refund };
     } catch (error) {
-      stripeLogger.error('Failed to retrieve refund:', error);
+      stripeLogger.error("Failed to retrieve refund:", error);
       throw handleStripeError(error);
     }
-  },
+  }
 );
 
 export const updateRefund = api(
   {
-    method: 'PATCH',
-    path: '/stripe/refunds/:id',
+    method: "PATCH",
+    path: "/stripe/refunds/:id",
     auth: true,
   },
   async (params: UpdateRefundRequest): Promise<StripeResponse<StripeRefund>> => {
@@ -783,16 +783,16 @@ export const updateRefund = api(
       const refund = await StripeService.refunds.update(id, updateData);
       return { success: true, result: refund };
     } catch (error) {
-      stripeLogger.error('Failed to update refund:', error);
+      stripeLogger.error("Failed to update refund:", error);
       throw handleStripeError(error);
     }
-  },
+  }
 );
 
 export const listRefunds = api(
   {
-    method: 'GET',
-    path: '/stripe/refunds',
+    method: "GET",
+    path: "/stripe/refunds",
     auth: true,
   },
   async (params: ListRefundsRequest): Promise<StripeResponse<StripeRefund[]>> => {
@@ -800,40 +800,40 @@ export const listRefunds = api(
       const refunds = await StripeService.refunds.list(params);
       return { success: true, result: refunds };
     } catch (error) {
-      stripeLogger.error('Failed to list refunds:', error);
+      stripeLogger.error("Failed to list refunds:", error);
       throw handleStripeError(error);
     }
-  },
+  }
 );
 
 // Add usage record endpoints
 export const createUsageRecord = api(
   {
-    method: 'POST',
-    path: '/stripe/subscription-items/:subscriptionItemId/usage',
+    method: "POST",
+    path: "/stripe/subscription-items/:subscriptionItemId/usage",
     auth: true,
   },
   async (params: {
     subscriptionItemId: string;
     quantity: number;
     timestamp?: number;
-    action?: 'increment' | 'set';
+    action?: "increment" | "set";
     metadata?: Record<string, any>;
   }) => {
     try {
       const usageRecord = await StripeService.usageRecords.create(params);
       return { success: true, result: usageRecord };
     } catch (error) {
-      stripeLogger.error('Failed to create usage record:', error);
+      stripeLogger.error("Failed to create usage record:", error);
       throw handleStripeError(error);
     }
-  },
+  }
 );
 
 export const listUsageRecords = api(
   {
-    method: 'GET',
-    path: '/stripe/subscription-items/:subscriptionItemId/usage',
+    method: "GET",
+    path: "/stripe/subscription-items/:subscriptionItemId/usage",
     auth: true,
   },
   async (params: { subscriptionItemId: string; limit?: number; startingAfter?: string }) => {
@@ -842,17 +842,17 @@ export const listUsageRecords = api(
       const usageRecords = await StripeService.usageRecords.list(subscriptionItemId, listParams);
       return { success: true, result: usageRecords };
     } catch (error) {
-      stripeLogger.error('Failed to list usage records:', error);
+      stripeLogger.error("Failed to list usage records:", error);
       throw handleStripeError(error);
     }
-  },
+  }
 );
 
 // Update coupon endpoints
 export const listCoupons = api(
   {
-    method: 'GET',
-    path: '/stripe/coupons',
+    method: "GET",
+    path: "/stripe/coupons",
     auth: true,
   },
   async (params: ListCouponsRequest): Promise<StripeResponse<StripeCoupon[]>> => {
@@ -860,17 +860,17 @@ export const listCoupons = api(
       const coupons = await StripeService.coupons.list(params);
       return { success: true, result: coupons };
     } catch (error) {
-      stripeLogger.error('Failed to list coupons:', error);
+      stripeLogger.error("Failed to list coupons:", error);
       throw handleStripeError(error);
     }
-  },
+  }
 );
 
 // Update promotion code endpoints
 export const listPromotionCodes = api(
   {
-    method: 'GET',
-    path: '/stripe/promotion-codes',
+    method: "GET",
+    path: "/stripe/promotion-codes",
     auth: true,
   },
   async (params: ListPromotionCodesRequest): Promise<StripeResponse<StripePromotionCode[]>> => {
@@ -878,17 +878,17 @@ export const listPromotionCodes = api(
       const promotionCodes = await StripeService.promotionCodes.list(params);
       return { success: true, result: promotionCodes };
     } catch (error) {
-      stripeLogger.error('Failed to list promotion codes:', error);
+      stripeLogger.error("Failed to list promotion codes:", error);
       throw handleStripeError(error);
     }
-  },
+  }
 );
 
 // List plans endpoint
 export const listPlans = api(
   {
-    method: 'GET',
-    path: '/stripe/plans',
+    method: "GET",
+    path: "/stripe/plans",
     auth: true,
     expose: true,
   },
@@ -898,7 +898,7 @@ export const listPlans = api(
       const prices = await listPrices(params);
 
       if (!products.result || !prices.result) {
-        throw APIError.internal('Failed to list products or prices');
+        throw APIError.internal("Failed to list products or prices");
       }
 
       if (products.result.length === 0) {
@@ -928,16 +928,16 @@ export const listPlans = api(
         nextPageToken: plans[plans.length - 1]?.id,
       };
     } catch (error) {
-      stripeLogger.error('Failed to list products:', error);
+      stripeLogger.error("Failed to list products:", error);
       throw handleStripeError(error);
     }
-  },
+  }
 );
 
 export const getSubscriptionUrl = api(
   {
-    method: 'POST',
-    path: '/stripe/subscription-url',
+    method: "POST",
+    path: "/stripe/subscription-url",
     auth: true,
     expose: true,
   },
@@ -945,15 +945,13 @@ export const getSubscriptionUrl = api(
     try {
       const session = await StripeService.checkout.create({
         priceId: params.priceId,
-        successUrl: params.successUrl,
-        cancelUrl: params.cancelUrl,
         customerId: params.customerId,
-        mode: 'subscription',
+        mode: "subscription",
         quantity: 1,
       });
 
       if (!session.url) {
-        throw new Error('Failed to generate subscription URL');
+        throw new Error("Failed to generate subscription URL");
       }
 
       return {
@@ -961,8 +959,8 @@ export const getSubscriptionUrl = api(
         result: { url: session.url },
       };
     } catch (error) {
-      stripeLogger.error('Failed to generate subscription URL:', error);
+      stripeLogger.error("Failed to generate subscription URL:", error);
       throw handleStripeError(error);
     }
-  },
+  }
 );

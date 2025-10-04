@@ -1,5 +1,5 @@
-import { Stripe } from 'stripe';
-import { getSubscriptionUrl } from './stripe.controller';
+import { Stripe } from "stripe";
+import { getSubscriptionUrl } from "./stripe.controller";
 
 // Core Response Types
 export interface StripeResponse<T> {
@@ -72,9 +72,9 @@ export interface StripeSubscription {
 }
 
 // Refund Types
-export type RefundStatus = 'succeeded' | 'pending' | 'failed' | 'canceled';
-export type RefundReason = 'duplicate' | 'fraudulent' | 'requested_by_customer';
-export type RefundResponseReason = RefundReason | 'expired_uncaptured_charge';
+export type RefundStatus = "succeeded" | "pending" | "failed" | "canceled";
+export type RefundReason = "duplicate" | "fraudulent" | "requested_by_customer";
+export type RefundResponseReason = RefundReason | "expired_uncaptured_charge";
 
 export interface StripeRefund {
   id: string;
@@ -129,9 +129,9 @@ export interface StripePrice {
   productId: string;
   currency: string;
   unitAmount: number | null;
-  type: 'one_time' | 'recurring';
+  type: "one_time" | "recurring";
   recurring: {
-    interval: 'day' | 'week' | 'month' | 'year';
+    interval: "day" | "week" | "month" | "year";
     interval_count?: number;
   } | null;
   active: boolean;
@@ -160,7 +160,7 @@ export interface SyncResult {
   resource: SyncableResource;
 }
 
-export type SyncableResource = 'customers' | 'subscriptions' | 'products' | 'prices';
+export type SyncableResource = "customers" | "subscriptions" | "products" | "prices";
 
 export interface StripeTaxId {
   id: string;
@@ -215,19 +215,19 @@ export interface StripeSubscriptionScheduleCurrentPhase {
     quantity: number | null;
   }> | null;
   application_fee_percent: number | null;
-  billing_cycle_anchor: 'automatic' | 'phase_start' | null;
+  billing_cycle_anchor: "automatic" | "phase_start" | null;
   billing_thresholds: {
     amount_gte: number;
     reset_billing_cycle_anchor: boolean;
   } | null;
-  collection_method: 'charge_automatically' | 'send_invoice' | null;
+  collection_method: "charge_automatically" | "send_invoice" | null;
   coupon: string | null;
   default_payment_method: string | null;
   invoice_settings: {
     days_until_due: number;
   } | null;
   metadata: Record<string, any> | null;
-  proration_behavior: 'always_invoice' | 'create_prorations' | 'none' | null;
+  proration_behavior: "always_invoice" | "create_prorations" | "none" | null;
   transfer_data: {
     destination: string;
     amount_percent: number;
@@ -244,7 +244,7 @@ export interface StripeSubscriptionSchedule {
   id: string;
   customerId: string;
   subscriptionId: string | null;
-  status: 'active' | 'canceled' | 'completed' | 'not_started' | 'released';
+  status: "active" | "canceled" | "completed" | "not_started" | "released";
   phases: StripeSubscriptionSchedulePhase[];
   currentPhase: StripeSubscriptionScheduleCurrentPhase | null;
   metadata: Record<string, any>;
@@ -298,7 +298,7 @@ export interface StripeUsageRecord {
   subscriptionItemId: string;
   quantity: number;
   timestamp: Date;
-  action: 'increment' | 'set';
+  action: "increment" | "set";
   metadata: Record<string, any>;
 }
 
@@ -316,7 +316,7 @@ export interface StripePromotionCode {
 }
 
 // Add Coupon types
-export type StripeCouponDuration = 'forever' | 'once' | 'repeating';
+export type StripeCouponDuration = "forever" | "once" | "repeating";
 
 export interface StripeCoupon {
   id: string;
@@ -377,13 +377,13 @@ export const ensureMetadata = (metadata: Stripe.Metadata | null): Record<string,
 };
 
 // Update subscription status type
-export type SubscriptionStatus = 'active' | 'past_due' | 'unpaid' | 'canceled' | 'incomplete' | 'incomplete_expired' | 'trialing';
+export type SubscriptionStatus = "active" | "past_due" | "unpaid" | "canceled" | "incomplete" | "incomplete_expired" | "trialing";
 
 // Update payment method type
 export type PaymentMethodType = Stripe.PaymentMethod.Type;
 
 // Update usage record types
-export type UsageRecordAction = 'increment' | 'set';
+export type UsageRecordAction = "increment" | "set";
 
 // Update coupon types
 export type CouponDuration = Stripe.Coupon.Duration;
@@ -397,7 +397,7 @@ export interface PortalConfiguration {
   };
   features?: {
     customer_update?: {
-      allowed_updates?: Array<'email' | 'address' | 'phone' | 'tax_id'>;
+      allowed_updates?: Array<"email" | "address" | "phone" | "tax_id">;
       enabled: boolean;
     };
     invoice_history?: {
@@ -408,8 +408,8 @@ export interface PortalConfiguration {
     };
     subscription_cancel?: {
       enabled: boolean;
-      mode?: 'at_period_end' | 'immediately';
-      proration_behavior?: 'create_prorations' | 'none';
+      mode?: "at_period_end" | "immediately";
+      proration_behavior?: "create_prorations" | "none";
     };
     subscription_pause?: {
       enabled: boolean;
@@ -424,7 +424,7 @@ export const ensureNonNullMetadata = (metadata: Stripe.Metadata | null): Record<
 };
 
 export const ensureNonNullQuantity = (quantity: number | undefined): number | null => {
-  return typeof quantity === 'undefined' ? null : quantity;
+  return typeof quantity === "undefined" ? null : quantity;
 };
 
 export const ensureNonNullString = (value: string | null): string | undefined => {
@@ -453,42 +453,42 @@ export interface StripeSubscriptionSchedulePhaseInput {
 
 // Add these type definitions
 export type TaxIdType =
-  | 'au_abn'
-  | 'eu_vat'
-  | 'in_gst'
-  | 'no_vat'
-  | 'nz_gst'
-  | 'za_vat'
-  | 'br_cnpj'
-  | 'br_cpf'
-  | 'ca_bn'
-  | 'ca_qst'
-  | 'ch_vat'
-  | 'cl_tin'
-  | 'es_cif'
-  | 'gb_vat'
-  | 'hk_br'
-  | 'id_npwp'
-  | 'il_vat'
-  | 'jp_cn'
-  | 'jp_rn'
-  | 'kr_brn'
-  | 'li_uid'
-  | 'mx_rfc'
-  | 'my_frp'
-  | 'my_itn'
-  | 'my_sst'
-  | 'ru_inn'
-  | 'ru_kpp'
-  | 'sa_vat'
-  | 'sg_gst'
-  | 'sg_uen'
-  | 'th_vat'
-  | 'tw_vat'
-  | 'us_ein'
-  | 'za_vat';
+  | "au_abn"
+  | "eu_vat"
+  | "in_gst"
+  | "no_vat"
+  | "nz_gst"
+  | "za_vat"
+  | "br_cnpj"
+  | "br_cpf"
+  | "ca_bn"
+  | "ca_qst"
+  | "ch_vat"
+  | "cl_tin"
+  | "es_cif"
+  | "gb_vat"
+  | "hk_br"
+  | "id_npwp"
+  | "il_vat"
+  | "jp_cn"
+  | "jp_rn"
+  | "kr_brn"
+  | "li_uid"
+  | "mx_rfc"
+  | "my_frp"
+  | "my_itn"
+  | "my_sst"
+  | "ru_inn"
+  | "ru_kpp"
+  | "sa_vat"
+  | "sg_gst"
+  | "sg_uen"
+  | "th_vat"
+  | "tw_vat"
+  | "us_ein"
+  | "za_vat";
 
-export type TaxIdVerificationStatus = 'pending' | 'verified' | 'unverified';
+export type TaxIdVerificationStatus = "pending" | "verified" | "unverified";
 
 export type StripeRefundReason = RefundReason;
 
@@ -518,7 +518,7 @@ export interface StripeUpdatePaymentMethodRequest {
 export interface StripeCreateRefundRequest {
   paymentIntentId: string;
   amount?: number;
-  reason?: 'duplicate' | 'fraudulent' | 'requested_by_customer';
+  reason?: "duplicate" | "fraudulent" | "requested_by_customer";
   metadata?: Record<string, any>;
 }
 
@@ -526,66 +526,66 @@ export interface StripeCreateUsageRecordRequest {
   subscriptionItemId: string;
   quantity: number;
   timestamp?: number;
-  action?: 'increment' | 'set';
+  action?: "increment" | "set";
   metadata?: Record<string, any>;
 }
 
 // Add webhook event type enum
 export enum WebhookEventType {
-  CustomerCreated = 'customer.created',
-  CustomerUpdated = 'customer.updated',
-  CustomerDeleted = 'customer.deleted',
-  SubscriptionCreated = 'customer.subscription.created',
-  SubscriptionUpdated = 'customer.subscription.updated',
-  SubscriptionDeleted = 'customer.subscription.deleted',
-  PriceCreated = 'price.created',
-  PriceUpdated = 'price.updated',
-  PriceDeleted = 'price.deleted',
-  ProductCreated = 'product.created',
-  ProductUpdated = 'product.updated',
-  ProductDeleted = 'product.deleted',
-  PaymentSucceeded = 'payment_intent.succeeded',
-  PaymentFailed = 'payment_intent.payment_failed',
-  InvoicePaid = 'invoice.paid',
-  InvoicePaymentFailed = 'invoice.payment_failed',
-  SetupIntentSucceeded = 'setup_intent.succeeded',
-  SetupIntentFailed = 'setup_intent.failed',
-  TaxIdCreated = 'tax_id.created',
-  TaxIdUpdated = 'tax_id.updated',
-  TaxIdDeleted = 'tax_id.deleted',
-  SubscriptionScheduleCreated = 'subscription_schedule.created',
-  SubscriptionScheduleUpdated = 'subscription_schedule.updated',
-  SubscriptionScheduleCanceled = 'subscription_schedule.canceled',
-  SubscriptionScheduleCompleted = 'subscription_schedule.completed',
-  SubscriptionScheduleReleased = 'subscription_schedule.released',
-  SubscriptionItemCreated = 'subscription_item.created',
-  SubscriptionItemUpdated = 'subscription_item.updated',
-  SubscriptionItemDeleted = 'subscription_item.deleted',
-  PaymentMethodAttached = 'payment_method.attached',
-  PaymentMethodDetached = 'payment_method.detached',
-  PaymentMethodUpdated = 'payment_method.updated',
-  RefundCreated = 'refund.created',
-  RefundUpdated = 'refund.updated',
-  RefundFailed = 'refund.failed',
-  UsageRecordCreated = 'usage_record.created',
-  UsageRecordUpdated = 'usage_record.updated',
-  PromotionCodeCreated = 'promotion_code.created',
-  PromotionCodeUpdated = 'promotion_code.updated',
-  CouponCreated = 'coupon.created',
-  CouponUpdated = 'coupon.updated',
-  CouponDeleted = 'coupon.deleted',
-  PlanCreated = 'plan.created',
-  PlanUpdated = 'plan.updated',
-  PlanDeleted = 'plan.deleted',
-  SetupIntentRequiresAction = 'setup_intent.requires_action',
-  SetupIntentRequiresConfirmation = 'setup_intent.requires_confirmation',
-  PaymentMethodAutomaticallyUpdated = 'payment_method.automatically_updated',
-  PaymentMethodRequiresAction = 'payment_method.requires_action',
-  InvoiceFinalized = 'invoice.finalized',
-  InvoiceMarkedUncollectible = 'invoice.marked_uncollectible',
-  InvoiceSent = 'invoice.sent',
-  InvoiceUpcoming = 'invoice.upcoming',
-  InvoiceVoided = 'invoice.voided',
+  CustomerCreated = "customer.created",
+  CustomerUpdated = "customer.updated",
+  CustomerDeleted = "customer.deleted",
+  SubscriptionCreated = "customer.subscription.created",
+  SubscriptionUpdated = "customer.subscription.updated",
+  SubscriptionDeleted = "customer.subscription.deleted",
+  PriceCreated = "price.created",
+  PriceUpdated = "price.updated",
+  PriceDeleted = "price.deleted",
+  ProductCreated = "product.created",
+  ProductUpdated = "product.updated",
+  ProductDeleted = "product.deleted",
+  PaymentSucceeded = "payment_intent.succeeded",
+  PaymentFailed = "payment_intent.payment_failed",
+  InvoicePaid = "invoice.paid",
+  InvoicePaymentFailed = "invoice.payment_failed",
+  SetupIntentSucceeded = "setup_intent.succeeded",
+  SetupIntentFailed = "setup_intent.failed",
+  TaxIdCreated = "tax_id.created",
+  TaxIdUpdated = "tax_id.updated",
+  TaxIdDeleted = "tax_id.deleted",
+  SubscriptionScheduleCreated = "subscription_schedule.created",
+  SubscriptionScheduleUpdated = "subscription_schedule.updated",
+  SubscriptionScheduleCanceled = "subscription_schedule.canceled",
+  SubscriptionScheduleCompleted = "subscription_schedule.completed",
+  SubscriptionScheduleReleased = "subscription_schedule.released",
+  SubscriptionItemCreated = "subscription_item.created",
+  SubscriptionItemUpdated = "subscription_item.updated",
+  SubscriptionItemDeleted = "subscription_item.deleted",
+  PaymentMethodAttached = "payment_method.attached",
+  PaymentMethodDetached = "payment_method.detached",
+  PaymentMethodUpdated = "payment_method.updated",
+  RefundCreated = "refund.created",
+  RefundUpdated = "refund.updated",
+  RefundFailed = "refund.failed",
+  UsageRecordCreated = "usage_record.created",
+  UsageRecordUpdated = "usage_record.updated",
+  PromotionCodeCreated = "promotion_code.created",
+  PromotionCodeUpdated = "promotion_code.updated",
+  CouponCreated = "coupon.created",
+  CouponUpdated = "coupon.updated",
+  CouponDeleted = "coupon.deleted",
+  PlanCreated = "plan.created",
+  PlanUpdated = "plan.updated",
+  PlanDeleted = "plan.deleted",
+  SetupIntentRequiresAction = "setup_intent.requires_action",
+  SetupIntentRequiresConfirmation = "setup_intent.requires_confirmation",
+  PaymentMethodAutomaticallyUpdated = "payment_method.automatically_updated",
+  PaymentMethodRequiresAction = "payment_method.requires_action",
+  InvoiceFinalized = "invoice.finalized",
+  InvoiceMarkedUncollectible = "invoice.marked_uncollectible",
+  InvoiceSent = "invoice.sent",
+  InvoiceUpcoming = "invoice.upcoming",
+  InvoiceVoided = "invoice.voided",
 }
 
 // Add request types
@@ -604,7 +604,7 @@ export interface CreatePriceRequest {
   unitAmount: number;
   currency: string;
   recurring?: {
-    interval: 'day' | 'week' | 'month' | 'year';
+    interval: "day" | "week" | "month" | "year";
     interval_count?: number;
   };
 }
@@ -631,8 +631,6 @@ export interface CreateBillingPortalSessionRequest {
 
 export interface GetSubscriptionUrlRequest {
   priceId: string;
-  successUrl: string;
-  cancelUrl: string;
   customerId?: string;
 }
 
@@ -649,13 +647,13 @@ export interface CreateCheckoutSessionRequest {
   }>;
   successUrl: string;
   cancelUrl: string;
-  mode?: 'subscription' | 'payment';
+  mode?: "subscription" | "payment";
   quantity?: number;
   metadata?: Record<string, any>;
   allowPromotionCodes?: boolean;
   collectPhoneNumber?: boolean;
   collectShippingAddress?: boolean;
-  paymentMethodTypes?: Array<'card' | 'us_bank_account' | 'sepa_debit'>;
+  paymentMethodTypes?: Array<"card" | "us_bank_account" | "sepa_debit">;
   subscriptionData?: {
     trialPeriodDays?: number;
     metadata?: Record<string, any>;
@@ -667,14 +665,14 @@ export interface UpdateSubscriptionRequest {
   priceId?: string;
   quantity?: number;
   cancelAtPeriodEnd?: boolean;
-  paymentBehavior?: 'allow_incomplete' | 'error_if_incomplete' | 'pending_if_incomplete';
+  paymentBehavior?: "allow_incomplete" | "error_if_incomplete" | "pending_if_incomplete";
   proration?: boolean;
 }
 
 export interface CreateSetupIntentRequest {
   customerId: string;
   paymentMethodTypes?: string[];
-  usage?: 'off_session' | 'on_session';
+  usage?: "off_session" | "on_session";
   metadata?: Record<string, any>;
 }
 
@@ -721,7 +719,7 @@ export interface CreateUsageRecordRequest {
   subscriptionItemId: string;
   quantity: number;
   timestamp?: number;
-  action?: 'increment' | 'set';
+  action?: "increment" | "set";
   metadata?: Record<string, any>;
 }
 
@@ -734,7 +732,7 @@ export interface ListUsageRecordsRequest {
 // Add missing response types
 export interface StripeBillingPortalSession {
   id: string;
-  object: 'billing_portal.session';
+  object: "billing_portal.session";
   configuration: string | BillingPortalConfiguration;
   created: number;
   customer: string;
@@ -747,7 +745,7 @@ export interface StripeBillingPortalSession {
 
 export interface StripeCheckoutSession {
   id: string;
-  object: 'checkout.session';
+  object: "checkout.session";
   url: string | null;
   customer?: string | null;
   payment_status: string;
@@ -797,7 +795,7 @@ export interface SyncStripeDataRequest {
 // Define portal configuration types
 export interface BillingPortalFeatures {
   payment_method_update?: { enabled: boolean };
-  subscription_cancel?: { enabled: boolean; mode?: 'at_period_end' | 'immediately' };
+  subscription_cancel?: { enabled: boolean; mode?: "at_period_end" | "immediately" };
   subscription_pause?: { enabled: boolean };
   invoice_history?: { enabled: boolean };
 }
