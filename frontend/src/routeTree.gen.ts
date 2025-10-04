@@ -9,13 +9,13 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as AuthRouteImport } from './routes/_auth'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as OrgOrgIdRouteImport } from './routes/org.$orgId'
 import { Route as OnboardingVerifyRouteImport } from './routes/onboarding.verify'
 import { Route as OnboardingSubscriptionRouteImport } from './routes/onboarding.subscription'
 import { Route as OnboardingProfileRouteImport } from './routes/onboarding.profile'
 import { Route as OnboardingOrganizationRouteImport } from './routes/onboarding.organization'
-import { Route as AuthSignoutRouteImport } from './routes/_auth.signout'
 import { Route as AuthSigninRouteImport } from './routes/_auth.signin'
 import { Route as AuthCallbackRouteImport } from './routes/_auth.callback'
 import { Route as OrgOrgIdIndexRouteImport } from './routes/org.$orgId.index'
@@ -24,6 +24,10 @@ import { Route as OrgOrgIdSettingsRouteImport } from './routes/org.$orgId.settin
 import { Route as OrgOrgIdMembersRouteImport } from './routes/org.$orgId.members'
 import { Route as OrgOrgIdAdminRouteImport } from './routes/org.$orgId.admin'
 
+const AuthRoute = AuthRouteImport.update({
+  id: '/_auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -54,20 +58,15 @@ const OnboardingOrganizationRoute = OnboardingOrganizationRouteImport.update({
   path: '/onboarding/organization',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthSignoutRoute = AuthSignoutRouteImport.update({
-  id: '/_auth/signout',
-  path: '/signout',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const AuthSigninRoute = AuthSigninRouteImport.update({
-  id: '/_auth/signin',
+  id: '/signin',
   path: '/signin',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AuthRoute,
 } as any)
 const AuthCallbackRoute = AuthCallbackRouteImport.update({
-  id: '/_auth/callback',
+  id: '/callback',
   path: '/callback',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AuthRoute,
 } as any)
 const OrgOrgIdIndexRoute = OrgOrgIdIndexRouteImport.update({
   id: '/',
@@ -99,7 +98,6 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/callback': typeof AuthCallbackRoute
   '/signin': typeof AuthSigninRoute
-  '/signout': typeof AuthSignoutRoute
   '/onboarding/organization': typeof OnboardingOrganizationRoute
   '/onboarding/profile': typeof OnboardingProfileRoute
   '/onboarding/subscription': typeof OnboardingSubscriptionRoute
@@ -115,7 +113,6 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/callback': typeof AuthCallbackRoute
   '/signin': typeof AuthSigninRoute
-  '/signout': typeof AuthSignoutRoute
   '/onboarding/organization': typeof OnboardingOrganizationRoute
   '/onboarding/profile': typeof OnboardingProfileRoute
   '/onboarding/subscription': typeof OnboardingSubscriptionRoute
@@ -129,9 +126,9 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/_auth': typeof AuthRouteWithChildren
   '/_auth/callback': typeof AuthCallbackRoute
   '/_auth/signin': typeof AuthSigninRoute
-  '/_auth/signout': typeof AuthSignoutRoute
   '/onboarding/organization': typeof OnboardingOrganizationRoute
   '/onboarding/profile': typeof OnboardingProfileRoute
   '/onboarding/subscription': typeof OnboardingSubscriptionRoute
@@ -149,7 +146,6 @@ export interface FileRouteTypes {
     | '/'
     | '/callback'
     | '/signin'
-    | '/signout'
     | '/onboarding/organization'
     | '/onboarding/profile'
     | '/onboarding/subscription'
@@ -165,7 +161,6 @@ export interface FileRouteTypes {
     | '/'
     | '/callback'
     | '/signin'
-    | '/signout'
     | '/onboarding/organization'
     | '/onboarding/profile'
     | '/onboarding/subscription'
@@ -178,9 +173,9 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/_auth'
     | '/_auth/callback'
     | '/_auth/signin'
-    | '/_auth/signout'
     | '/onboarding/organization'
     | '/onboarding/profile'
     | '/onboarding/subscription'
@@ -195,9 +190,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AuthCallbackRoute: typeof AuthCallbackRoute
-  AuthSigninRoute: typeof AuthSigninRoute
-  AuthSignoutRoute: typeof AuthSignoutRoute
+  AuthRoute: typeof AuthRouteWithChildren
   OnboardingOrganizationRoute: typeof OnboardingOrganizationRoute
   OnboardingProfileRoute: typeof OnboardingProfileRoute
   OnboardingSubscriptionRoute: typeof OnboardingSubscriptionRoute
@@ -207,6 +200,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/_auth': {
+      id: '/_auth'
+      path: ''
+      fullPath: ''
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -249,26 +249,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OnboardingOrganizationRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_auth/signout': {
-      id: '/_auth/signout'
-      path: '/signout'
-      fullPath: '/signout'
-      preLoaderRoute: typeof AuthSignoutRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/_auth/signin': {
       id: '/_auth/signin'
       path: '/signin'
       fullPath: '/signin'
       preLoaderRoute: typeof AuthSigninRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof AuthRoute
     }
     '/_auth/callback': {
       id: '/_auth/callback'
       path: '/callback'
       fullPath: '/callback'
       preLoaderRoute: typeof AuthCallbackRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof AuthRoute
     }
     '/org/$orgId/': {
       id: '/org/$orgId/'
@@ -308,6 +301,18 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AuthRouteChildren {
+  AuthCallbackRoute: typeof AuthCallbackRoute
+  AuthSigninRoute: typeof AuthSigninRoute
+}
+
+const AuthRouteChildren: AuthRouteChildren = {
+  AuthCallbackRoute: AuthCallbackRoute,
+  AuthSigninRoute: AuthSigninRoute,
+}
+
+const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
+
 interface OrgOrgIdRouteChildren {
   OrgOrgIdAdminRoute: typeof OrgOrgIdAdminRoute
   OrgOrgIdMembersRoute: typeof OrgOrgIdMembersRoute
@@ -330,9 +335,7 @@ const OrgOrgIdRouteWithChildren = OrgOrgIdRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AuthCallbackRoute: AuthCallbackRoute,
-  AuthSigninRoute: AuthSigninRoute,
-  AuthSignoutRoute: AuthSignoutRoute,
+  AuthRoute: AuthRouteWithChildren,
   OnboardingOrganizationRoute: OnboardingOrganizationRoute,
   OnboardingProfileRoute: OnboardingProfileRoute,
   OnboardingSubscriptionRoute: OnboardingSubscriptionRoute,

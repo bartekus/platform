@@ -1,15 +1,15 @@
-import { useEffect } from 'react';
-import { Outlet } from 'react-router';
-import { useLogto } from '@logto/react';
+import { useEffect } from "react";
+import { Outlet } from "react-router";
+import { useLogto } from "@logto/react";
 
-import { appConfig } from '~/config/logto';
+import { authConfig } from "~/config/logto";
 
 export const RequireAuth = () => {
   const { isAuthenticated, isLoading, signIn } = useLogto();
 
   useEffect(() => {
     if (!isAuthenticated) {
-      void signIn(appConfig.signOutRedirectUri);
+      void signIn(authConfig.signOutRedirectUri);
     }
   }, [isAuthenticated, isLoading, signIn]);
 

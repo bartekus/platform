@@ -1,7 +1,7 @@
 import { useLogto } from "@logto/react";
 import { useCallback } from "react";
 
-import { appConfig, encoreApiEndpoint } from "~/config/logto";
+import { authConfig, encoreApiEndpoint } from "~/config/logto";
 
 import { ApiRequestError } from "~/types";
 import type { FetchOptions } from "~/types";
@@ -16,7 +16,7 @@ export const useRawApi = () => {
       if (organizationId) {
         token = await getOrganizationToken(organizationId);
       } else {
-        token = await getAccessToken(appConfig.apiResourceIndicator);
+        token = await getAccessToken(authConfig.apiResourceIndicator);
       }
 
       if (!token) {

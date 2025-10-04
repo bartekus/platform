@@ -3,7 +3,7 @@ import { Loader2 } from "lucide-react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useLogto, useHandleSignInCallback } from "@logto/react";
 
-import { appConfig, encoreApiEndpoint } from "~/config/logto";
+import { authConfig, encoreApiEndpoint } from "~/config/logto";
 import { callback, fallbackToRoot, onboardingProfile, onboardingSubscription } from "~/config/constants";
 import type { OrganizationData, UserSubscription, UserCustomData, UserData } from "~/types";
 import { sleep } from "~/lib/utils";
@@ -38,7 +38,7 @@ function CallbackPage() {
           setIsResolving(true);
           await sleep(5000);
 
-          const accessToken = await getAccessToken(appConfig.apiResourceIndicator);
+          const accessToken = await getAccessToken(authConfig.apiResourceIndicator);
           console.log("accessToken", accessToken);
 
           const userInfo = (await fetchUserInfo()) as UserData;

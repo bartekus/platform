@@ -1,11 +1,9 @@
 // import { ReactNode } from "react";
-import { LogtoProvider } from "@logto/react";
+
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
 import { Outlet, createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
 
-import LayoutRoot from "~/components/LayoutRoot";
-import { config } from "~/config/logto";
 import appCss from "../index.css?url";
 
 export const Route = createRootRoute({
@@ -43,13 +41,11 @@ export const Route = createRootRoute({
 function RootComponent() {
   return (
     // <RootDocument>
-    <LogtoProvider config={config}>
-      <LayoutRoot>
-        <Outlet />
-        <ReactQueryDevtools buttonPosition="bottom-right" />
-        <TanStackRouterDevtools position="bottom-left" />
-      </LayoutRoot>
-    </LogtoProvider>
+    <>
+      <Outlet />
+      <ReactQueryDevtools buttonPosition="bottom-right" />
+      <TanStackRouterDevtools position="bottom-left" />
+    </>
     // </RootDocument>
   );
 }

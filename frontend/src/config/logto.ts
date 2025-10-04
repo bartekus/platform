@@ -47,7 +47,7 @@ export const config: LogtoConfig = {
   ],
 };
 
-export const appConfig = {
+export const authConfig = {
   apiResourceIndicator: `https://${API_DOMAIN}/api`,
   signInRedirectUri: `https://${WEB_DOMAIN}/callback`,
   signOutRedirectUri: `https://${WEB_DOMAIN}/`,
