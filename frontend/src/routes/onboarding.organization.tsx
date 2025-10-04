@@ -1,12 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 // import { requireActiveSub } from "~/lib/guards";
-import getRequestClient from "~/lib/get-request-client";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 
-import { onboardingOrganization } from "~/config/constants";
+import { fallbackToRoot, onboardingOrganization, onboardingSubscription } from "~/config/constants";
+import { useLogto } from "@logto/react";
+import { useOrganizationApi } from "~/api/organization";
+import { OrganizationData, UserCustomData, UserProfile } from "~/types";
 
 export const Route = createFileRoute(`${onboardingOrganization}`)({
   // beforeLoad: requireActiveSub,
@@ -14,7 +16,34 @@ export const Route = createFileRoute(`${onboardingOrganization}`)({
 });
 
 function OrganizationPage() {
+  const navigate = Route.useNavigate();
+  const { isAuthenticated, fetchUserInfo } = useLogto();
+  const { createOrganization, getOrganizations } = useOrganizationApi();
+
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const checkUserOrganizations = async () => {
+      if (!isAuthenticated) {
+        await navigate({ to: fallbackToRoot });
+        return;
+      }
+
+      try {
+        const userInfo = await fetchUserInfo();
+        const organizationData = (userInfo?.organization_data || []) as OrganizationData[];
+
+        if (!organizationData.length === 0) {
+          await navigate({ to: organizationData[0].id });
+          return;
+        }
+      } catch (error) {
+        console.error("Onboarding organization error:", error);
+      }
+    };
+
+    checkUserOrganizations();
+  }, [isAuthenticated, fetchUserInfo, createOrganization, getOrganizations, navigate]);
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -22,8 +51,8 @@ function OrganizationPage() {
 
     try {
       const payload = Object.fromEntries(new FormData(e.currentTarget).entries());
-      const org = await getRequestClient().organization.createOneOrganization(payload as any);
-      window.location.replace(`/org/${org.id}`);
+      const org = await createOrganization(payload as any);
+      await navigate({ to: `/org/${org.id}` });
     } catch (error) {
       console.error("Organization creation error:", error);
       setLoading(false);
@@ -45,9 +74,8 @@ function OrganizationPage() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="slug">URL Slug</Label>
-            <Input id="slug" name="slug" placeholder="acme-corp" pattern="[a-z0-9-]+" required />
-            <p className="text-xs text-muted-foreground">Only lowercase letters, numbers, and hyphens</p>
+            <Label htmlFor="description">Description</Label>
+            <Input id="description" name="description" placeholder="Acme Corp where leadership thrives" required />
           </div>
 
           <Button type="submit" className="w-full" disabled={loading}>
