@@ -4,13 +4,15 @@ import { useLogto } from "@logto/react";
 import getRequestClient from "~/lib/get-request-client";
 import { authConfig } from "~/config/logto";
 
+const { apiResourceIndicator } = authConfig;
+
 export const useSubscriptionApi = () => {
   const { getAccessToken } = useLogto();
 
   return {
     createUserSubscription: useCallback(
       async (params: { priceId: string; customerId: string; successUrl: string; cancelUrl: string }) => {
-        const token = await getAccessToken(authConfig.apiResourceIndicator);
+        const token = await getAccessToken(apiResourceIndicator);
         if (!token) throw new Error("Not authorized");
 
         const client = getRequestClient(token);
@@ -30,7 +32,7 @@ export const useSubscriptionApi = () => {
 
     verifySubscription: useCallback(
       async (sessionId: string) => {
-        const token = await getAccessToken(authConfig.apiResourceIndicator);
+        const token = await getAccessToken(apiResourceIndicator);
         if (!token) throw new Error("Not authorized");
 
         const client = getRequestClient(token);

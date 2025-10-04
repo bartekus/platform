@@ -1,14 +1,14 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { useLogto } from "@logto/react";
 import { useEffect, useState } from "react";
+import { createFileRoute } from "@tanstack/react-router";
+
 // import { requireActiveSub } from "~/lib/guards";
-import getRequestClient from "~/lib/get-request-client";
+import { fallbackToRoot, onboardingOrganization, onboardingProfile, onboardingSubscription } from "~/config/constants";
+import { User, UserCustomData, UserProfile } from "~/types";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
-
-import { fallbackToRoot, onboardingOrganization, onboardingProfile, onboardingSubscription } from "~/config/constants";
-import { useLogto } from "@logto/react";
-import { UserCustomData, UserProfile } from "~/types";
+import { useUserApi } from "~/api/user";
 
 export const Route = createFileRoute(`${onboardingProfile}`)({
   // beforeLoad: requireActiveSub,
@@ -18,6 +18,8 @@ export const Route = createFileRoute(`${onboardingProfile}`)({
 function ProfilePage() {
   const navigate = Route.useNavigate();
   const { isAuthenticated, fetchUserInfo } = useLogto();
+  const { updateUserProfile } = useUserApi();
+
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -29,9 +31,6 @@ function ProfilePage() {
 
       try {
         const userInfo = await fetchUserInfo();
-
-        console.log("userInfo");
-        console.dir(userInfo);
 
         const customData = userInfo?.custom_data as UserCustomData;
 
@@ -74,9 +73,8 @@ function ProfilePage() {
 
     try {
       const payload = Object.fromEntries(new FormData(e.currentTarget).entries());
-      await getRequestClient().user.updateUser(payload as any);
-      await navigate({ to: onboardingSubscription });
-      window.location.replace("/onboarding/organization");
+      await updateUserProfile(payload as User);
+      await navigate({ to: onboardingOrganization });
     } catch (error) {
       console.error("Profile update error:", error);
       setLoading(false);
@@ -93,13 +91,18 @@ function ProfilePage() {
 
         <form onSubmit={onSubmit} className="space-y-6">
           <div className="space-y-2">
-            <Label htmlFor="displayName">Display Name</Label>
-            <Input id="displayName" name="displayName" placeholder="John Doe" required />
+            <Label htmlFor="username">Username</Label>
+            <Input id="username" name="username" placeholder="John Doe" required />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="timeZone">Time Zone</Label>
-            <Input id="timeZone" name="timeZone" placeholder="America/New_York" />
+            <Label htmlFor="zoneinfo">Time Zone</Label>
+            <Input id="zoneinfo" name="zoneinfo" placeholder="America/Edmonton" />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="locale">Locale</Label>
+            <Input id="locale" name="locale" placeholder="en-CA" />
           </div>
 
           <Button type="submit" className="w-full" disabled={loading}>
