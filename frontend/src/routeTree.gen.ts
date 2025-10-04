@@ -14,8 +14,8 @@ import { Route as SigninRouteImport } from './routes/signin'
 import { Route as CallbackRouteImport } from './routes/callback'
 import { Route as OnboardingRouteRouteImport } from './routes/onboarding.route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as SubscriptionVerifyRouteImport } from './routes/subscription.verify'
 import { Route as OrgOrgIdRouteImport } from './routes/org.$orgId'
-import { Route as OnboardingVerifyRouteImport } from './routes/onboarding.verify'
 import { Route as OnboardingSubscriptionRouteImport } from './routes/onboarding.subscription'
 import { Route as OnboardingProfileRouteImport } from './routes/onboarding.profile'
 import { Route as OnboardingOrganizationRouteImport } from './routes/onboarding.organization'
@@ -50,15 +50,15 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SubscriptionVerifyRoute = SubscriptionVerifyRouteImport.update({
+  id: '/subscription/verify',
+  path: '/subscription/verify',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const OrgOrgIdRoute = OrgOrgIdRouteImport.update({
   id: '/org/$orgId',
   path: '/org/$orgId',
   getParentRoute: () => rootRouteImport,
-} as any)
-const OnboardingVerifyRoute = OnboardingVerifyRouteImport.update({
-  id: '/verify',
-  path: '/verify',
-  getParentRoute: () => OnboardingRouteRoute,
 } as any)
 const OnboardingSubscriptionRoute = OnboardingSubscriptionRouteImport.update({
   id: '/subscription',
@@ -110,8 +110,8 @@ export interface FileRoutesByFullPath {
   '/onboarding/organization': typeof OnboardingOrganizationRoute
   '/onboarding/profile': typeof OnboardingProfileRoute
   '/onboarding/subscription': typeof OnboardingSubscriptionRoute
-  '/onboarding/verify': typeof OnboardingVerifyRoute
   '/org/$orgId': typeof OrgOrgIdRouteWithChildren
+  '/subscription/verify': typeof SubscriptionVerifyRoute
   '/org/$orgId/admin': typeof OrgOrgIdAdminRoute
   '/org/$orgId/members': typeof OrgOrgIdMembersRoute
   '/org/$orgId/settings': typeof OrgOrgIdSettingsRoute
@@ -127,7 +127,7 @@ export interface FileRoutesByTo {
   '/onboarding/organization': typeof OnboardingOrganizationRoute
   '/onboarding/profile': typeof OnboardingProfileRoute
   '/onboarding/subscription': typeof OnboardingSubscriptionRoute
-  '/onboarding/verify': typeof OnboardingVerifyRoute
+  '/subscription/verify': typeof SubscriptionVerifyRoute
   '/org/$orgId/admin': typeof OrgOrgIdAdminRoute
   '/org/$orgId/members': typeof OrgOrgIdMembersRoute
   '/org/$orgId/settings': typeof OrgOrgIdSettingsRoute
@@ -144,8 +144,8 @@ export interface FileRoutesById {
   '/onboarding/organization': typeof OnboardingOrganizationRoute
   '/onboarding/profile': typeof OnboardingProfileRoute
   '/onboarding/subscription': typeof OnboardingSubscriptionRoute
-  '/onboarding/verify': typeof OnboardingVerifyRoute
   '/org/$orgId': typeof OrgOrgIdRouteWithChildren
+  '/subscription/verify': typeof SubscriptionVerifyRoute
   '/org/$orgId/admin': typeof OrgOrgIdAdminRoute
   '/org/$orgId/members': typeof OrgOrgIdMembersRoute
   '/org/$orgId/settings': typeof OrgOrgIdSettingsRoute
@@ -163,8 +163,8 @@ export interface FileRouteTypes {
     | '/onboarding/organization'
     | '/onboarding/profile'
     | '/onboarding/subscription'
-    | '/onboarding/verify'
     | '/org/$orgId'
+    | '/subscription/verify'
     | '/org/$orgId/admin'
     | '/org/$orgId/members'
     | '/org/$orgId/settings'
@@ -180,7 +180,7 @@ export interface FileRouteTypes {
     | '/onboarding/organization'
     | '/onboarding/profile'
     | '/onboarding/subscription'
-    | '/onboarding/verify'
+    | '/subscription/verify'
     | '/org/$orgId/admin'
     | '/org/$orgId/members'
     | '/org/$orgId/settings'
@@ -196,8 +196,8 @@ export interface FileRouteTypes {
     | '/onboarding/organization'
     | '/onboarding/profile'
     | '/onboarding/subscription'
-    | '/onboarding/verify'
     | '/org/$orgId'
+    | '/subscription/verify'
     | '/org/$orgId/admin'
     | '/org/$orgId/members'
     | '/org/$orgId/settings'
@@ -212,6 +212,7 @@ export interface RootRouteChildren {
   SigninRoute: typeof SigninRoute
   SignoutRoute: typeof SignoutRoute
   OrgOrgIdRoute: typeof OrgOrgIdRouteWithChildren
+  SubscriptionVerifyRoute: typeof SubscriptionVerifyRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -251,19 +252,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/subscription/verify': {
+      id: '/subscription/verify'
+      path: '/subscription/verify'
+      fullPath: '/subscription/verify'
+      preLoaderRoute: typeof SubscriptionVerifyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/org/$orgId': {
       id: '/org/$orgId'
       path: '/org/$orgId'
       fullPath: '/org/$orgId'
       preLoaderRoute: typeof OrgOrgIdRouteImport
       parentRoute: typeof rootRouteImport
-    }
-    '/onboarding/verify': {
-      id: '/onboarding/verify'
-      path: '/verify'
-      fullPath: '/onboarding/verify'
-      preLoaderRoute: typeof OnboardingVerifyRouteImport
-      parentRoute: typeof OnboardingRouteRoute
     }
     '/onboarding/subscription': {
       id: '/onboarding/subscription'
@@ -328,14 +329,12 @@ interface OnboardingRouteRouteChildren {
   OnboardingOrganizationRoute: typeof OnboardingOrganizationRoute
   OnboardingProfileRoute: typeof OnboardingProfileRoute
   OnboardingSubscriptionRoute: typeof OnboardingSubscriptionRoute
-  OnboardingVerifyRoute: typeof OnboardingVerifyRoute
 }
 
 const OnboardingRouteRouteChildren: OnboardingRouteRouteChildren = {
   OnboardingOrganizationRoute: OnboardingOrganizationRoute,
   OnboardingProfileRoute: OnboardingProfileRoute,
   OnboardingSubscriptionRoute: OnboardingSubscriptionRoute,
-  OnboardingVerifyRoute: OnboardingVerifyRoute,
 }
 
 const OnboardingRouteRouteWithChildren = OnboardingRouteRoute._addFileChildren(
@@ -369,6 +368,7 @@ const rootRouteChildren: RootRouteChildren = {
   SigninRoute: SigninRoute,
   SignoutRoute: SignoutRoute,
   OrgOrgIdRoute: OrgOrgIdRouteWithChildren,
+  SubscriptionVerifyRoute: SubscriptionVerifyRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

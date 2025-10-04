@@ -1,12 +1,5 @@
-import { useLogto } from "@logto/react";
-import getRequestClient from "~/lib/get-request-client";
 import { authConfig } from "~/config/logto";
-import type { 
-  SessionData, 
-  SessionManagerOptions, 
-  SessionManagerEvents, 
-  SessionManagerListener 
-} from "./types";
+import type { SessionData, SessionManagerOptions, SessionManagerEvents, SessionManagerListener } from "./types";
 import type { UserCustomData, OrganizationData } from "~/types";
 
 export class SessionManager {
@@ -27,10 +20,7 @@ export class SessionManager {
   /**
    * Subscribe to session events
    */
-  on<T extends keyof SessionManagerEvents>(
-    event: T,
-    listener: SessionManagerListener<T>
-  ): () => void {
+  on<T extends keyof SessionManagerEvents>(event: T, listener: SessionManagerListener<T>): () => void {
     if (!this.listeners.has(event)) {
       this.listeners.set(event, new Set());
     }
@@ -45,13 +35,10 @@ export class SessionManager {
   /**
    * Emit events to all listeners
    */
-  private emit<T extends keyof SessionManagerEvents>(
-    event: T,
-    ...args: Parameters<SessionManagerListener<T>>
-  ): void {
+  private emit<T extends keyof SessionManagerEvents>(event: T, ...args: Parameters<SessionManagerListener<T>>): void {
     const eventListeners = this.listeners.get(event);
     if (eventListeners) {
-      eventListeners.forEach(listener => {
+      eventListeners.forEach((listener) => {
         try {
           (listener as any)(...args);
         } catch (error) {
@@ -64,19 +51,24 @@ export class SessionManager {
   /**
    * Load session data from Logto and backend APIs
    */
-  async loadSession(): Promise<SessionData> {
+  async loadSession(forceRefresh?: { forceRefresh: boolean }): Promise<SessionData> {
     if (this.isLoading) {
       // Wait for existing load to complete
       return new Promise((resolve, reject) => {
-        const unsubscribe = this.on('session:loaded', (session) => {
+        const unsubscribe = this.on("session:loaded", (session) => {
           unsubscribe();
           resolve(session);
         });
-        this.on('session:error', (error) => {
+        this.on("session:error", (error) => {
           unsubscribe();
           reject(error);
         });
       });
+    }
+
+    // If we have a valid session and not forcing refresh, return cached
+    if (!forceRefresh && this.session && this.isSessionValid()) {
+      return this.session;
     }
 
     this.isLoading = true;
@@ -86,10 +78,7 @@ export class SessionManager {
       // We'll need to get these from the React context when called from components
       const { getAccessToken, fetchUserInfo } = this.getLogtoHooks();
 
-      const [userInfo, accessToken] = await Promise.all([
-        fetchUserInfo(),
-        getAccessToken(authConfig.apiResourceIndicator)
-      ]);
+      const [userInfo, accessToken] = await Promise.all([fetchUserInfo(), getAccessToken(authConfig.apiResourceIndicator)]);
 
       if (!userInfo || !accessToken) {
         throw new Error("Failed to get user info or access token");
@@ -104,7 +93,7 @@ export class SessionManager {
       const hasProfileZoneinfo = profileData?.zoneinfo;
       const hasProfileLocale = profileData?.locale;
       const profileCompleted = !!(hasUsername || hasProfileZoneinfo || hasProfileLocale);
-      
+
       const organizationCompleted = organizationData.length > 0;
       const onboardingCompleted = profileCompleted && organizationCompleted;
 
@@ -130,13 +119,12 @@ export class SessionManager {
         this.startAutoRefresh();
       }
 
-      this.emit('session:loaded', session);
+      this.emit("session:loaded", session);
       return session;
-
     } catch (error) {
       this.isLoading = false;
       const errorObj = error instanceof Error ? error : new Error(String(error));
-      this.emit('session:error', errorObj);
+      this.emit("session:error", errorObj);
       throw errorObj;
     }
   }
@@ -157,11 +145,11 @@ export class SessionManager {
 
     try {
       const newSession = await this.loadSession();
-      this.emit('session:refreshed', newSession);
+      this.emit("session:refreshed", newSession);
       return newSession;
     } catch (error) {
       // If refresh fails, return cached session
-      console.warn('Session refresh failed, using cached session:', error);
+      console.warn("Session refresh failed, using cached session:", error);
       return this.session;
     }
   }
@@ -178,7 +166,7 @@ export class SessionManager {
    */
   isSessionValid(): boolean {
     if (!this.session) return false;
-    
+
     const now = Date.now();
     return now - this.session.lastUpdated < this.options.cacheTimeout;
   }
@@ -197,8 +185,8 @@ export class SessionManager {
   private startAutoRefresh(): void {
     this.stopAutoRefresh();
     this.refreshTimer = setInterval(() => {
-      this.refreshSession().catch(error => {
-        console.warn('Auto-refresh failed:', error);
+      this.refreshSession().catch((error) => {
+        console.warn("Auto-refresh failed:", error);
       });
     }, this.options.refreshInterval);
   }
