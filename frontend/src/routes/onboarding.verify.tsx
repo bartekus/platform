@@ -3,11 +3,12 @@ import { useEffect, useState } from "react";
 import { useLogto } from "@logto/react";
 import { Loader2 } from "lucide-react";
 
+import { requireAuth } from "~/lib/session";
 import type { UserCustomData } from "~/types";
 import { fallbackToRoot, onboardingProfile, onboardingSubscription } from "~/config/constants";
 
 export const Route = createFileRoute("/onboarding/verify")({
-  // beforeLoad: requireAuth,
+  beforeLoad: requireAuth,
   component: VerifyPage,
 });
 

@@ -1,7 +1,7 @@
 import { useLogto } from "@logto/react";
 import { useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-// import { requireAuth } from "~/lib/guards";
+import { requireAuth } from "~/lib/session";
 
 import getRequestClient from "~/lib/get-request-client";
 import { useSubscriptionApi } from "~/api/subsciption";
@@ -13,7 +13,7 @@ import { stripe } from "~/lib/client";
 import type { UserCustomData } from "~/types";
 
 export const Route = createFileRoute("/onboarding/subscription")({
-  // beforeLoad: requireAuth,
+  beforeLoad: requireAuth,
   component: SubscriptionPage,
 });
 

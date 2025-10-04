@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-// import { requireActiveSub } from "~/lib/guards";
+import { requireActiveSub } from "~/lib/session";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
@@ -11,7 +11,7 @@ import { useOrganizationApi } from "~/api/organization";
 import { OrganizationData, UserCustomData, UserProfile } from "~/types";
 
 export const Route = createFileRoute(`${onboardingOrganization}`)({
-  // beforeLoad: requireActiveSub,
+  beforeLoad: requireActiveSub,
   component: OrganizationPage,
 });
 
@@ -33,8 +33,8 @@ function OrganizationPage() {
         const userInfo = await fetchUserInfo();
         const organizationData = (userInfo?.organization_data || []) as OrganizationData[];
 
-        if (!organizationData.length === 0) {
-          await navigate({ to: organizationData[0].id });
+        if (organizationData.length > 0) {
+          await navigate({ to: `/org/${organizationData[0].id}` });
           return;
         }
       } catch (error) {

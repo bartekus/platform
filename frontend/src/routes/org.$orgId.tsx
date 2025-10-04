@@ -1,6 +1,7 @@
 import { useLogto } from "@logto/react";
 import { createFileRoute, Link, Outlet } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { requireOnboarding, useSession } from "~/lib/session";
 
 // import { requireOnboarding } from "~/lib/guards";
 // import { loadSession, Session, Role } from "~/lib/session";
@@ -12,13 +13,14 @@ import { useWorkspaceApi } from "~/api/workspace";
 import type { Organization, Workspace } from "~/types";
 
 export const Route = createFileRoute("/org/$orgId")({
-  // beforeLoad: requireOnboarding,
+  beforeLoad: requireOnboarding,
   component: OrgLayout,
 });
 
 function OrgLayout() {
   const { orgId } = Route.useParams();
   const { isAuthenticated } = useLogto();
+  const { session } = useSession();
   const { getUserOrganizationScopes, getOrganizations } = useOrganizationApi();
   const { getWorkspaces, updateWorkspace, deleteWorkspace } = useWorkspaceApi();
 
@@ -29,7 +31,7 @@ function OrgLayout() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editWorkspaceId, setEditWorkspaceId] = useState<Workspace["id"]>();
-  const [userScopes, setUserScopes] = useState<string[]>([]); // const [data, setData] = useState<{ session: Session; org: { id: string; name: string; slug: string; role: Role } } | null>(null);
+  const [userScopes, setUserScopes] = useState<string[]>([]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -58,18 +60,6 @@ function OrgLayout() {
     void fetchData();
   }, [orgId, isAuthenticated, getWorkspaces, getUserOrganizationScopes, getOrganizations]);
 
-  // useEffect(() => {
-  //   (async () => {
-  //     const session = await loadSession();
-  //     const org = session.orgs.find((o) => o.id === orgId);
-  //     if (!org) {
-  //       window.location.href = "/onboarding/organization";
-  //       return;
-  //     }
-  //     setData({ session, org });
-  //   })();
-  // }, [orgId]);
-
   if (!organizations) {
     return (
       <div className="container mx-auto px-4 py-20 text-center">
@@ -78,11 +68,19 @@ function OrgLayout() {
     );
   }
 
-  // const { session, org } = data;
-
-  const org = {
-    id: "DefaultOrg",
+  // Get current organization from session or fallback
+  const currentOrg = session?.organizations.find(o => o.id === orgId) || {
+    id: orgId,
+    name: "Default Organization",
+    role: "admin" as const
   };
+
+  // Convert organizations to the format expected by OrgSwitcher
+  const orgsForSwitcher = session?.organizations.map(org => ({
+    id: org.id,
+    name: org.name,
+    role: (org.role || "member") as "admin" | "editor" | "member"
+  })) || [];
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -94,36 +92,36 @@ function OrgLayout() {
             </Link>
             <nav className="flex gap-6">
               <Link
-                to={`/org/${org.id}`}
+                to={`/org/${currentOrg.id}`}
                 className="text-sm text-muted-foreground hover:text-foreground transition-smooth"
                 activeProps={{ className: "text-foreground font-medium" }}
               >
                 Overview
               </Link>
               <Link
-                to={`/org/${org.id}/workspaces`}
+                to={`/org/${currentOrg.id}/workspaces`}
                 className="text-sm text-muted-foreground hover:text-foreground transition-smooth"
                 activeProps={{ className: "text-foreground font-medium" }}
               >
                 Workspaces
               </Link>
               <Link
-                to={`/org/${org.id}/members`}
+                to={`/org/${currentOrg.id}/members`}
                 className="text-sm text-muted-foreground hover:text-foreground transition-smooth"
                 activeProps={{ className: "text-foreground font-medium" }}
               >
                 Members
               </Link>
               <Link
-                to={`/org/${org.id}/settings`}
+                to={`/org/${currentOrg.id}/settings`}
                 className="text-sm text-muted-foreground hover:text-foreground transition-smooth"
                 activeProps={{ className: "text-foreground font-medium" }}
               >
                 Settings
               </Link>
-              {organizations.role === "admin" && (
+              {currentOrg.role === "admin" && (
                 <Link
-                  to={`/org/${org.id}/admin`}
+                  to={`/org/${currentOrg.id}/admin`}
                   className="text-sm text-muted-foreground hover:text-foreground transition-smooth"
                   activeProps={{ className: "text-foreground font-medium" }}
                 >
@@ -132,7 +130,7 @@ function OrgLayout() {
               )}
             </nav>
             <div className="ml-auto flex items-center gap-4">
-              <OrgSwitcher orgs={organizations} currentId={org.id} />
+              <OrgSwitcher orgs={orgsForSwitcher} currentId={currentOrg.id} />
               <Link to="/signout" className="text-sm text-muted-foreground hover:text-foreground transition-smooth">
                 Sign out
               </Link>

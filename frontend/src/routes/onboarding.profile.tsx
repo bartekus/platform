@@ -1,6 +1,7 @@
 import { useLogto } from "@logto/react";
 import { useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
+import { requireActiveSub } from "~/lib/session";
 
 // import { requireActiveSub } from "~/lib/guards";
 import { fallbackToRoot, onboardingOrganization, onboardingProfile, onboardingSubscription } from "~/config/constants";
@@ -11,7 +12,7 @@ import { Label } from "~/components/ui/label";
 import { useUserApi } from "~/api/user";
 
 export const Route = createFileRoute(`${onboardingProfile}`)({
-  // beforeLoad: requireActiveSub,
+  beforeLoad: requireActiveSub,
   component: ProfilePage,
 });
 

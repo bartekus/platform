@@ -12,8 +12,7 @@ import { config } from "~/config/logto";
 const queryClient = new QueryClient();
 
 function InnerApp() {
-  // const session = loadSession();
-  return <RouterProvider router={router} /*context={{ session }}*/ />;
+  return <RouterProvider router={router} />;
 }
 
 const App = () => (
