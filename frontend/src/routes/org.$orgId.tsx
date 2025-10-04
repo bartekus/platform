@@ -1,8 +1,15 @@
+import { useLogto } from "@logto/react";
 import { createFileRoute, Link, Outlet } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+
 // import { requireOnboarding } from "~/lib/guards";
 // import { loadSession, Session, Role } from "~/lib/session";
+
+import { useOrganizationApi } from "~/api/organization";
 import OrgSwitcher from "~/components/OrgSwitcher";
+import { useWorkspaceApi } from "~/api/workspace";
+
+import type { Organization, Workspace } from "~/types";
 
 export const Route = createFileRoute("/org/$orgId")({
   // beforeLoad: requireOnboarding,
@@ -11,8 +18,46 @@ export const Route = createFileRoute("/org/$orgId")({
 
 function OrgLayout() {
   const { orgId } = Route.useParams();
-  // const [data, setData] = useState<{ session: Session; org: { id: string; name: string; slug: string; role: Role } } | null>(null);
-  //
+  const { isAuthenticated } = useLogto();
+  const { getUserOrganizationScopes, getOrganizations } = useOrganizationApi();
+  const { getWorkspaces, updateWorkspace, deleteWorkspace } = useWorkspaceApi();
+
+  const [organizations, setOrganizations] = useState<Organization[]>([]);
+  const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editWorkspaceId, setEditWorkspaceId] = useState<Workspace["id"]>();
+  const [userScopes, setUserScopes] = useState<string[]>([]); // const [data, setData] = useState<{ session: Session; org: { id: string; name: string; slug: string; role: Role } } | null>(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!orgId || !isAuthenticated) return;
+
+      setLoading(true);
+      setError(null);
+
+      try {
+        const [usersOrganizations, scopes, workspacesData] = await Promise.all([
+          getOrganizations(),
+          getUserOrganizationScopes(orgId),
+          getWorkspaces(orgId),
+        ]);
+
+        setOrganizations(usersOrganizations);
+        setUserScopes(scopes);
+        setWorkspaces(workspacesData);
+      } catch (error) {
+        setError(error instanceof Error ? error.message : "Failed to fetch data");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    void fetchData();
+  }, [orgId, isAuthenticated, getWorkspaces, getUserOrganizationScopes, getOrganizations]);
+
   // useEffect(() => {
   //   (async () => {
   //     const session = await loadSession();
@@ -25,14 +70,14 @@ function OrgLayout() {
   //   })();
   // }, [orgId]);
 
-  // if (!data) {
-  //   return (
-  //     <div className="container mx-auto px-4 py-20 text-center">
-  //       <p className="text-muted-foreground">Loading organization...</p>
-  //     </div>
-  //   );
-  // }
-  //
+  if (!organizations) {
+    return (
+      <div className="container mx-auto px-4 py-20 text-center">
+        <p className="text-muted-foreground">Loading organization...</p>
+      </div>
+    );
+  }
+
   // const { session, org } = data;
 
   const org = {
@@ -76,7 +121,7 @@ function OrgLayout() {
               >
                 Settings
               </Link>
-              {org.role === "admin" && (
+              {organizations.role === "admin" && (
                 <Link
                   to={`/org/${org.id}/admin`}
                   className="text-sm text-muted-foreground hover:text-foreground transition-smooth"
@@ -87,7 +132,7 @@ function OrgLayout() {
               )}
             </nav>
             <div className="ml-auto flex items-center gap-4">
-              <OrgSwitcher orgs={session.orgs} currentId={org.id} />
+              <OrgSwitcher orgs={organizations} currentId={org.id} />
               <Link to="/signout" className="text-sm text-muted-foreground hover:text-foreground transition-smooth">
                 Sign out
               </Link>

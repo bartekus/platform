@@ -2,6 +2,10 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import getRequestClient from "~/lib/get-request-client";
 import { Activity, Users, FolderOpen } from "lucide-react";
+import { useLogto } from "@logto/react";
+import { useOrganizationApi } from "~/api/organization";
+import { useWorkspaceApi } from "~/api/workspace";
+import type { Organization, Workspace } from "~/types";
 
 export const Route = createFileRoute("/org/$orgId/")({
   component: OrgHomePage,
@@ -9,14 +13,54 @@ export const Route = createFileRoute("/org/$orgId/")({
 
 function OrgHomePage() {
   const { orgId } = Route.useParams();
+  const { isAuthenticated } = useLogto();
+  const { getUserOrganizationScopes, getOrganizations } = useOrganizationApi();
+  const { getWorkspaces, updateWorkspace, deleteWorkspace } = useWorkspaceApi();
+
+  const [organizations, setOrganizations] = useState<Organization[]>([]);
+  const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editWorkspaceId, setEditWorkspaceId] = useState<Workspace["id"]>();
+  const [userScopes, setUserScopes] = useState<string[]>([]); // const [data
+
   const [summary, setSummary] = useState<{ workspaces: number; members: number; files: number } | null>(null);
 
   useEffect(() => {
-    getRequestClient()
-      .orgs.getSummary({ orgId })
-      .then(setSummary)
-      .catch((e) => console.error("Failed to load summary:", e));
-  }, [orgId]);
+    const fetchData = async () => {
+      if (!orgId || !isAuthenticated) return;
+
+      setLoading(true);
+      setError(null);
+
+      try {
+        const [usersOrganizations, scopes, workspacesData] = await Promise.all([
+          getOrganizations(),
+          getUserOrganizationScopes(orgId),
+          getWorkspaces(orgId),
+        ]);
+
+        setOrganizations(usersOrganizations);
+        setUserScopes(scopes);
+        setWorkspaces(workspacesData);
+      } catch (error) {
+        setError(error instanceof Error ? error.message : "Failed to fetch data");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    void fetchData();
+  }, [orgId, isAuthenticated, getWorkspaces, getUserOrganizationScopes, getOrganizations]);
+
+  // useEffect(() => {
+  //   getRequestClient()
+  //     .orgs.getSummary({ orgId })
+  //     .then(setSummary)
+  //     .catch((e) => console.error("Failed to load summary:", e));
+  // }, [orgId]);
 
   if (!summary) {
     return <div className="text-center py-12 text-muted-foreground">Loading...</div>;
