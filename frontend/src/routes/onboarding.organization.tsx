@@ -22,7 +22,7 @@ function OrganizationPage() {
 
     try {
       const payload = Object.fromEntries(new FormData(e.currentTarget).entries());
-      const org = await getRequestClient().orgs.create(payload as any);
+      const org = await getRequestClient().organization.createOneOrganization(payload as any);
       window.location.replace(`/org/${org.id}`);
     } catch (error) {
       console.error("Organization creation error:", error);

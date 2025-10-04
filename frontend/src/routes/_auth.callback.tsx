@@ -36,7 +36,7 @@ function CallbackPage() {
       if (!isLoading && isAuthenticated) {
         try {
           setIsResolving(true);
-          await sleep(5000);
+          await sleep(3000);
 
           const accessToken = await getAccessToken(authConfig.apiResourceIndicator);
           console.log("accessToken", accessToken);

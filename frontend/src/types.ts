@@ -1,5 +1,5 @@
 import type { LucideIcon } from "lucide-react";
-import { file_upload, organization, workspace } from "~/lib/client";
+import { file_upload, organization, workspace, user } from "~/lib/client";
 
 import Organization = organization.Organization;
 import CreateOrganizationParams = organization.CreateOrganizationParams;
@@ -14,6 +14,10 @@ export type { Workspace, CreateWorkspaceParams, UpdateWorkspaceParams };
 
 import FileMetadata = file_upload.FileMetadata;
 export type { FileMetadata };
+
+import User = user.User;
+import UserProfile = user.UserProfile;
+export type { User, UserProfile };
 
 export class ApiRequestError extends Error {
   status?: number;
@@ -76,4 +80,6 @@ export interface UserData {
   name: string;
   email: string;
   avatar?: string;
+  customData?: Record<string, UserCustomData>;
+  custom_data?: Record<string, UserCustomData>;
 }

@@ -14,7 +14,6 @@ export const Route = createFileRoute("/onboarding/verify")({
 function VerifyPage() {
   const navigate = Route.useNavigate();
   const { isAuthenticated, fetchUserInfo } = useLogto();
-  const [verifying, setVerifying] = useState(true);
 
   useEffect(() => {
     const verifySubscription = async () => {
@@ -55,17 +54,6 @@ function VerifyPage() {
 
     verifySubscription();
   }, [isAuthenticated, fetchUserInfo, navigate]);
-
-  if (verifying) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="text-xl text-gray-600 mb-4">Verifying your subscription...</div>
-          <div className="text-sm text-gray-500">This will only take a moment</div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="container mx-auto px-4 py-20 text-center">

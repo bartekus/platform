@@ -1,12 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 // import { requireActiveSub } from "~/lib/guards";
 import getRequestClient from "~/lib/get-request-client";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 
-import { onboardingProfile } from "~/config/constants";
+import { fallbackToRoot, onboardingOrganization, onboardingProfile, onboardingSubscription } from "~/config/constants";
+import { useLogto } from "@logto/react";
+import { UserCustomData, UserProfile } from "~/types";
 
 export const Route = createFileRoute(`${onboardingProfile}`)({
   // beforeLoad: requireActiveSub,
@@ -14,7 +16,57 @@ export const Route = createFileRoute(`${onboardingProfile}`)({
 });
 
 function ProfilePage() {
+  const navigate = Route.useNavigate();
+  const { isAuthenticated, fetchUserInfo } = useLogto();
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const checkUserProfile = async () => {
+      if (!isAuthenticated) {
+        await navigate({ to: fallbackToRoot });
+        return;
+      }
+
+      try {
+        const userInfo = await fetchUserInfo();
+
+        console.log("userInfo");
+        console.dir(userInfo);
+
+        const customData = userInfo?.custom_data as UserCustomData;
+
+        if (!customData?.stripeCustomerId) {
+          console.error("No Stripe customer ID found");
+          await navigate({ to: fallbackToRoot });
+          return;
+        }
+
+        // Check subscription status from custom_data
+        const hasActiveSubscription = customData?.subscription?.status === "active";
+
+        if (!hasActiveSubscription) {
+          await navigate({ to: onboardingSubscription });
+          return;
+        }
+
+        const profileData = userInfo?.profile as UserProfile;
+
+        const hasUsername = userInfo?.username;
+        const hasProfileZoneinfo = profileData?.zoneinfo;
+        const hasProfileLocale = profileData?.locale;
+
+        if (hasUsername || hasProfileZoneinfo || hasProfileLocale) {
+          await navigate({ to: onboardingOrganization });
+          return;
+        }
+      } catch (error) {
+        console.error("Subscription verification error:", error);
+        window.location.href = "/error";
+      }
+    };
+
+    checkUserProfile();
+  }, [isAuthenticated, fetchUserInfo, navigate]);
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -22,7 +74,8 @@ function ProfilePage() {
 
     try {
       const payload = Object.fromEntries(new FormData(e.currentTarget).entries());
-      await getRequestClient().me.updateProfile(payload as any);
+      await getRequestClient().user.updateUser(payload as any);
+      await navigate({ to: onboardingSubscription });
       window.location.replace("/onboarding/organization");
     } catch (error) {
       console.error("Profile update error:", error);
