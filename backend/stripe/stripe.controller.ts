@@ -946,6 +946,8 @@ export const getSubscriptionUrl = api(
       const session = await StripeService.checkout.create({
         priceId: params.priceId,
         customerId: params.customerId,
+        successUrl: params.successUrl,
+        cancelUrl: params.cancelUrl,
         mode: "subscription",
         quantity: 1,
       });

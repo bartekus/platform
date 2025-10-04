@@ -631,6 +631,8 @@ export interface CreateBillingPortalSessionRequest {
 
 export interface GetSubscriptionUrlRequest {
   priceId: string;
+  successUrl: string;
+  cancelUrl: string;
   customerId?: string;
 }
 
