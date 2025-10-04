@@ -7,7 +7,7 @@ import { useOrganizationApi } from "~/api/organization";
 import { useWorkspaceApi } from "~/api/workspace";
 import type { Organization, Workspace } from "~/types";
 
-export const Route = createFileRoute("/org/$orgId/")({
+export const Route = createFileRoute("/_auth/org/$orgId/")({
   component: OrgHomePage,
 });
 

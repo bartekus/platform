@@ -8,7 +8,7 @@ import { authConfig } from "~/config/logto";
 
 const { signInRedirectUri } = authConfig;
 
-export const Route = createFileRoute("/_auth/signin")({
+export const Route = createFileRoute("/signin")({
   // validateSearch: z.object({
   //   redirect: z.string().optional().catch(""),
   // }),
