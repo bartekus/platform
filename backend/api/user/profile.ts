@@ -24,20 +24,24 @@ export const updateUser = api(
 
     const userId = auth.userID;
 
+    console.log("params", params);
+
     try {
       // First update profile directly as this method performs a partial update of the profile object.
       const profile: LogtoAPIResponse<any> = await logto.callApi({
         path: `/api/users/${userId}/profile`,
-        method: "POST",
+        method: "PATCH",
         body: JSON.stringify({
-          zoneinfo: params.profile?.zoneinfo || undefined, // example: "America/Edmonton"
-          locale: params.profile?.locale || undefined, // example: "en-CA"
+          profile: {
+            zoneinfo: params.profile?.zoneinfo || undefined, // example: "America/Edmonton"
+            locale: params.profile?.locale || undefined, // example: "en-CA"
+          },
         }),
       });
 
       const user: LogtoAPIResponse<any> = await logto.callApi({
         path: `/api/users/${userId}`,
-        method: "POST",
+        method: "PATCH",
         body: JSON.stringify({
           username: params.username || undefined,
         }),
