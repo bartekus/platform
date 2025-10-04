@@ -9,6 +9,7 @@ import { fallbackToRoot } from "~/config/constants";
 import PlanCard from "~/components/PlanCard";
 import { authConfig } from "~/config/logto";
 import { stripe } from "~/lib/client";
+import { sleep } from "~/lib/utils";
 
 import type { UserCustomData } from "~/types";
 
@@ -53,35 +54,62 @@ function SubscriptionPage() {
   }, [getAccessToken]);
 
   const handleSubscribe = async (priceId: string) => {
+    const maxRetries = 3; // Maximum number of retries for Stripe customer ID
+    let retryCount = 0;
+
+    const attemptSubscription = async (): Promise<void> => {
+      try {
+        const userInfo = await fetchUserInfo();
+        const customData = userInfo?.custom_data as UserCustomData;
+
+        console.log(`Checking for Stripe customer ID (attempt ${retryCount + 1}/${maxRetries}):`, customData);
+
+        if (!customData?.stripeCustomerId) {
+          if (retryCount < maxRetries - 1) {
+            // No Stripe customer ID yet, retry
+            console.log(`No Stripe customer ID found, retrying... (${retryCount + 1}/${maxRetries})`);
+            retryCount++;
+            
+            // Wait for webhook to process customer creation
+            await sleep(2000 + (retryCount * 1000)); // 2s, 3s, 4s
+            return attemptSubscription();
+          } else {
+            // Max retries reached
+            console.error("Max retries reached - no Stripe customer ID found");
+            await navigate({ to: fallbackToRoot });
+            return;
+          }
+        }
+
+        // Stripe customer ID found, proceed with subscription
+        console.log("Stripe customer ID found:", customData.stripeCustomerId);
+
+        const session = await createUserSubscription({
+          priceId,
+          customerId: customData.stripeCustomerId,
+          successUrl: `${onboardingVerifyUri}`,
+          cancelUrl: `${onboardingSubscriptionUri}`,
+        });
+
+        if (session.success && session.result?.url) {
+          console.log("session success", session);
+          window.location.href = session.result.url;
+          return;
+        } else if (session.error && session.result?.url) {
+          console.log("session error", session);
+          window.location.href = session.result.url;
+          return;
+        }
+      } catch (error) {
+        console.error("Subscription error:", error);
+        throw error;
+      }
+    };
+
     try {
-      const userInfo = await fetchUserInfo();
-
-      const customData = userInfo?.custom_data as UserCustomData;
-
-      if (!customData?.stripeCustomerId) {
-        console.error("No Stripe customer ID found");
-        await navigate({ to: fallbackToRoot });
-        return;
-      }
-
-      const session = await createUserSubscription({
-        priceId,
-        customerId: customData.stripeCustomerId,
-        successUrl: `${onboardingVerifyUri}`,
-        cancelUrl: `${onboardingSubscriptionUri}`,
-      });
-
-      if (session.success && session.result?.url) {
-        console.log("session success", session);
-        window.location.href = session.result.url;
-        return;
-      } else if (session.error && session.result?.url) {
-        console.log("session error", session);
-        window.location.href = session.result.url;
-        return;
-      }
+      await attemptSubscription();
     } catch (error) {
-      console.error("Subscription error:", error);
+      console.error("Failed to create subscription after retries:", error);
     }
   };
 
