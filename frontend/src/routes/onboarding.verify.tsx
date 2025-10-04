@@ -7,7 +7,7 @@ import { requireAuth } from "~/lib/session";
 import type { UserCustomData } from "~/types";
 import { fallbackToRoot, onboardingProfile, onboardingSubscription } from "~/config/constants";
 
-export const Route = createFileRoute("/_auth/onboarding/verify")({
+export const Route = createFileRoute("/onboarding/verify")({
   beforeLoad: requireAuth,
   component: VerifyPage,
 });

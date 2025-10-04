@@ -12,7 +12,7 @@ import { useWorkspaceApi } from "~/api/workspace";
 
 import type { Organization, Workspace } from "~/types";
 
-export const Route = createFileRoute("/_auth/org/$orgId")({
+export const Route = createFileRoute("/org/$orgId")({
   beforeLoad: requireOnboarding,
   component: OrgLayout,
 });

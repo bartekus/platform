@@ -12,7 +12,7 @@ import { stripe } from "~/lib/client";
 
 import type { UserCustomData } from "~/types";
 
-export const Route = createFileRoute("/_auth/onboarding/subscription")({
+export const Route = createFileRoute("/onboarding/subscription")({
   beforeLoad: requireAuth,
   component: SubscriptionPage,
 });
