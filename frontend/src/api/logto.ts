@@ -47,8 +47,6 @@ export function needsOnboarding(userInfo?: UserInfo) {
   }
 
   if (hasActiveSubscription && hasUsername && hasOrganization) {
-    return true;
+    return false;
   }
-
-  return false;
 }

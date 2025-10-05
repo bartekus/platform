@@ -38,11 +38,11 @@ function CallbackPage() {
           setIsResolving(true);
 
           const accessToken = await getAccessToken(authConfig.apiResourceIndicator);
-          console.log("Callback accessToken", accessToken);
+          // console.log("Callback accessToken", accessToken);
 
           const userInfo = (await fetchUserInfo()) as User;
-          console.log("userInfo");
-          console.dir(userInfo, { depth: null });
+          // console.log("userInfo");
+          // console.dir(userInfo, { depth: null });
 
           const customData = userInfo?.custom_data as UserCustomData;
 

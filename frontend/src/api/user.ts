@@ -20,7 +20,7 @@ export const useUserApi = () => {
         const client = getRequestClient(token);
         const user = await client.user.updateUser(params);
 
-        console.log("User profile update", user);
+        // console.log("User profile update", user);
 
         return user;
       },

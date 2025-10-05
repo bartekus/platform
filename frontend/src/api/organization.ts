@@ -17,7 +17,7 @@ export const useOrganizationApi = () => {
         const client = getRequestClient(token);
         const organization = await client.organization.createOneOrganization(params);
 
-        console.log("createOrganization organization", organization);
+        // console.log("createOrganization organization", organization);
 
         return organization;
       },
@@ -31,7 +31,7 @@ export const useOrganizationApi = () => {
       const userInfo = await fetchUserInfo();
       const organizations = (userInfo?.organization_data || []) as OrganizationData[];
 
-      console.log("getOrganizations organizations", organizations);
+      // console.log("getOrganizations organizations", organizations);
 
       return organizations;
     }, [getAccessToken, fetchUserInfo]),
