@@ -8,6 +8,7 @@ export default function PlanCard({
   billingInterval,
   features,
   onSelect,
+  buttonDisabled,
 }: {
   name: string;
   description: string | null;
@@ -19,6 +20,7 @@ export default function PlanCard({
   billingInterval: string;
   features: string[];
   onSelect: () => any;
+  buttonDisabled: boolean;
 }) {
   return (
     <div className="border rounded-xl p-6 gradient-card shadow-md hover:shadow-lg transition-smooth">
@@ -40,7 +42,7 @@ export default function PlanCard({
           </li>
         ))}
       </ul>
-      <Button variant="accent" className="w-full" onClick={onSelect}>
+      <Button variant="accent" className="w-full" onClick={onSelect} disabled={buttonDisabled}>
         Choose {name}
       </Button>
     </div>

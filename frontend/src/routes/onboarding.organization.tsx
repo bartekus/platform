@@ -31,10 +31,10 @@ function OrganizationPage() {
 
       setLoading(false);
 
-      if (org.id) {
-        sleep(500);
-        await navigate({ to: `/dashboard/org/${org.id}` });
-      }
+      // if (org.id) {
+      //   sleep(500);
+      //   await navigate({ to: `/dashboard/org/${org.id}` });
+      // }
 
       return;
     } catch (error) {

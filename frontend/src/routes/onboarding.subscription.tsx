@@ -68,7 +68,7 @@ function SubscriptionPage() {
 
         const customData = user?.custom_data as UserCustomData;
 
-        console.log(`Checking for Stripe customer ID (attempt ${retryCount + 1}/${maxRetries}):`, customData);
+        // console.log(`Checking for Stripe customer ID (attempt ${retryCount + 1}/${maxRetries}):`, customData);
 
         if (!customData?.stripeCustomerId) {
           if (retryCount < maxRetries - 1) {
@@ -137,10 +137,6 @@ function SubscriptionPage() {
     return <div>Resolving user info...</div>;
   }
 
-  if (loadingSubscriptionPortal) {
-    return <div>Loading stripe portal...</div>;
-  }
-
   return (
     <div className="container mx-auto px-4 py-12">
       <div className="text-center mb-12">
@@ -180,6 +176,7 @@ function SubscriptionPage() {
               price={price}
               features={plan.metadata && Object.entries(plan.metadata).map(([k, v]) => `${v} ${k}`)}
               onSelect={() => price && handleSubscribe(price.id)}
+              buttonDisabled={loadingSubscriptionPortal}
             />
           );
         })}

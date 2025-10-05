@@ -13,13 +13,13 @@ import { createFileRoute } from '@tanstack/react-router'
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SignoutRouteImport } from './routes/signout'
 import { Route as SigninRouteImport } from './routes/signin'
+import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as CallbackRouteImport } from './routes/callback'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as OnboardingVerifySubscriptionRouteImport } from './routes/onboarding.verify-subscription'
 import { Route as OnboardingSubscriptionRouteImport } from './routes/onboarding.subscription'
 import { Route as OnboardingProfileRouteImport } from './routes/onboarding.profile'
 import { Route as OnboardingOrganizationRouteImport } from './routes/onboarding.organization'
-import { Route as Onboarding_layoutRouteImport } from './routes/onboarding.__layout'
 import { Route as Auth_layoutRouteImport } from './routes/_auth.__layout'
 import { Route as AuthDashboard_layoutRouteImport } from './routes/_auth.dashboard.__layout'
 import { Route as AuthDashboardOrgOrgIdRouteImport } from './routes/_auth.dashboard.org.$orgId'
@@ -29,14 +29,8 @@ import { Route as AuthDashboardOrgOrgIdSettingsRouteImport } from './routes/_aut
 import { Route as AuthDashboardOrgOrgIdMembersRouteImport } from './routes/_auth.dashboard.org.$orgId.members'
 import { Route as AuthDashboardOrgOrgIdAdminRouteImport } from './routes/_auth.dashboard.org.$orgId.admin'
 
-const OnboardingRouteImport = createFileRoute('/onboarding')()
 const AuthDashboardRouteImport = createFileRoute('/_auth/dashboard')()
 
-const OnboardingRoute = OnboardingRouteImport.update({
-  id: '/onboarding',
-  path: '/onboarding',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const SignoutRoute = SignoutRouteImport.update({
   id: '/signout',
   path: '/signout',
@@ -45,6 +39,11 @@ const SignoutRoute = SignoutRouteImport.update({
 const SigninRoute = SigninRouteImport.update({
   id: '/signin',
   path: '/signin',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OnboardingRoute = OnboardingRouteImport.update({
+  id: '/onboarding',
+  path: '/onboarding',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CallbackRoute = CallbackRouteImport.update({
@@ -81,10 +80,6 @@ const OnboardingProfileRoute = OnboardingProfileRouteImport.update({
 const OnboardingOrganizationRoute = OnboardingOrganizationRouteImport.update({
   id: '/organization',
   path: '/organization',
-  getParentRoute: () => OnboardingRoute,
-} as any)
-const Onboarding_layoutRoute = Onboarding_layoutRouteImport.update({
-  id: '/__layout',
   getParentRoute: () => OnboardingRoute,
 } as any)
 const Auth_layoutRoute = Auth_layoutRouteImport.update({
@@ -134,9 +129,9 @@ const AuthDashboardOrgOrgIdAdminRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/callback': typeof CallbackRoute
+  '/onboarding': typeof OnboardingRouteWithChildren
   '/signin': typeof SigninRoute
   '/signout': typeof SignoutRoute
-  '/onboarding': typeof Onboarding_layoutRoute
   '/onboarding/organization': typeof OnboardingOrganizationRoute
   '/onboarding/profile': typeof OnboardingProfileRoute
   '/onboarding/subscription': typeof OnboardingSubscriptionRoute
@@ -152,9 +147,9 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/callback': typeof CallbackRoute
+  '/onboarding': typeof OnboardingRouteWithChildren
   '/signin': typeof SigninRoute
   '/signout': typeof SignoutRoute
-  '/onboarding': typeof Onboarding_layoutRoute
   '/onboarding/organization': typeof OnboardingOrganizationRoute
   '/onboarding/profile': typeof OnboardingProfileRoute
   '/onboarding/subscription': typeof OnboardingSubscriptionRoute
@@ -170,11 +165,10 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/callback': typeof CallbackRoute
+  '/onboarding': typeof OnboardingRouteWithChildren
   '/signin': typeof SigninRoute
   '/signout': typeof SignoutRoute
   '/_auth/__layout': typeof Auth_layoutRoute
-  '/onboarding': typeof OnboardingRouteWithChildren
-  '/onboarding/__layout': typeof Onboarding_layoutRoute
   '/onboarding/organization': typeof OnboardingOrganizationRoute
   '/onboarding/profile': typeof OnboardingProfileRoute
   '/onboarding/subscription': typeof OnboardingSubscriptionRoute
@@ -193,9 +187,9 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/callback'
+    | '/onboarding'
     | '/signin'
     | '/signout'
-    | '/onboarding'
     | '/onboarding/organization'
     | '/onboarding/profile'
     | '/onboarding/subscription'
@@ -211,9 +205,9 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/callback'
+    | '/onboarding'
     | '/signin'
     | '/signout'
-    | '/onboarding'
     | '/onboarding/organization'
     | '/onboarding/profile'
     | '/onboarding/subscription'
@@ -228,11 +222,10 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/callback'
+    | '/onboarding'
     | '/signin'
     | '/signout'
     | '/_auth/__layout'
-    | '/onboarding'
-    | '/onboarding/__layout'
     | '/onboarding/organization'
     | '/onboarding/profile'
     | '/onboarding/subscription'
@@ -250,22 +243,15 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   CallbackRoute: typeof CallbackRoute
+  OnboardingRoute: typeof OnboardingRouteWithChildren
   SigninRoute: typeof SigninRoute
   SignoutRoute: typeof SignoutRoute
   Auth_layoutRoute: typeof Auth_layoutRoute
-  OnboardingRoute: typeof OnboardingRouteWithChildren
   AuthDashboardRoute: typeof AuthDashboardRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/onboarding': {
-      id: '/onboarding'
-      path: '/onboarding'
-      fullPath: '/onboarding'
-      preLoaderRoute: typeof OnboardingRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/signout': {
       id: '/signout'
       path: '/signout'
@@ -278,6 +264,13 @@ declare module '@tanstack/react-router' {
       path: '/signin'
       fullPath: '/signin'
       preLoaderRoute: typeof SigninRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/onboarding': {
+      id: '/onboarding'
+      path: '/onboarding'
+      fullPath: '/onboarding'
+      preLoaderRoute: typeof OnboardingRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/callback': {
@@ -327,13 +320,6 @@ declare module '@tanstack/react-router' {
       path: '/organization'
       fullPath: '/onboarding/organization'
       preLoaderRoute: typeof OnboardingOrganizationRouteImport
-      parentRoute: typeof OnboardingRoute
-    }
-    '/onboarding/__layout': {
-      id: '/onboarding/__layout'
-      path: '/onboarding'
-      fullPath: '/onboarding'
-      preLoaderRoute: typeof Onboarding_layoutRouteImport
       parentRoute: typeof OnboardingRoute
     }
     '/_auth/__layout': {
@@ -396,7 +382,6 @@ declare module '@tanstack/react-router' {
 }
 
 interface OnboardingRouteChildren {
-  Onboarding_layoutRoute: typeof Onboarding_layoutRoute
   OnboardingOrganizationRoute: typeof OnboardingOrganizationRoute
   OnboardingProfileRoute: typeof OnboardingProfileRoute
   OnboardingSubscriptionRoute: typeof OnboardingSubscriptionRoute
@@ -404,7 +389,6 @@ interface OnboardingRouteChildren {
 }
 
 const OnboardingRouteChildren: OnboardingRouteChildren = {
-  Onboarding_layoutRoute: Onboarding_layoutRoute,
   OnboardingOrganizationRoute: OnboardingOrganizationRoute,
   OnboardingProfileRoute: OnboardingProfileRoute,
   OnboardingSubscriptionRoute: OnboardingSubscriptionRoute,
@@ -453,10 +437,10 @@ const AuthDashboardRouteWithChildren = AuthDashboardRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CallbackRoute: CallbackRoute,
+  OnboardingRoute: OnboardingRouteWithChildren,
   SigninRoute: SigninRoute,
   SignoutRoute: SignoutRoute,
   Auth_layoutRoute: Auth_layoutRoute,
-  OnboardingRoute: OnboardingRouteWithChildren,
   AuthDashboardRoute: AuthDashboardRouteWithChildren,
 }
 export const routeTree = rootRouteImport

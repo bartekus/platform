@@ -1,5 +1,6 @@
 import { logtoApiEndpoint } from "~/config/logto";
 import { User, UserCustomData } from "~/types";
+// import { redirect } from "@tanstack/react-router";
 
 export async function fetchUserInfo(getAccessToken: () => Promise<string | undefined>): Promise<User> {
   const token = await getAccessToken();
@@ -13,7 +14,20 @@ export async function fetchUserInfo(getAccessToken: () => Promise<string | undef
     credentials: "include",
   });
 
+  console.log("res", res);
+  console.log("!res.ok", !res.ok);
+
   if (!res.ok) {
+    // throw redirect({
+    //   to: "/signin",
+    //   search: {
+    //     // Use the current location to power a redirect after login
+    //     // (Do not use `router.state.resolvedLocation` as it can
+    //     // potentially lag behind the actual current location)
+    //     redirect: location.href,
+    //   },
+    // });
+
     throw new Error("Failed to load user");
   }
 
