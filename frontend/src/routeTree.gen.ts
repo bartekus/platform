@@ -8,6 +8,8 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
+import { createFileRoute } from '@tanstack/react-router'
+
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SignoutRouteImport } from './routes/signout'
 import { Route as SigninRouteImport } from './routes/signin'
@@ -15,15 +17,19 @@ import { Route as CallbackRouteImport } from './routes/callback'
 import { Route as OnboardingRouteRouteImport } from './routes/onboarding.route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SubscriptionVerifyRouteImport } from './routes/subscription.verify'
-import { Route as OrgOrgIdRouteImport } from './routes/org.$orgId'
 import { Route as OnboardingSubscriptionRouteImport } from './routes/onboarding.subscription'
 import { Route as OnboardingProfileRouteImport } from './routes/onboarding.profile'
 import { Route as OnboardingOrganizationRouteImport } from './routes/onboarding.organization'
-import { Route as OrgOrgIdIndexRouteImport } from './routes/org.$orgId.index'
-import { Route as OrgOrgIdWorkspacesRouteImport } from './routes/org.$orgId.workspaces'
-import { Route as OrgOrgIdSettingsRouteImport } from './routes/org.$orgId.settings'
-import { Route as OrgOrgIdMembersRouteImport } from './routes/org.$orgId.members'
-import { Route as OrgOrgIdAdminRouteImport } from './routes/org.$orgId.admin'
+import { Route as Auth_layoutRouteImport } from './routes/_auth.__layout'
+import { Route as AuthDashboard_layoutRouteImport } from './routes/_auth.dashboard.__layout'
+import { Route as AuthDashboardOrgOrgIdRouteImport } from './routes/_auth.dashboard.org.$orgId'
+import { Route as AuthDashboardOrgOrgIdIndexRouteImport } from './routes/_auth.dashboard.org.$orgId.index'
+import { Route as AuthDashboardOrgOrgIdWorkspacesRouteImport } from './routes/_auth.dashboard.org.$orgId.workspaces'
+import { Route as AuthDashboardOrgOrgIdSettingsRouteImport } from './routes/_auth.dashboard.org.$orgId.settings'
+import { Route as AuthDashboardOrgOrgIdMembersRouteImport } from './routes/_auth.dashboard.org.$orgId.members'
+import { Route as AuthDashboardOrgOrgIdAdminRouteImport } from './routes/_auth.dashboard.org.$orgId.admin'
+
+const AuthDashboardRouteImport = createFileRoute('/_auth/dashboard')()
 
 const SignoutRoute = SignoutRouteImport.update({
   id: '/signout',
@@ -50,14 +56,14 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthDashboardRoute = AuthDashboardRouteImport.update({
+  id: '/_auth/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SubscriptionVerifyRoute = SubscriptionVerifyRouteImport.update({
   id: '/subscription/verify',
   path: '/subscription/verify',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const OrgOrgIdRoute = OrgOrgIdRouteImport.update({
-  id: '/org/$orgId',
-  path: '/org/$orgId',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OnboardingSubscriptionRoute = OnboardingSubscriptionRouteImport.update({
@@ -75,31 +81,49 @@ const OnboardingOrganizationRoute = OnboardingOrganizationRouteImport.update({
   path: '/organization',
   getParentRoute: () => OnboardingRouteRoute,
 } as any)
-const OrgOrgIdIndexRoute = OrgOrgIdIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => OrgOrgIdRoute,
+const Auth_layoutRoute = Auth_layoutRouteImport.update({
+  id: '/_auth/__layout',
+  getParentRoute: () => rootRouteImport,
 } as any)
-const OrgOrgIdWorkspacesRoute = OrgOrgIdWorkspacesRouteImport.update({
-  id: '/workspaces',
-  path: '/workspaces',
-  getParentRoute: () => OrgOrgIdRoute,
+const AuthDashboard_layoutRoute = AuthDashboard_layoutRouteImport.update({
+  id: '/__layout',
+  getParentRoute: () => AuthDashboardRoute,
 } as any)
-const OrgOrgIdSettingsRoute = OrgOrgIdSettingsRouteImport.update({
-  id: '/settings',
-  path: '/settings',
-  getParentRoute: () => OrgOrgIdRoute,
+const AuthDashboardOrgOrgIdRoute = AuthDashboardOrgOrgIdRouteImport.update({
+  id: '/org/$orgId',
+  path: '/org/$orgId',
+  getParentRoute: () => AuthDashboardRoute,
 } as any)
-const OrgOrgIdMembersRoute = OrgOrgIdMembersRouteImport.update({
-  id: '/members',
-  path: '/members',
-  getParentRoute: () => OrgOrgIdRoute,
-} as any)
-const OrgOrgIdAdminRoute = OrgOrgIdAdminRouteImport.update({
-  id: '/admin',
-  path: '/admin',
-  getParentRoute: () => OrgOrgIdRoute,
-} as any)
+const AuthDashboardOrgOrgIdIndexRoute =
+  AuthDashboardOrgOrgIdIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthDashboardOrgOrgIdRoute,
+  } as any)
+const AuthDashboardOrgOrgIdWorkspacesRoute =
+  AuthDashboardOrgOrgIdWorkspacesRouteImport.update({
+    id: '/workspaces',
+    path: '/workspaces',
+    getParentRoute: () => AuthDashboardOrgOrgIdRoute,
+  } as any)
+const AuthDashboardOrgOrgIdSettingsRoute =
+  AuthDashboardOrgOrgIdSettingsRouteImport.update({
+    id: '/settings',
+    path: '/settings',
+    getParentRoute: () => AuthDashboardOrgOrgIdRoute,
+  } as any)
+const AuthDashboardOrgOrgIdMembersRoute =
+  AuthDashboardOrgOrgIdMembersRouteImport.update({
+    id: '/members',
+    path: '/members',
+    getParentRoute: () => AuthDashboardOrgOrgIdRoute,
+  } as any)
+const AuthDashboardOrgOrgIdAdminRoute =
+  AuthDashboardOrgOrgIdAdminRouteImport.update({
+    id: '/admin',
+    path: '/admin',
+    getParentRoute: () => AuthDashboardOrgOrgIdRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -110,13 +134,14 @@ export interface FileRoutesByFullPath {
   '/onboarding/organization': typeof OnboardingOrganizationRoute
   '/onboarding/profile': typeof OnboardingProfileRoute
   '/onboarding/subscription': typeof OnboardingSubscriptionRoute
-  '/org/$orgId': typeof OrgOrgIdRouteWithChildren
   '/subscription/verify': typeof SubscriptionVerifyRoute
-  '/org/$orgId/admin': typeof OrgOrgIdAdminRoute
-  '/org/$orgId/members': typeof OrgOrgIdMembersRoute
-  '/org/$orgId/settings': typeof OrgOrgIdSettingsRoute
-  '/org/$orgId/workspaces': typeof OrgOrgIdWorkspacesRoute
-  '/org/$orgId/': typeof OrgOrgIdIndexRoute
+  '/dashboard': typeof AuthDashboard_layoutRoute
+  '/dashboard/org/$orgId': typeof AuthDashboardOrgOrgIdRouteWithChildren
+  '/dashboard/org/$orgId/admin': typeof AuthDashboardOrgOrgIdAdminRoute
+  '/dashboard/org/$orgId/members': typeof AuthDashboardOrgOrgIdMembersRoute
+  '/dashboard/org/$orgId/settings': typeof AuthDashboardOrgOrgIdSettingsRoute
+  '/dashboard/org/$orgId/workspaces': typeof AuthDashboardOrgOrgIdWorkspacesRoute
+  '/dashboard/org/$orgId/': typeof AuthDashboardOrgOrgIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -128,11 +153,12 @@ export interface FileRoutesByTo {
   '/onboarding/profile': typeof OnboardingProfileRoute
   '/onboarding/subscription': typeof OnboardingSubscriptionRoute
   '/subscription/verify': typeof SubscriptionVerifyRoute
-  '/org/$orgId/admin': typeof OrgOrgIdAdminRoute
-  '/org/$orgId/members': typeof OrgOrgIdMembersRoute
-  '/org/$orgId/settings': typeof OrgOrgIdSettingsRoute
-  '/org/$orgId/workspaces': typeof OrgOrgIdWorkspacesRoute
-  '/org/$orgId': typeof OrgOrgIdIndexRoute
+  '/dashboard': typeof AuthDashboard_layoutRoute
+  '/dashboard/org/$orgId/admin': typeof AuthDashboardOrgOrgIdAdminRoute
+  '/dashboard/org/$orgId/members': typeof AuthDashboardOrgOrgIdMembersRoute
+  '/dashboard/org/$orgId/settings': typeof AuthDashboardOrgOrgIdSettingsRoute
+  '/dashboard/org/$orgId/workspaces': typeof AuthDashboardOrgOrgIdWorkspacesRoute
+  '/dashboard/org/$orgId': typeof AuthDashboardOrgOrgIdIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -141,16 +167,19 @@ export interface FileRoutesById {
   '/callback': typeof CallbackRoute
   '/signin': typeof SigninRoute
   '/signout': typeof SignoutRoute
+  '/_auth/__layout': typeof Auth_layoutRoute
   '/onboarding/organization': typeof OnboardingOrganizationRoute
   '/onboarding/profile': typeof OnboardingProfileRoute
   '/onboarding/subscription': typeof OnboardingSubscriptionRoute
-  '/org/$orgId': typeof OrgOrgIdRouteWithChildren
   '/subscription/verify': typeof SubscriptionVerifyRoute
-  '/org/$orgId/admin': typeof OrgOrgIdAdminRoute
-  '/org/$orgId/members': typeof OrgOrgIdMembersRoute
-  '/org/$orgId/settings': typeof OrgOrgIdSettingsRoute
-  '/org/$orgId/workspaces': typeof OrgOrgIdWorkspacesRoute
-  '/org/$orgId/': typeof OrgOrgIdIndexRoute
+  '/_auth/dashboard': typeof AuthDashboardRouteWithChildren
+  '/_auth/dashboard/__layout': typeof AuthDashboard_layoutRoute
+  '/_auth/dashboard/org/$orgId': typeof AuthDashboardOrgOrgIdRouteWithChildren
+  '/_auth/dashboard/org/$orgId/admin': typeof AuthDashboardOrgOrgIdAdminRoute
+  '/_auth/dashboard/org/$orgId/members': typeof AuthDashboardOrgOrgIdMembersRoute
+  '/_auth/dashboard/org/$orgId/settings': typeof AuthDashboardOrgOrgIdSettingsRoute
+  '/_auth/dashboard/org/$orgId/workspaces': typeof AuthDashboardOrgOrgIdWorkspacesRoute
+  '/_auth/dashboard/org/$orgId/': typeof AuthDashboardOrgOrgIdIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -163,13 +192,14 @@ export interface FileRouteTypes {
     | '/onboarding/organization'
     | '/onboarding/profile'
     | '/onboarding/subscription'
-    | '/org/$orgId'
     | '/subscription/verify'
-    | '/org/$orgId/admin'
-    | '/org/$orgId/members'
-    | '/org/$orgId/settings'
-    | '/org/$orgId/workspaces'
-    | '/org/$orgId/'
+    | '/dashboard'
+    | '/dashboard/org/$orgId'
+    | '/dashboard/org/$orgId/admin'
+    | '/dashboard/org/$orgId/members'
+    | '/dashboard/org/$orgId/settings'
+    | '/dashboard/org/$orgId/workspaces'
+    | '/dashboard/org/$orgId/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -181,11 +211,12 @@ export interface FileRouteTypes {
     | '/onboarding/profile'
     | '/onboarding/subscription'
     | '/subscription/verify'
-    | '/org/$orgId/admin'
-    | '/org/$orgId/members'
-    | '/org/$orgId/settings'
-    | '/org/$orgId/workspaces'
-    | '/org/$orgId'
+    | '/dashboard'
+    | '/dashboard/org/$orgId/admin'
+    | '/dashboard/org/$orgId/members'
+    | '/dashboard/org/$orgId/settings'
+    | '/dashboard/org/$orgId/workspaces'
+    | '/dashboard/org/$orgId'
   id:
     | '__root__'
     | '/'
@@ -193,16 +224,19 @@ export interface FileRouteTypes {
     | '/callback'
     | '/signin'
     | '/signout'
+    | '/_auth/__layout'
     | '/onboarding/organization'
     | '/onboarding/profile'
     | '/onboarding/subscription'
-    | '/org/$orgId'
     | '/subscription/verify'
-    | '/org/$orgId/admin'
-    | '/org/$orgId/members'
-    | '/org/$orgId/settings'
-    | '/org/$orgId/workspaces'
-    | '/org/$orgId/'
+    | '/_auth/dashboard'
+    | '/_auth/dashboard/__layout'
+    | '/_auth/dashboard/org/$orgId'
+    | '/_auth/dashboard/org/$orgId/admin'
+    | '/_auth/dashboard/org/$orgId/members'
+    | '/_auth/dashboard/org/$orgId/settings'
+    | '/_auth/dashboard/org/$orgId/workspaces'
+    | '/_auth/dashboard/org/$orgId/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -211,8 +245,9 @@ export interface RootRouteChildren {
   CallbackRoute: typeof CallbackRoute
   SigninRoute: typeof SigninRoute
   SignoutRoute: typeof SignoutRoute
-  OrgOrgIdRoute: typeof OrgOrgIdRouteWithChildren
+  Auth_layoutRoute: typeof Auth_layoutRoute
   SubscriptionVerifyRoute: typeof SubscriptionVerifyRoute
+  AuthDashboardRoute: typeof AuthDashboardRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
@@ -252,18 +287,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_auth/dashboard': {
+      id: '/_auth/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof AuthDashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/subscription/verify': {
       id: '/subscription/verify'
       path: '/subscription/verify'
       fullPath: '/subscription/verify'
       preLoaderRoute: typeof SubscriptionVerifyRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/org/$orgId': {
-      id: '/org/$orgId'
-      path: '/org/$orgId'
-      fullPath: '/org/$orgId'
-      preLoaderRoute: typeof OrgOrgIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/onboarding/subscription': {
@@ -287,40 +322,61 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OnboardingOrganizationRouteImport
       parentRoute: typeof OnboardingRouteRoute
     }
-    '/org/$orgId/': {
-      id: '/org/$orgId/'
+    '/_auth/__layout': {
+      id: '/_auth/__layout'
+      path: ''
+      fullPath: ''
+      preLoaderRoute: typeof Auth_layoutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_auth/dashboard/__layout': {
+      id: '/_auth/dashboard/__layout'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof AuthDashboard_layoutRouteImport
+      parentRoute: typeof AuthDashboardRoute
+    }
+    '/_auth/dashboard/org/$orgId': {
+      id: '/_auth/dashboard/org/$orgId'
+      path: '/org/$orgId'
+      fullPath: '/dashboard/org/$orgId'
+      preLoaderRoute: typeof AuthDashboardOrgOrgIdRouteImport
+      parentRoute: typeof AuthDashboardRoute
+    }
+    '/_auth/dashboard/org/$orgId/': {
+      id: '/_auth/dashboard/org/$orgId/'
       path: '/'
-      fullPath: '/org/$orgId/'
-      preLoaderRoute: typeof OrgOrgIdIndexRouteImport
-      parentRoute: typeof OrgOrgIdRoute
+      fullPath: '/dashboard/org/$orgId/'
+      preLoaderRoute: typeof AuthDashboardOrgOrgIdIndexRouteImport
+      parentRoute: typeof AuthDashboardOrgOrgIdRoute
     }
-    '/org/$orgId/workspaces': {
-      id: '/org/$orgId/workspaces'
+    '/_auth/dashboard/org/$orgId/workspaces': {
+      id: '/_auth/dashboard/org/$orgId/workspaces'
       path: '/workspaces'
-      fullPath: '/org/$orgId/workspaces'
-      preLoaderRoute: typeof OrgOrgIdWorkspacesRouteImport
-      parentRoute: typeof OrgOrgIdRoute
+      fullPath: '/dashboard/org/$orgId/workspaces'
+      preLoaderRoute: typeof AuthDashboardOrgOrgIdWorkspacesRouteImport
+      parentRoute: typeof AuthDashboardOrgOrgIdRoute
     }
-    '/org/$orgId/settings': {
-      id: '/org/$orgId/settings'
+    '/_auth/dashboard/org/$orgId/settings': {
+      id: '/_auth/dashboard/org/$orgId/settings'
       path: '/settings'
-      fullPath: '/org/$orgId/settings'
-      preLoaderRoute: typeof OrgOrgIdSettingsRouteImport
-      parentRoute: typeof OrgOrgIdRoute
+      fullPath: '/dashboard/org/$orgId/settings'
+      preLoaderRoute: typeof AuthDashboardOrgOrgIdSettingsRouteImport
+      parentRoute: typeof AuthDashboardOrgOrgIdRoute
     }
-    '/org/$orgId/members': {
-      id: '/org/$orgId/members'
+    '/_auth/dashboard/org/$orgId/members': {
+      id: '/_auth/dashboard/org/$orgId/members'
       path: '/members'
-      fullPath: '/org/$orgId/members'
-      preLoaderRoute: typeof OrgOrgIdMembersRouteImport
-      parentRoute: typeof OrgOrgIdRoute
+      fullPath: '/dashboard/org/$orgId/members'
+      preLoaderRoute: typeof AuthDashboardOrgOrgIdMembersRouteImport
+      parentRoute: typeof AuthDashboardOrgOrgIdRoute
     }
-    '/org/$orgId/admin': {
-      id: '/org/$orgId/admin'
+    '/_auth/dashboard/org/$orgId/admin': {
+      id: '/_auth/dashboard/org/$orgId/admin'
       path: '/admin'
-      fullPath: '/org/$orgId/admin'
-      preLoaderRoute: typeof OrgOrgIdAdminRouteImport
-      parentRoute: typeof OrgOrgIdRoute
+      fullPath: '/dashboard/org/$orgId/admin'
+      preLoaderRoute: typeof AuthDashboardOrgOrgIdAdminRouteImport
+      parentRoute: typeof AuthDashboardOrgOrgIdRoute
     }
   }
 }
@@ -341,24 +397,39 @@ const OnboardingRouteRouteWithChildren = OnboardingRouteRoute._addFileChildren(
   OnboardingRouteRouteChildren,
 )
 
-interface OrgOrgIdRouteChildren {
-  OrgOrgIdAdminRoute: typeof OrgOrgIdAdminRoute
-  OrgOrgIdMembersRoute: typeof OrgOrgIdMembersRoute
-  OrgOrgIdSettingsRoute: typeof OrgOrgIdSettingsRoute
-  OrgOrgIdWorkspacesRoute: typeof OrgOrgIdWorkspacesRoute
-  OrgOrgIdIndexRoute: typeof OrgOrgIdIndexRoute
+interface AuthDashboardOrgOrgIdRouteChildren {
+  AuthDashboardOrgOrgIdAdminRoute: typeof AuthDashboardOrgOrgIdAdminRoute
+  AuthDashboardOrgOrgIdMembersRoute: typeof AuthDashboardOrgOrgIdMembersRoute
+  AuthDashboardOrgOrgIdSettingsRoute: typeof AuthDashboardOrgOrgIdSettingsRoute
+  AuthDashboardOrgOrgIdWorkspacesRoute: typeof AuthDashboardOrgOrgIdWorkspacesRoute
+  AuthDashboardOrgOrgIdIndexRoute: typeof AuthDashboardOrgOrgIdIndexRoute
 }
 
-const OrgOrgIdRouteChildren: OrgOrgIdRouteChildren = {
-  OrgOrgIdAdminRoute: OrgOrgIdAdminRoute,
-  OrgOrgIdMembersRoute: OrgOrgIdMembersRoute,
-  OrgOrgIdSettingsRoute: OrgOrgIdSettingsRoute,
-  OrgOrgIdWorkspacesRoute: OrgOrgIdWorkspacesRoute,
-  OrgOrgIdIndexRoute: OrgOrgIdIndexRoute,
+const AuthDashboardOrgOrgIdRouteChildren: AuthDashboardOrgOrgIdRouteChildren = {
+  AuthDashboardOrgOrgIdAdminRoute: AuthDashboardOrgOrgIdAdminRoute,
+  AuthDashboardOrgOrgIdMembersRoute: AuthDashboardOrgOrgIdMembersRoute,
+  AuthDashboardOrgOrgIdSettingsRoute: AuthDashboardOrgOrgIdSettingsRoute,
+  AuthDashboardOrgOrgIdWorkspacesRoute: AuthDashboardOrgOrgIdWorkspacesRoute,
+  AuthDashboardOrgOrgIdIndexRoute: AuthDashboardOrgOrgIdIndexRoute,
 }
 
-const OrgOrgIdRouteWithChildren = OrgOrgIdRoute._addFileChildren(
-  OrgOrgIdRouteChildren,
+const AuthDashboardOrgOrgIdRouteWithChildren =
+  AuthDashboardOrgOrgIdRoute._addFileChildren(
+    AuthDashboardOrgOrgIdRouteChildren,
+  )
+
+interface AuthDashboardRouteChildren {
+  AuthDashboard_layoutRoute: typeof AuthDashboard_layoutRoute
+  AuthDashboardOrgOrgIdRoute: typeof AuthDashboardOrgOrgIdRouteWithChildren
+}
+
+const AuthDashboardRouteChildren: AuthDashboardRouteChildren = {
+  AuthDashboard_layoutRoute: AuthDashboard_layoutRoute,
+  AuthDashboardOrgOrgIdRoute: AuthDashboardOrgOrgIdRouteWithChildren,
+}
+
+const AuthDashboardRouteWithChildren = AuthDashboardRoute._addFileChildren(
+  AuthDashboardRouteChildren,
 )
 
 const rootRouteChildren: RootRouteChildren = {
@@ -367,8 +438,9 @@ const rootRouteChildren: RootRouteChildren = {
   CallbackRoute: CallbackRoute,
   SigninRoute: SigninRoute,
   SignoutRoute: SignoutRoute,
-  OrgOrgIdRoute: OrgOrgIdRouteWithChildren,
+  Auth_layoutRoute: Auth_layoutRoute,
   SubscriptionVerifyRoute: SubscriptionVerifyRoute,
+  AuthDashboardRoute: AuthDashboardRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

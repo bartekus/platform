@@ -207,6 +207,12 @@ export namespace organization {
         description?: string
     }
 
+    export interface OrganizationScope {
+        id: string
+        name: string
+        description?: string
+    }
+
     export interface OrganizationsResponse {
         totalCount: number
         list: Organization[]
@@ -323,47 +329,51 @@ export namespace user {
     export interface User {
         id?: string
         username?: string
-        primaryEmail?: string
-        primaryPhone?: string
+        "primary_email"?: string
+        "primary_phone"?: string
         name?: string
         picture?: string
         identities?: Identities
-        lastSignInAt?: number
-        createdAt?: number
-        updatedAt?: number
-        customData?: CustomData
+        "last_sign_in_at"?: number
+        "created_at"?: number
+        "updated_at"?: number
+        "custom_data"?: CustomData
         profile?: UserProfile
-        applicationId?: string
-        isSuspended?: true
-        hasPassword?: true
-        ssoIdentities?: SsoIdentity
+        "organization_data"?: organization.OrganizationScope[]
+        organizations?: organization.Organization[]
+        "application_id"?: string
+        "is_suspended"?: true
+        "has_password"?: true
+        "sso_identities"?: SsoIdentity
     }
 
     export interface User {
         id?: string
         username?: string
-        primaryEmail?: string
-        primaryPhone?: string
+        "primary_email"?: string
+        "primary_phone"?: string
         name?: string
         picture?: string
         identities?: Identities
-        lastSignInAt?: number
-        createdAt?: number
-        updatedAt?: number
-        customData?: CustomData
+        "last_sign_in_at"?: number
+        "created_at"?: number
+        "updated_at"?: number
+        "custom_data"?: CustomData
         profile?: UserProfile
-        applicationId?: string
-        isSuspended?: true
-        hasPassword?: true
-        ssoIdentities?: SsoIdentity
+        "organization_data"?: organization.OrganizationScope[]
+        organizations?: organization.Organization[]
+        "application_id"?: string
+        "is_suspended"?: true
+        "has_password"?: true
+        "sso_identities"?: SsoIdentity
     }
 
     export interface UserProfile {
-        familyName?: string
-        givenName?: string
-        middleName?: string
+        "family_name"?: string
+        "given_name"?: string
+        "middle_name"?: string
         nickname?: string
-        preferredUsername?: string
+        "preferred_username"?: string
         profile?: string
         website?: string
         gender?: string

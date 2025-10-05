@@ -1,7 +1,6 @@
 import { useEffect } from "react";
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useLogto } from "@logto/react";
-import { sessionManager } from "~/lib/session";
 import { authConfig } from "~/config/logto";
 
 export const Route = createFileRoute("/signout")({
@@ -14,9 +13,6 @@ function SignOutPage() {
   useEffect(() => {
     const handleSignOut = async () => {
       try {
-        // Clear our session data
-        sessionManager.clearSession();
-        
         // Sign out from Logto
         await signOut(authConfig.signOutRedirectUri);
       } catch (error) {

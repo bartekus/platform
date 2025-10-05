@@ -1,12 +1,12 @@
-import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
+import { useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useLogto, useHandleSignInCallback } from "@logto/react";
 
 import { authConfig } from "~/config/logto";
 import { fallbackToRoot, onboardingProfile, onboardingSubscription, onboardingOrganization } from "~/config/constants";
-import { sessionManager } from "~/lib/session";
 import { sleep } from "~/lib/utils";
+import { User, UserCustomData } from "~/types";
 
 export const Route = createFileRoute("/callback")({
   component: CallbackPage,
@@ -28,7 +28,7 @@ function CallbackPage() {
   const { isAuthenticated, getAccessToken, fetchUserInfo } = useLogto();
 
   useEffect(() => {
-    const resolveLogtoCallback = async () => {
+    const resolveLogtoProvided = async () => {
       if (isLoading && !isAuthenticated) {
         return;
       }
@@ -36,62 +36,53 @@ function CallbackPage() {
       if (!isLoading && isAuthenticated) {
         try {
           setIsResolving(true);
+          await sleep(5000);
 
-          // Give Logto a moment to fully initialize
-          await sleep(2000);
+          const accessToken = await getAccessToken(authConfig.apiResourceIndicator);
+          // console.log("accessToken", accessToken);
 
-          // Initialize the session manager with Logto hooks
-          sessionManager.setLogtoHooksGetter(() => ({
-            getAccessToken,
-            fetchUserInfo,
-          }));
+          const userInfo = (await fetchUserInfo()) as User;
+          console.log("userInfo");
+          console.dir(userInfo, { depth: null });
+          const customData = userInfo?.custom_data as UserCustomData;
 
-          // Load the session using our new session system
-          const session = await sessionManager.loadSession();
-
-          console.log("Session loaded:", session);
+          // Check subscription status from custom_data
+          const hasActiveSubscription = customData?.subscription?.status === "active";
+          // Check profile status from userInfo
+          const hasUsername = !!userInfo?.username;
+          // Check profile status from userInfo
+          const hasOrganization = userInfo?.organizations && userInfo?.organizations?.length > 0;
+          const firstOrg = userInfo?.organizations?.[0];
 
           setIsResolving(false);
 
-          // Determine where to redirect based on onboarding status
-          if (!session.subscription || session.subscription.status !== "active") {
-            // No active subscription - redirect to subscription page
+          if (!hasActiveSubscription) {
             await navigate({ to: onboardingSubscription, replace: true });
             return;
           }
 
-          if (!session.onboarding.profileCompleted) {
-            // Has subscription but profile not completed - redirect to profile
+          if (hasActiveSubscription && !hasUsername) {
             await navigate({ to: onboardingProfile, replace: true });
             return;
           }
 
-          if (!session.onboarding.organizationCompleted) {
-            // Profile completed but no organization - redirect to organization setup
+          if (hasActiveSubscription && hasUsername && !hasOrganization) {
             await navigate({ to: onboardingOrganization, replace: true });
             return;
           }
 
-          // User is fully onboarded - redirect to their default organization
-          if (session.defaultOrgId) {
-            await navigate({ to: `/org/${session.defaultOrgId}`, replace: true });
+          if (hasActiveSubscription && hasUsername && hasOrganization) {
+            await navigate({ to: `/dashboard/org/${firstOrg}`, replace: true });
             return;
           }
-
-          // Fallback - redirect to organization setup if no default org
-          await navigate({ to: onboardingOrganization, replace: true });
         } catch (error) {
-          console.error("Failed to resolve callback:", error);
-          setIsResolving(false);
-
-          // On error, redirect to fallback
-          await navigate({ to: fallbackToRoot, replace: true });
+          console.error("Failed to fetch organizations:", error);
         }
       }
     };
 
-    void resolveLogtoCallback();
-  }, [isLoading, isAuthenticated, fetchUserInfo, getAccessToken, navigate]);
+    void resolveLogtoProvided();
+  }, [isLoading, isAuthenticated, fetchUserInfo, getAccessToken, navigate, setIsResolving]);
 
   if (error) {
     return (

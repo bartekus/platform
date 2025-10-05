@@ -2,8 +2,9 @@ import type { LucideIcon } from "lucide-react";
 import { file_upload, organization, workspace, user } from "~/lib/client";
 
 import Organization = organization.Organization;
+import OrganizationData = organization.OrganizationScope;
 import CreateOrganizationParams = organization.CreateOrganizationParams;
-export type { Organization, CreateOrganizationParams };
+export type { Organization, OrganizationData, CreateOrganizationParams };
 
 import Workspace = workspace.Workspace;
 import CreateWorkspaceParams = workspace.CreateWorkspaceRequest;
@@ -16,8 +17,10 @@ import FileMetadata = file_upload.FileMetadata;
 export type { FileMetadata };
 
 import User = user.User;
+import UserCustomData = user.CustomData;
 import UserProfile = user.UserProfile;
-export type { User, UserProfile };
+
+export type { User, UserCustomData, UserProfile };
 
 export class ApiRequestError extends Error {
   status?: number;
@@ -34,29 +37,8 @@ export interface FetchOptions extends RequestInit {
   rawBody?: boolean;
 }
 
-export interface OrganizationData {
-  id: string;
-  name: string;
-  description?: string;
-  logo?: LucideIcon;
-  plan?: string;
-  role?: string;
-}
-
 export interface OrganizationCreateFormProps {
   onSuccess: (orgId: string) => void;
-}
-
-export interface UserSubscription {
-  id: string;
-  status: string;
-  priceId: string;
-  currentPeriodEnd: number;
-}
-
-export interface UserCustomData {
-  subscription?: UserSubscription;
-  stripeCustomerId?: string;
 }
 
 export interface NavItem {
@@ -74,12 +56,4 @@ export interface Project {
   name: string;
   url: string;
   icon: LucideIcon;
-}
-
-export interface UserData {
-  name: string;
-  email: string;
-  avatar?: string;
-  customData?: Record<string, UserCustomData>;
-  custom_data?: Record<string, UserCustomData>;
 }

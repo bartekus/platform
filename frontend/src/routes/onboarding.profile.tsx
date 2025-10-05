@@ -1,18 +1,15 @@
 import { useLogto } from "@logto/react";
 import { useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { requireActiveSub } from "~/lib/session";
 
-// import { requireActiveSub } from "~/lib/guards";
 import { fallbackToRoot, onboardingOrganization, onboardingProfile, onboardingSubscription } from "~/config/constants";
-import { User, UserCustomData, UserProfile } from "~/types";
+import { User, UserCustomData, UserProfile, OrganizationData } from "~/types";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import { useUserApi } from "~/api/user";
 
 export const Route = createFileRoute(`${onboardingProfile}`)({
-  beforeLoad: requireActiveSub,
   component: ProfilePage,
 });
 
@@ -41,14 +38,6 @@ function ProfilePage() {
           return;
         }
 
-        // Check subscription status from custom_data
-        const hasActiveSubscription = customData?.subscription?.status === "active";
-
-        if (!hasActiveSubscription) {
-          await navigate({ to: onboardingSubscription });
-          return;
-        }
-
         const profileData = userInfo?.profile as UserProfile;
 
         const hasUsername = userInfo?.username;
@@ -57,10 +46,11 @@ function ProfilePage() {
 
         if (hasUsername || hasProfileZoneinfo || hasProfileLocale) {
           await navigate({ to: onboardingOrganization });
-          return;
         }
+
+        return;
       } catch (error) {
-        console.error("Subscription verification error:", error);
+        console.error("Profile verification error:", error);
         window.location.href = "/error";
       }
     };
@@ -75,6 +65,9 @@ function ProfilePage() {
     try {
       const payload = Object.fromEntries(new FormData(e.currentTarget).entries());
       await updateUserProfile(payload as User);
+
+      setLoading(false);
+
       await navigate({ to: onboardingOrganization });
     } catch (error) {
       console.error("Profile update error:", error);

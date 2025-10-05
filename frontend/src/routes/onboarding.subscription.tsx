@@ -1,7 +1,6 @@
 import { useLogto } from "@logto/react";
 import { useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { requireAuth } from "~/lib/session";
 
 import getRequestClient from "~/lib/get-request-client";
 import { useSubscriptionApi } from "~/api/subsciption";
@@ -14,7 +13,6 @@ import { sleep } from "~/lib/utils";
 import type { UserCustomData } from "~/types";
 
 export const Route = createFileRoute("/onboarding/subscription")({
-  beforeLoad: requireAuth,
   component: SubscriptionPage,
 });
 
@@ -69,9 +67,9 @@ function SubscriptionPage() {
             // No Stripe customer ID yet, retry
             console.log(`No Stripe customer ID found, retrying... (${retryCount + 1}/${maxRetries})`);
             retryCount++;
-            
+
             // Wait for webhook to process customer creation
-            await sleep(2000 + (retryCount * 1000)); // 2s, 3s, 4s
+            await sleep(2000 + retryCount * 1000); // 2s, 3s, 4s
             return attemptSubscription();
           } else {
             // Max retries reached

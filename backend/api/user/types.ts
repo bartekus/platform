@@ -1,3 +1,5 @@
+import { Organization, OrganizationScope } from "../organization/types";
+
 export type SubscriptionStatus = "active" | "trialing" | "past_due" | "canceled" | "unpaid";
 
 export interface Subscription {
@@ -41,11 +43,11 @@ export interface SsoIdentity {
 }
 
 export type UserProfile = Partial<{
-  familyName: string;
-  givenName: string;
-  middleName: string;
+  family_name: string;
+  given_name: string;
+  middle_name: string;
   nickname: string;
-  preferredUsername: string;
+  preferred_username: string;
   profile: string;
   website: string;
   gender: string;
@@ -65,18 +67,20 @@ export type UserProfile = Partial<{
 export type User = Partial<{
   id: string;
   username: string;
-  primaryEmail: string;
-  primaryPhone: string;
+  primary_email: string;
+  primary_phone: string;
   name: string;
   picture: string;
   identities: Identities;
-  lastSignInAt: number; // ms since epoch
-  createdAt: number; // ms since epoch
-  updatedAt: number; // ms since epoch
-  customData: CustomData;
+  last_sign_in_at: number; // ms since epoch
+  created_at: number; // ms since epoch
+  updated_at: number; // ms since epoch
+  custom_data: CustomData;
   profile: UserProfile;
-  applicationId: string;
-  isSuspended: true;
-  hasPassword: true;
-  ssoIdentities: SsoIdentity;
+  organization_data: OrganizationScope[];
+  organizations: Organization[];
+  application_id: string;
+  is_suspended: true;
+  has_password: true;
+  sso_identities: SsoIdentity;
 }>;

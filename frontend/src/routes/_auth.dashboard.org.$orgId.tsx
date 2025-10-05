@@ -1,10 +1,6 @@
 import { useLogto } from "@logto/react";
 import { createFileRoute, Link, Outlet } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { requireOnboarding, useSession } from "~/lib/session";
-
-// import { requireOnboarding } from "~/lib/guards";
-// import { loadSession, Session, Role } from "~/lib/session";
 
 import { useOrganizationApi } from "~/api/organization";
 import OrgSwitcher from "~/components/OrgSwitcher";
@@ -12,15 +8,13 @@ import { useWorkspaceApi } from "~/api/workspace";
 
 import type { Organization, Workspace } from "~/types";
 
-export const Route = createFileRoute("/org/$orgId")({
-  beforeLoad: requireOnboarding,
+export const Route = createFileRoute("/_auth/dashboard/org/$orgId")({
   component: OrgLayout,
 });
 
 function OrgLayout() {
   const { orgId } = Route.useParams();
   const { isAuthenticated } = useLogto();
-  const { session } = useSession();
   const { getUserOrganizationScopes, getOrganizations } = useOrganizationApi();
   const { getWorkspaces, updateWorkspace, deleteWorkspace } = useWorkspaceApi();
 
@@ -69,18 +63,19 @@ function OrgLayout() {
   }
 
   // Get current organization from session or fallback
-  const currentOrg = session?.organizations.find(o => o.id === orgId) || {
+  const currentOrg = organizations.find((o) => o.id === orgId) || {
     id: orgId,
     name: "Default Organization",
-    role: "admin" as const
+    role: "admin" as const,
   };
 
   // Convert organizations to the format expected by OrgSwitcher
-  const orgsForSwitcher = session?.organizations.map(org => ({
-    id: org.id,
-    name: org.name,
-    role: (org.role || "member") as "admin" | "editor" | "member"
-  })) || [];
+  // const orgsForSwitcher =
+  //   organizations.map((org) => ({
+  //     id: org.id,
+  //     name: org.name,
+  //     role: (org?.role || "member") as "admin" | "editor" | "member",
+  //   })) || [];
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -92,45 +87,45 @@ function OrgLayout() {
             </Link>
             <nav className="flex gap-6">
               <Link
-                to={`/org/${currentOrg.id}`}
+                to={`/dashboard/org/${currentOrg.id}`}
                 className="text-sm text-muted-foreground hover:text-foreground transition-smooth"
                 activeProps={{ className: "text-foreground font-medium" }}
               >
                 Overview
               </Link>
               <Link
-                to={`/org/${currentOrg.id}/workspaces`}
+                to={`/dashboard/org/${currentOrg.id}/workspaces`}
                 className="text-sm text-muted-foreground hover:text-foreground transition-smooth"
                 activeProps={{ className: "text-foreground font-medium" }}
               >
                 Workspaces
               </Link>
               <Link
-                to={`/org/${currentOrg.id}/members`}
+                to={`/dashboard/org/${currentOrg.id}/members`}
                 className="text-sm text-muted-foreground hover:text-foreground transition-smooth"
                 activeProps={{ className: "text-foreground font-medium" }}
               >
                 Members
               </Link>
               <Link
-                to={`/org/${currentOrg.id}/settings`}
+                to={`/dashboard/org/${currentOrg.id}/settings`}
                 className="text-sm text-muted-foreground hover:text-foreground transition-smooth"
                 activeProps={{ className: "text-foreground font-medium" }}
               >
                 Settings
               </Link>
-              {currentOrg.role === "admin" && (
-                <Link
-                  to={`/org/${currentOrg.id}/admin`}
-                  className="text-sm text-muted-foreground hover:text-foreground transition-smooth"
-                  activeProps={{ className: "text-foreground font-medium" }}
-                >
-                  Admin
-                </Link>
-              )}
+              {/*{currentOrg?.role === "admin" && (*/}
+              {/*  <Link*/}
+              {/*    to={`/dashboard/org/${currentOrg.id}/admin`}*/}
+              {/*    className="text-sm text-muted-foreground hover:text-foreground transition-smooth"*/}
+              {/*    activeProps={{ className: "text-foreground font-medium" }}*/}
+              {/*  >*/}
+              {/*    Admin*/}
+              {/*  </Link>*/}
+              {/*)}*/}
             </nav>
             <div className="ml-auto flex items-center gap-4">
-              <OrgSwitcher orgs={orgsForSwitcher} currentId={currentOrg.id} />
+              {/*<OrgSwitcher orgs={orgsForSwitcher} currentId={currentOrg.id} />*/}
               <Link to="/signout" className="text-sm text-muted-foreground hover:text-foreground transition-smooth">
                 Sign out
               </Link>
