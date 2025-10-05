@@ -1,13 +1,12 @@
+import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+
+import { onboardingOrganization } from "~/config/constants";
+import { useOrganizationApi } from "~/api/organization";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
-
-import { fallbackToRoot, onboardingOrganization, onboardingSubscription } from "~/config/constants";
-import { useLogto } from "@logto/react";
-import { useOrganizationApi } from "~/api/organization";
-import { OrganizationData, UserCustomData, UserProfile } from "~/types";
 import { sleep } from "~/lib/utils";
 
 export const Route = createFileRoute(`${onboardingOrganization}`)({
@@ -15,6 +14,7 @@ export const Route = createFileRoute(`${onboardingOrganization}`)({
 });
 
 function OrganizationPage() {
+  const qc = useQueryClient();
   const navigate = Route.useNavigate();
   const { createOrganization } = useOrganizationApi();
 
@@ -27,6 +27,7 @@ function OrganizationPage() {
     try {
       const payload = Object.fromEntries(new FormData(e.currentTarget).entries());
       const org = await createOrganization(payload as any);
+      await qc.invalidateQueries({ queryKey: ["userInfo"] });
 
       setLoading(false);
 

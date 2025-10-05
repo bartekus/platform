@@ -1,8 +1,6 @@
-// import { ReactNode } from "react";
-
+import { Outlet, createRootRoute } from "@tanstack/react-router";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
-import { Outlet, createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
 
 import appCss from "../index.css?url";
 
@@ -17,7 +15,7 @@ export const Route = createRootRoute({
         content: `width=device-width, initial-scale=1`,
       },
       {
-        title: `TanStack Start/DB/Electric Starter`,
+        title: `Platform starter`,
       },
     ],
     links: [
@@ -40,26 +38,10 @@ export const Route = createRootRoute({
 
 function RootComponent() {
   return (
-    // <RootDocument>
     <>
       <Outlet />
       <ReactQueryDevtools buttonPosition="bottom-right" />
       <TanStackRouterDevtools position="bottom-left" />
     </>
-    // </RootDocument>
   );
 }
-// Not available in SPA mode
-// function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
-//   return (
-//     <html>
-//       <head>
-//         <HeadContent />
-//       </head>
-//       <body>
-//         {children}
-//         <Scripts />
-//       </body>
-//     </html>
-//   );
-// }

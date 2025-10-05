@@ -16,11 +16,11 @@ export type { Workspace, CreateWorkspaceParams, UpdateWorkspaceParams };
 import FileMetadata = file_upload.FileMetadata;
 export type { FileMetadata };
 
-import User = user.User;
+import UserInfo = user.User;
 import UserCustomData = user.CustomData;
 import UserProfile = user.UserProfile;
 
-export type { User, UserCustomData, UserProfile };
+export type { UserInfo, UserCustomData, UserProfile };
 
 export class ApiRequestError extends Error {
   status?: number;

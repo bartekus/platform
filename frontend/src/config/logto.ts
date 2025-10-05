@@ -1,12 +1,12 @@
 import { LogtoConfig, UserScope, ReservedResource } from "@logto/react";
 
 import * as routePath from "./constants";
-import { onboardingOrganization, onboardingProfile, onboardingSubscription } from "./constants";
-console.log("import.meta.env");
-console.log(import.meta.env);
-
-console.log("window?.__ENV__");
-console.log(typeof window !== "undefined" && window?.__ENV__);
+// import { onboardingOrganization, onboardingProfile, onboardingSubscription } from "./constants";
+// console.log("import.meta.env");
+// console.log(import.meta.env);
+//
+// console.log("window?.__ENV__");
+// console.log(typeof window !== "undefined" && window?.__ENV__);
 
 const API_DOMAIN = import.meta.env?.VITE_API_DOMAIN || (typeof window !== "undefined" && window?.__ENV__?.VITE_API_DOMAIN);
 const LOGTO_APP_ID = import.meta.env?.VITE_LOGTO_APP_ID || (typeof window !== "undefined" && window?.__ENV__?.VITE_LOGTO_APP_ID);
@@ -59,4 +59,5 @@ export const authConfig = {
   onboardingOrganizationUri: `https://${WEB_DOMAIN}${routePath.onboardingOrganization}`,
 };
 
+export const logtoApiEndpoint = `https://${LOGTO_DOMAIN}`;
 export const encoreApiEndpoint = `https://${API_DOMAIN}`;

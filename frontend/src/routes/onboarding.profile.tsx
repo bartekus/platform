@@ -1,5 +1,6 @@
 import { useLogto } from "@logto/react";
 import { useEffect, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 
 import { fallbackToRoot, onboardingOrganization, onboardingProfile, onboardingSubscription } from "~/config/constants";
@@ -14,6 +15,7 @@ export const Route = createFileRoute(`${onboardingProfile}`)({
 });
 
 function ProfilePage() {
+  const qc = useQueryClient();
   const navigate = Route.useNavigate();
   const { isAuthenticated, fetchUserInfo } = useLogto();
   const { updateUserProfile } = useUserApi();
@@ -29,6 +31,7 @@ function ProfilePage() {
 
       try {
         const userInfo = await fetchUserInfo();
+        await qc.invalidateQueries({ queryKey: ["userInfo"] });
 
         const customData = userInfo?.custom_data as UserCustomData;
 
@@ -56,7 +59,7 @@ function ProfilePage() {
     };
 
     checkUserProfile();
-  }, [isAuthenticated, fetchUserInfo, navigate]);
+  }, [isAuthenticated, fetchUserInfo, navigate, qc]);
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();

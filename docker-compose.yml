@@ -204,6 +204,16 @@ services:
       - "traefik.http.routers.logto.tls=true"
       - "traefik.http.routers.logto.service=logto"
       - "traefik.http.services.logto.loadbalancer.server.port=3001"
+      - "traefik.http.routers.logto.middlewares=logto-cors@docker"
+
+      # CORS middleware (allow web origin, allow credentials)
+      - "traefik.http.middlewares.logto-cors.headers.accessControlAllowOriginList=https://web.localdev.online,https://backend.localdev.online,https://logto-admin.localdev.online"
+      - "traefik.http.middlewares.logto-cors.headers.accessControlAllowMethods=GET,POST,PUT,PATCH,DELETE,OPTIONS"
+      - "traefik.http.middlewares.logto-cors.headers.accessControlAllowHeaders=Authorization,Content-Type"
+      - "traefik.http.middlewares.logto-cors.headers.accessControlExposeHeaders=Content-Length,Content-Type,Location,Link,Total-Number,X-Total-Count"
+      - "traefik.http.middlewares.logto-cors.headers.accessControlAllowCredentials=true"
+      - "traefik.http.middlewares.logto-cors.headers.addVaryHeader=true"
+
       # Admin (port 3002)
       - "traefik.http.routers.logto-admin.rule=Host(`${LOGTO_ADMIN_DOMAIN}`)"
       - "traefik.http.routers.logto-admin.entrypoints=websecure"

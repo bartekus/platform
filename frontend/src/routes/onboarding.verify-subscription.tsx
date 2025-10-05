@@ -1,17 +1,19 @@
-import { createFileRoute, useSearch } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import { useLogto } from "@logto/react";
 import { Loader2 } from "lucide-react";
+import { useLogto } from "@logto/react";
+import { useEffect, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { createFileRoute, useSearch } from "@tanstack/react-router";
 
-import type { UserCustomData } from "~/types";
 import { fallbackToRoot, onboardingProfile, onboardingSubscription } from "~/config/constants";
+import type { UserCustomData } from "~/types";
 import { sleep } from "~/lib/utils";
 
-export const Route = createFileRoute("/subscription/verify")({
+export const Route = createFileRoute("/onboarding/verify-subscription")({
   component: VerifyPage,
 });
 
 function VerifyPage() {
+  const qc = useQueryClient();
   const navigate = Route.useNavigate();
   const { isAuthenticated, fetchUserInfo, getAccessToken } = useLogto();
   const [isVerifying, setIsVerifying] = useState(true);
@@ -21,12 +23,12 @@ function VerifyPage() {
   useEffect(() => {
     const verifySubscription = async () => {
       // Wait for authentication to be ready
-      if (!isAuthenticated) {
-        console.log("VerifyPage not authenticated");
-        // If not authenticated, redirect to callback to handle auth
-        await navigate({ to: "/callback", replace: true });
-        return;
-      }
+      // if (!isAuthenticated) {
+      //   console.log("VerifyPage not authenticated");
+      //   // If not authenticated, redirect to callback to handle auth
+      //   await navigate({ to: "/callback", replace: true });
+      //   return;
+      // }
 
       try {
         setIsVerifying(true);
@@ -38,6 +40,8 @@ function VerifyPage() {
 
         // Force refresh user info to get updated custom data
         const userInfo = await fetchUserInfo();
+        await qc.invalidateQueries({ queryKey: ["userInfo"] });
+
         const customData = userInfo?.custom_data as UserCustomData;
 
         console.log(`Fetched user info (attempt ${retryCount + 1}):`, userInfo);
@@ -75,9 +79,9 @@ function VerifyPage() {
     };
 
     verifySubscription();
-  }, [isAuthenticated, fetchUserInfo, getAccessToken, navigate, retryCount]);
+  }, [qc, isAuthenticated, fetchUserInfo, getAccessToken, navigate, retryCount]);
 
-  return (
+  return isVerifying ? (
     <div className="container mx-auto px-4 py-20 text-center">
       <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-accent" />
       <h1 className="text-2xl font-semibold mb-2">Finalizing your subscription</h1>
@@ -90,5 +94,5 @@ function VerifyPage() {
         <p className="text-sm text-muted-foreground mt-2">This may take a few moments while we process your payment</p>
       )}
     </div>
-  );
+  ) : null;
 }

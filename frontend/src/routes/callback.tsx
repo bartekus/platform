@@ -3,9 +3,9 @@ import { useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useLogto, useHandleSignInCallback } from "@logto/react";
 
-import { authConfig } from "~/config/logto";
 import { fallbackToRoot, onboardingProfile, onboardingSubscription, onboardingOrganization } from "~/config/constants";
-import { sleep } from "~/lib/utils";
+import { authConfig } from "~/config/logto";
+
 import { User, UserCustomData } from "~/types";
 
 export const Route = createFileRoute("/callback")({
@@ -28,7 +28,7 @@ function CallbackPage() {
   const { isAuthenticated, getAccessToken, fetchUserInfo } = useLogto();
 
   useEffect(() => {
-    const resolveLogtoProvided = async () => {
+    const resolveUserState = async () => {
       if (isLoading && !isAuthenticated) {
         return;
       }
@@ -36,14 +36,14 @@ function CallbackPage() {
       if (!isLoading && isAuthenticated) {
         try {
           setIsResolving(true);
-          await sleep(5000);
 
           const accessToken = await getAccessToken(authConfig.apiResourceIndicator);
-          // console.log("accessToken", accessToken);
+          console.log("Callback accessToken", accessToken);
 
           const userInfo = (await fetchUserInfo()) as User;
           console.log("userInfo");
           console.dir(userInfo, { depth: null });
+
           const customData = userInfo?.custom_data as UserCustomData;
 
           // Check subscription status from custom_data
@@ -76,12 +76,12 @@ function CallbackPage() {
             return;
           }
         } catch (error) {
-          console.error("Failed to fetch organizations:", error);
+          console.error("Failed to resolve Callback:", error);
         }
       }
     };
 
-    void resolveLogtoProvided();
+    void resolveUserState();
   }, [isLoading, isAuthenticated, fetchUserInfo, getAccessToken, navigate, setIsResolving]);
 
   if (error) {

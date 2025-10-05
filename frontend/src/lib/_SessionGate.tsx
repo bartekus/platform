@@ -9,6 +9,7 @@ export default function SessionGate() {
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
+      console.log("SessionGate");
       navigate({
         to: "/signin",
         search: { redirect: location.href ?? window.location.href },

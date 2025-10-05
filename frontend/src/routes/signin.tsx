@@ -1,31 +1,73 @@
 import { LogIn } from "lucide-react";
 import { useLogto } from "@logto/react";
 import { Button } from "~/components/ui/button";
-import { /*redirect,*/ createFileRoute } from "@tanstack/react-router";
+import { redirect, createFileRoute, useNavigate } from "@tanstack/react-router";
 
 import { authConfig } from "~/config/logto";
+import { useEffect, useState } from "react";
+import { fallbackToRoot, onboardingOrganization, onboardingProfile, onboardingSubscription } from "~/config/constants";
+import { UserCustomData, UserProfile } from "~/types";
 // import { z } from "zod";
 
 const { signInRedirectUri } = authConfig;
 
 export const Route = createFileRoute("/signin")({
-  // validateSearch: z.object({
-  //   redirect: z.string().optional().catch(""),
-  // }),
-  // beforeLoad: async ({ context, search }) => {
-  //   const { isAuthenticated } = await useLogto();
-  //
-  //   if (isAuthenticated) {
-  //     throw redirect({ to: signInRedirectUri });
-  //   }
-  // },
   component: SignInPage,
 });
 
 function SignInPage() {
-  const { signIn } = useLogto();
+  const { isLoading, isAuthenticated, fetchUserInfo, signIn } = useLogto();
+  const navigate = Route.useNavigate();
+  const [isResolving, setIsResolving] = useState<boolean>(false);
 
   const search = Route.useSearch();
+
+  useEffect(() => {
+    const checkIfAlreadyAuthenticated = async () => {
+      try {
+        if (!isLoading && isAuthenticated) {
+          const userInfo = await fetchUserInfo();
+
+          const customData = userInfo?.custom_data as UserCustomData;
+
+          // Check subscription status from custom_data
+          const hasActiveSubscription = customData?.subscription?.status === "active";
+          // Check profile status from userInfo
+          const hasUsername = !!userInfo?.username;
+          // Check profile status from userInfo
+          const hasOrganization = userInfo?.organizations && userInfo?.organizations?.length > 0;
+          const firstOrg = userInfo?.organizations?.[0];
+
+          setIsResolving(false);
+
+          if (!hasActiveSubscription) {
+            await navigate({ to: onboardingSubscription, replace: true });
+            return;
+          }
+
+          if (hasActiveSubscription && !hasUsername) {
+            await navigate({ to: onboardingProfile, replace: true });
+            return;
+          }
+
+          if (hasActiveSubscription && hasUsername && !hasOrganization) {
+            await navigate({ to: onboardingOrganization, replace: true });
+            return;
+          }
+
+          if (hasActiveSubscription && hasUsername && hasOrganization) {
+            await navigate({ to: `/dashboard/org/${firstOrg}`, replace: true });
+            return;
+          }
+        }
+      } catch (error) {
+        console.error("checkIfAlreadyAuthenticated verification error:", error);
+        window.location.href = "/error";
+      }
+    };
+
+    void checkIfAlreadyAuthenticated();
+  }, [isLoading, isAuthenticated, fetchUserInfo, navigate]);
 
   const handleSignIn = () => {
     signIn(`${signInRedirectUri}`);

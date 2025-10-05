@@ -11,6 +11,7 @@ import { stripe } from "~/lib/client";
 import { sleep } from "~/lib/utils";
 
 import type { UserCustomData } from "~/types";
+import { useQueryClient } from "@tanstack/react-query";
 
 export const Route = createFileRoute("/onboarding/subscription")({
   component: SubscriptionPage,
@@ -19,11 +20,14 @@ export const Route = createFileRoute("/onboarding/subscription")({
 const { onboardingVerifyUri, onboardingSubscriptionUri } = authConfig;
 
 function SubscriptionPage() {
+  const qc = useQueryClient();
   const navigate = Route.useNavigate();
   const { getAccessToken, fetchUserInfo } = useLogto();
   const { createUserSubscription } = useSubscriptionApi();
   const [plans, setPlans] = useState<stripe.StripeProduct[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loadingPlans, setLoadingPlans] = useState(true);
+  const [loadingStripeCustomerId, setLoadingStripeCustomerId] = useState(false);
+  const [loadingSubscriptionPortal, setLoadingSubscriptionPortal] = useState(false);
   const [billingInterval, setBillingInterval] = useState<"month" | "year">("month");
 
   useEffect(() => {
@@ -44,7 +48,7 @@ function SubscriptionPage() {
       } catch (error) {
         console.error("Error in loadPlans:", error);
       } finally {
-        setLoading(false);
+        setLoadingPlans(false);
       }
     };
 
@@ -56,8 +60,12 @@ function SubscriptionPage() {
     let retryCount = 0;
 
     const attemptSubscription = async (): Promise<void> => {
+      setLoadingStripeCustomerId(true);
+
       try {
         const userInfo = await fetchUserInfo();
+        await qc.invalidateQueries({ queryKey: ["userInfo"] });
+
         const customData = userInfo?.custom_data as UserCustomData;
 
         console.log(`Checking for Stripe customer ID (attempt ${retryCount + 1}/${maxRetries}):`, customData);
@@ -79,8 +87,11 @@ function SubscriptionPage() {
           }
         }
 
+        setLoadingStripeCustomerId(false);
         // Stripe customer ID found, proceed with subscription
         console.log("Stripe customer ID found:", customData.stripeCustomerId);
+
+        setLoadingSubscriptionPortal(true);
 
         const session = await createUserSubscription({
           priceId,
@@ -88,6 +99,8 @@ function SubscriptionPage() {
           successUrl: `${onboardingVerifyUri}`,
           cancelUrl: `${onboardingSubscriptionUri}`,
         });
+
+        setLoadingSubscriptionPortal(false);
 
         if (session.success && session.result?.url) {
           console.log("session success", session);
@@ -116,8 +129,16 @@ function SubscriptionPage() {
     return prices.find((price: { recurring: { interval: string } }) => price.recurring?.interval === billingInterval);
   };
 
-  if (loading) {
+  if (loadingPlans) {
     return <div>Loading plans...</div>;
+  }
+
+  if (loadingStripeCustomerId) {
+    return <div>Resolving user info...</div>;
+  }
+
+  if (loadingSubscriptionPortal) {
+    return <div>Loading stripe portal...</div>;
   }
 
   return (
