@@ -1,43 +1,47 @@
+import { useEffect } from "react";
 import { useLogto } from "@logto/react";
 import { useQuery } from "@tanstack/react-query";
 import { Outlet, useNavigate } from "@tanstack/react-router";
 
-import { fetchOidcUserInfo, needsOnboarding, nextRouteFor } from "~/api/logto";
+import { fetchOidcUserInfo, needsOnboarding, nextRouteFor, UnauthorizedError } from "~/api/logto";
+import { authConfig } from "~/config/logto";
 import type { User } from "~/types";
 
 export default function UserInfoGate() {
-  const { getAccessToken } = useLogto();
+  const { getAccessToken, signOut } = useLogto();
+  const navigate = useNavigate();
 
-  // Poll until onboarding completes.
   const {
     data: user,
     isFetching,
     status,
-    refetch,
-  } = useQuery<User>({
+    error,
+  } = useQuery<User, Error>({
     queryKey: ["user"],
     queryFn: () => fetchOidcUserInfo(getAccessToken),
-    // poll every 2s while the data is incomplete
+    retry: false,
     refetchInterval: (q) => (needsOnboarding(q.state.data as User | undefined) ? 2000 : false),
-    // if your backend pushes updates, you can also set staleTime generously
   });
 
-  const navigate = useNavigate();
+  // react to errors here (v5)
+  useEffect(() => {
+    if (error instanceof UnauthorizedError) {
+      (async () => {
+        await signOut(authConfig.signOutRedirectUri);
 
-  // Route users who need to finish onboarding
+        await navigate({ to: "/signin", replace: true });
+      })();
+    }
+  }, [error, signOut, navigate]);
+
   if (status === "success" && needsOnboarding(user)) {
-    const nextRouteUrl = nextRouteFor(user);
-
-    navigate({ to: nextRouteUrl, replace: true });
-
+    navigate({ to: nextRouteFor(user!), replace: true });
     return null;
   }
 
-  // While initially resolving (or between polls), render something lightweight
   if (status === "pending" || isFetching) {
     return <div>Finalizing your account…</div>;
   }
 
-  // All good → render protected content
   return <Outlet />;
 }

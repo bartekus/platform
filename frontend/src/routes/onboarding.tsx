@@ -3,13 +3,8 @@ import { useLogto } from "@logto/react";
 import { Link, Outlet } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-
-import { fetchOidcUserInfo, needsOnboarding, nextRouteFor } from "~/api/logto";
-import { useEffect } from "react";
-import { fallbackToRoot } from "~/config/constants";
-// import { useEffect } from "react";
-// import { fallbackToRoot, onboardingOrganization } from "~/config/constants";
-// import { UserCustomData, UserProfile } from "~/types";
+import { fetchOidcUserInfo, needsOnboarding, nextRouteFor, UnauthorizedError } from "~/api/logto";
+import { authConfig } from "~/config/logto";
 
 export const Route = createFileRoute("/onboarding")({
   component: OnboardingLayout,
@@ -17,60 +12,41 @@ export const Route = createFileRoute("/onboarding")({
 
 function OnboardingLayout() {
   const qc = useQueryClient();
-  const { isLoading, getAccessToken, isAuthenticated } = useLogto();
+  const { isLoading, getAccessToken, isAuthenticated, signOut } = useLogto();
   const navigate = useNavigate();
 
-  const { data: user } = useQuery({
+  const {
+    data: user,
+    status,
+    error,
+  } = useQuery({
     queryKey: ["user"],
     queryFn: () => fetchOidcUserInfo(getAccessToken),
+    retry: false,
     refetchInterval: (q) => (needsOnboarding(q.state.data) ? 2000 : false),
   });
 
-  useEffect(() => {
-    const checkUserProfile = async () => {
-      console.log("Onboard Route");
-      console.log("isAuthenticated", isAuthenticated);
-      if (!isLoading && !isAuthenticated) {
-        console.log("!isAuthenticated");
-        await navigate({ to: fallbackToRoot });
-        return;
-      }
+  React.useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      navigate({ to: "/" });
+    }
+  }, [isLoading, isAuthenticated, navigate]);
 
-      try {
-        // When backend finishes onboarding (e.g., org created/attached), bounce to dashboard
-        console.log("user", user);
-        console.log("needsOnboarding(user)", needsOnboarding(user));
+  React.useEffect(() => {
+    if (error instanceof UnauthorizedError) {
+      (async () => {
+        await signOut(authConfig.signOutRedirectUri);
 
-        if (user && !needsOnboarding(user)) {
-          console.log("Onboard Route user && !needsOnboarding(user)");
-          const nextRouteUrl = nextRouteFor(user);
+        await navigate({ to: "/signin", replace: true });
+      })();
+    }
+  }, [error, signOut, navigate]);
 
-          console.log("nextRouteUrl", nextRouteUrl);
-
-          await navigate({ to: nextRouteUrl, replace: true });
-          // const firstOrgId = user?.organization_data?.[0]?.id;
-          //
-          // console.log("firstOrgId", firstOrgId);
-          // if (firstOrgId) {
-          //   await navigate({ to: `/dashboard/org/${firstOrgId}`, replace: true });
-          // }
-
-          return null;
-        }
-      } catch (error) {
-        console.error("Profile verification error:", error);
-        window.location.href = "/error";
-      }
-    };
-
-    checkUserProfile();
-  }, [isAuthenticated, navigate, qc, user]);
-
-  // // Render onboarding UI; on any “continue” button, trigger server action then:
-  // async function onDidSomething() {
-  //   // await fetch('/api/onboarding/step', { ... })
-  //   await qc.invalidateQueries({ queryKey: ["user"] });
-  // }
+  React.useEffect(() => {
+    if (status === "success" && user && !needsOnboarding(user)) {
+      navigate({ to: nextRouteFor(user), replace: true });
+    }
+  }, [status, user, navigate]);
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -88,7 +64,6 @@ function OnboardingLayout() {
       </header>
       <main className="flex-1">
         <h1>Welcome—let’s finish setting things up</h1>
-
         <Outlet />
       </main>
     </div>

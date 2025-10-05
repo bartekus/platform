@@ -2,35 +2,29 @@ import { logtoApiEndpoint } from "~/config/logto";
 import { User, UserCustomData } from "~/types";
 // import { redirect } from "@tanstack/react-router";
 
-export async function fetchOidcUserInfo(getAccessToken: () => Promise<string | undefined>): Promise<User> {
-  const token = await getAccessToken();
-
-  if (!token) {
-    throw new Error("No access token");
+export class UnauthorizedError extends Error {
+  constructor(message = "Unauthorized") {
+    super(message);
+    this.name = "UnauthorizedError";
   }
+}
+
+export async function fetchOidcUserInfo(getAccessToken: () => Promise<string | undefined>) {
+  const token = await getAccessToken();
+  if (!token) throw new UnauthorizedError("No access token");
 
   const res = await fetch(`${logtoApiEndpoint}/oidc/me`, {
     headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
     credentials: "include",
   });
 
-  console.log("res", res);
-  console.log("!res.ok", !res.ok);
-
-  if (!res.ok) {
-    // throw redirect({
-    //   to: "/signin",
-    //   search: {
-    //     // Use the current location to power a redirect after login
-    //     // (Do not use `router.state.resolvedLocation` as it can
-    //     // potentially lag behind the actual current location)
-    //     redirect: location.href,
-    //   },
-    // });
-
-    throw new Error("Failed to load user");
+  if (res.status === 401) {
+    // Signal to callers that they must sign the user out
+    throw new UnauthorizedError("Token expired or invalid");
   }
-
+  if (!res.ok) {
+    throw new Error(`Failed to load user (status ${res.status})`);
+  }
   return res.json();
 }
 
