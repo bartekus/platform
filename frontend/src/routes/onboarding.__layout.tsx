@@ -1,12 +1,13 @@
 import * as React from "react";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useLogto } from "@logto/react";
 import { Link, Outlet } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useLogto } from "@logto/react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+
 import { fetchUserInfo, needsOnboarding } from "~/api/logto";
-import { useEffect } from "react";
-import { fallbackToRoot, onboardingOrganization } from "~/config/constants";
-import { UserCustomData, UserProfile } from "~/types";
+// import { useEffect } from "react";
+// import { fallbackToRoot, onboardingOrganization } from "~/config/constants";
+// import { UserCustomData, UserProfile } from "~/types";
 
 export const Route = createFileRoute("/onboarding/__layout")({
   component: OnboardingLayout,
@@ -23,34 +24,46 @@ function OnboardingLayout() {
     refetchInterval: (q) => (needsOnboarding(q.state.data) ? 2000 : false),
   });
 
-  useEffect(() => {
-    const checkUserProfile = async () => {
-      console.log("Onboard Route");
-      if (!isAuthenticated) {
-        await navigate({ to: fallbackToRoot });
-        return;
-      }
+  // When backend finishes onboarding (e.g., org created/attached), bounce to dashboard
+  if (userInfo && !needsOnboarding(userInfo)) {
+    const firstOrgId = userInfo?.organization_data?.[0]?.id;
 
-      try {
-        // When backend finishes onboarding (e.g., org created/attached), bounce to dashboard
-        if (userInfo && !needsOnboarding(userInfo)) {
-          const firstOrgId = userInfo?.organization_data?.[0]?.id;
+    console.log("firstOrgId", firstOrgId);
+    if (firstOrgId) {
+      navigate({ to: `/dashboard/org/${firstOrgId}`, replace: true });
+    }
 
-          console.log("firstOrgId", firstOrgId);
-          if (firstOrgId) {
-            navigate({ to: `/dashboard/org/${firstOrgId}`, replace: true });
-          }
+    return null;
+  }
 
-          return null;
-        }
-      } catch (error) {
-        console.error("Profile verification error:", error);
-        window.location.href = "/error";
-      }
-    };
-
-    checkUserProfile();
-  }, [isAuthenticated, navigate, qc, userInfo]);
+  // useEffect(() => {
+  //   const checkUserProfile = async () => {
+  //     console.log("Onboard Route");
+  //     if (!isAuthenticated) {
+  //       await navigate({ to: fallbackToRoot });
+  //       return;
+  //     }
+  //
+  //     try {
+  //       // When backend finishes onboarding (e.g., org created/attached), bounce to dashboard
+  //       if (userInfo && !needsOnboarding(userInfo)) {
+  //         const firstOrgId = userInfo?.organization_data?.[0]?.id;
+  //
+  //         console.log("firstOrgId", firstOrgId);
+  //         if (firstOrgId) {
+  //           navigate({ to: `/dashboard/org/${firstOrgId}`, replace: true });
+  //         }
+  //
+  //         return null;
+  //       }
+  //     } catch (error) {
+  //       console.error("Profile verification error:", error);
+  //       window.location.href = "/error";
+  //     }
+  //   };
+  //
+  //   checkUserProfile();
+  // }, [isAuthenticated, navigate, qc, userInfo]);
 
   // Render onboarding UI; on any “continue” button, trigger server action then:
   async function onDidSomething() {
