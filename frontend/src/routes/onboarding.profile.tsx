@@ -16,50 +16,46 @@ export const Route = createFileRoute(`${onboardingProfile}`)({
 
 function ProfilePage() {
   const qc = useQueryClient();
-  // const navigate = Route.useNavigate();
-  // const { isAuthenticated, fetchUserInfo } = useLogto();
+  const navigate = Route.useNavigate();
+  const { isAuthenticated, fetchUserInfo } = useLogto();
   const { updateUserProfile } = useUserApi();
 
   const [loading, setLoading] = useState(false);
 
-  // useEffect(() => {
-  //   const checkUserProfile = async () => {
-  //     if (!isAuthenticated) {
-  //       await navigate({ to: fallbackToRoot });
-  //       return;
-  //     }
-  //
-  //     try {
-  //       const user = await fetchUserInfo();
-  //       await qc.invalidateQueries({ queryKey: ["user"] });
-  //
-  //       const customData = user?.custom_data as UserCustomData;
-  //
-  //       if (!customData?.stripeCustomerId) {
-  //         console.error("No Stripe customer ID found");
-  //         await navigate({ to: fallbackToRoot });
-  //         return;
-  //       }
-  //
-  //       const profileData = user?.profile as UserProfile;
-  //
-  //       const hasUsername = user?.username;
-  //       const hasProfileZoneinfo = profileData?.zoneinfo;
-  //       const hasProfileLocale = profileData?.locale;
-  //
-  //       if (hasUsername || hasProfileZoneinfo || hasProfileLocale) {
-  //         await navigate({ to: onboardingOrganization });
-  //       }
-  //
-  //       return;
-  //     } catch (error) {
-  //       console.error("Profile verification error:", error);
-  //       window.location.href = "/error";
-  //     }
-  //   };
-  //
-  //   checkUserProfile();
-  // }, [isAuthenticated, fetchUserInfo, navigate, qc]);
+  // TODO: Figure out why oidc is not returning profile
+  useEffect(() => {
+    const checkUserProfile = async () => {
+      try {
+        const user = await fetchUserInfo();
+        await qc.invalidateQueries({ queryKey: ["user"] });
+
+        const customData = user?.custom_data as UserCustomData;
+
+        if (!customData?.stripeCustomerId) {
+          console.error("No Stripe customer ID found");
+          await navigate({ to: fallbackToRoot });
+          return;
+        }
+
+        const profileData = user?.profile as UserProfile;
+
+        const hasUsername = user?.username;
+        const hasProfileZoneinfo = profileData?.zoneinfo;
+        const hasProfileLocale = profileData?.locale;
+
+        if (hasUsername || hasProfileZoneinfo || hasProfileLocale) {
+          await navigate({ to: onboardingOrganization });
+        }
+
+        return;
+      } catch (error) {
+        console.error("Profile verification error:", error);
+        window.location.href = "/error";
+      }
+    };
+
+    checkUserProfile();
+  }, [isAuthenticated, fetchUserInfo, navigate, qc]);
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();

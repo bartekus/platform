@@ -44,6 +44,8 @@ function OnboardingLayout() {
 
   React.useEffect(() => {
     if (status === "success" && user && !needsOnboarding(user)) {
+      console.log("nextRouteFor(user)", nextRouteFor(user));
+
       navigate({ to: nextRouteFor(user), replace: true });
     }
   }, [status, user, navigate]);

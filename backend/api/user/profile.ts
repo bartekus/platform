@@ -39,6 +39,8 @@ export const updateUser = api(
         }),
       });
 
+      log.debug("User profile", profile);
+
       const user: LogtoAPIResponse<any> = await logto.callApi({
         path: `/api/users/${userId}`,
         method: "PATCH",
