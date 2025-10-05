@@ -4,7 +4,7 @@ import { Link, Outlet } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 
-import { fetchUserInfo, needsOnboarding, nextRouteFor } from "~/api/logto";
+import { fetchOidcUserInfo, needsOnboarding, nextRouteFor } from "~/api/logto";
 import { useEffect } from "react";
 import { fallbackToRoot } from "~/config/constants";
 // import { useEffect } from "react";
@@ -22,7 +22,7 @@ function OnboardingLayout() {
 
   const { data: user } = useQuery({
     queryKey: ["user"],
-    queryFn: () => fetchUserInfo(getAccessToken),
+    queryFn: () => fetchOidcUserInfo(getAccessToken),
     refetchInterval: (q) => (needsOnboarding(q.state.data) ? 2000 : false),
   });
 

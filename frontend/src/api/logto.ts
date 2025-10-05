@@ -2,7 +2,7 @@ import { logtoApiEndpoint } from "~/config/logto";
 import { User, UserCustomData } from "~/types";
 // import { redirect } from "@tanstack/react-router";
 
-export async function fetchUserInfo(getAccessToken: () => Promise<string | undefined>): Promise<User> {
+export async function fetchOidcUserInfo(getAccessToken: () => Promise<string | undefined>): Promise<User> {
   const token = await getAccessToken();
 
   if (!token) {
