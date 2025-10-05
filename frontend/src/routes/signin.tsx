@@ -1,12 +1,13 @@
 import { LogIn } from "lucide-react";
 import { useLogto } from "@logto/react";
+import { useEffect, useState } from "react";
 import { Button } from "~/components/ui/button";
-import { redirect, createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 
 import { authConfig } from "~/config/logto";
-import { useEffect, useState } from "react";
-import { fallbackToRoot, onboardingOrganization, onboardingProfile, onboardingSubscription } from "~/config/constants";
-import { UserCustomData, UserProfile } from "~/types";
+import { nextRouteFor } from "~/api/logto";
+import { User } from "~/types";
+
 // import { z } from "zod";
 
 const { signInRedirectUri } = authConfig;
@@ -26,39 +27,17 @@ function SignInPage() {
     const checkIfAlreadyAuthenticated = async () => {
       try {
         if (!isLoading && isAuthenticated) {
-          const userInfo = await fetchUserInfo();
+          setIsResolving(true);
 
-          const customData = userInfo?.custom_data as UserCustomData;
+          const user = (await fetchUserInfo()) as User;
 
-          // Check subscription status from custom_data
-          const hasActiveSubscription = customData?.subscription?.status === "active";
-          // Check profile status from userInfo
-          const hasUsername = !!userInfo?.username;
-          // Check profile status from userInfo
-          const hasOrganization = userInfo?.organizations && userInfo?.organizations?.length > 0;
-          const firstOrg = userInfo?.organizations?.[0];
+          const nextRouteUrl = nextRouteFor(user);
 
           setIsResolving(false);
 
-          if (!hasActiveSubscription) {
-            await navigate({ to: onboardingSubscription, replace: true });
-            return;
-          }
+          await navigate({ to: nextRouteUrl, replace: true });
 
-          if (hasActiveSubscription && !hasUsername) {
-            await navigate({ to: onboardingProfile, replace: true });
-            return;
-          }
-
-          if (hasActiveSubscription && hasUsername && !hasOrganization) {
-            await navigate({ to: onboardingOrganization, replace: true });
-            return;
-          }
-
-          if (hasActiveSubscription && hasUsername && hasOrganization) {
-            await navigate({ to: `/dashboard/org/${firstOrg}`, replace: true });
-            return;
-          }
+          return null;
         }
       } catch (error) {
         console.error("checkIfAlreadyAuthenticated verification error:", error);
@@ -72,6 +51,10 @@ function SignInPage() {
   const handleSignIn = () => {
     signIn(`${signInRedirectUri}`);
   };
+
+  if (isResolving) {
+    return <div>Already authenticated...</div>;
+  }
 
   return (
     <div className="container mx-auto px-4 py-20">

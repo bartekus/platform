@@ -63,10 +63,10 @@ function SubscriptionPage() {
       setLoadingStripeCustomerId(true);
 
       try {
-        const userInfo = await fetchUserInfo();
-        await qc.invalidateQueries({ queryKey: ["userInfo"] });
+        const user = await fetchUserInfo();
+        await qc.invalidateQueries({ queryKey: ["user"] });
 
-        const customData = userInfo?.custom_data as UserCustomData;
+        const customData = user?.custom_data as UserCustomData;
 
         console.log(`Checking for Stripe customer ID (attempt ${retryCount + 1}/${maxRetries}):`, customData);
 
@@ -100,15 +100,15 @@ function SubscriptionPage() {
           cancelUrl: `${onboardingSubscriptionUri}`,
         });
 
-        setLoadingSubscriptionPortal(false);
-
         if (session.success && session.result?.url) {
           console.log("session success", session);
           window.location.href = session.result.url;
+          setLoadingSubscriptionPortal(false);
           return;
         } else if (session.error && session.result?.url) {
           console.log("session error", session);
           window.location.href = session.result.url;
+          setLoadingSubscriptionPortal(false);
           return;
         }
       } catch (error) {

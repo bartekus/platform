@@ -22,14 +22,6 @@ function VerifyPage() {
 
   useEffect(() => {
     const verifySubscription = async () => {
-      // Wait for authentication to be ready
-      // if (!isAuthenticated) {
-      //   console.log("VerifyPage not authenticated");
-      //   // If not authenticated, redirect to callback to handle auth
-      //   await navigate({ to: "/callback", replace: true });
-      //   return;
-      // }
-
       try {
         setIsVerifying(true);
 
@@ -39,12 +31,12 @@ function VerifyPage() {
         await sleep(delay);
 
         // Force refresh user info to get updated custom data
-        const userInfo = await fetchUserInfo();
-        await qc.invalidateQueries({ queryKey: ["userInfo"] });
+        const user = await fetchUserInfo();
+        await qc.invalidateQueries({ queryKey: ["user"] });
 
-        const customData = userInfo?.custom_data as UserCustomData;
+        const customData = user?.custom_data as UserCustomData;
 
-        console.log(`Fetched user info (attempt ${retryCount + 1}):`, userInfo);
+        console.log(`Fetched user info (attempt ${retryCount + 1}):`, user);
         console.log("Custom data:", customData);
 
         // Check if we have subscription data

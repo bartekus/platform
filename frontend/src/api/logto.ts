@@ -1,7 +1,7 @@
 import { logtoApiEndpoint } from "~/config/logto";
-import { UserInfo, UserCustomData } from "~/types";
+import { User, UserCustomData } from "~/types";
 
-export async function fetchUserInfo(getAccessToken: () => Promise<string | undefined>): Promise<UserInfo> {
+export async function fetchUserInfo(getAccessToken: () => Promise<string | undefined>): Promise<User> {
   const token = await getAccessToken();
 
   if (!token) {
@@ -14,39 +14,34 @@ export async function fetchUserInfo(getAccessToken: () => Promise<string | undef
   });
 
   if (!res.ok) {
-    throw new Error("Failed to load userInfo");
+    throw new Error("Failed to load user");
   }
 
   return res.json();
 }
 
-// Whatever “done” means for you:
-export function needsOnboarding(userInfo?: UserInfo) {
-  console.log("userInfo");
-  console.dir(userInfo, { depth: null });
-
-  const customData = userInfo?.custom_data as UserCustomData;
-
-  // Check subscription status from custom_data
+export function needsOnboarding(user?: User) {
+  const customData = user?.custom_data as UserCustomData | undefined;
   const hasActiveSubscription = customData?.subscription?.status === "active";
-  // Check userInfo status from userInfo
-  const hasUsername = !!userInfo?.username;
-  // Check userInfo status from userInfo
-  const hasOrganization = userInfo?.organizations && userInfo?.organizations?.length > 0;
+  const hasUsername = !!user?.username;
+  const hasOrganization = !!(user?.organizations && user.organizations.length > 0);
 
-  if (!hasActiveSubscription) {
-    return true;
-  }
+  if (!hasActiveSubscription) return true;
+  if (hasActiveSubscription && !hasUsername) return true;
+  if (hasActiveSubscription && hasUsername && !hasOrganization) return true;
 
-  if (hasActiveSubscription && !hasUsername) {
-    return true;
-  }
+  // Everything satisfied → no onboarding needed
+  return false;
+}
 
-  if (hasActiveSubscription && hasUsername && !hasOrganization) {
-    return true;
-  }
+export function nextRouteFor(user: User): string {
+  const cd = user?.custom_data as UserCustomData | undefined;
+  const okSub = cd?.subscription?.status === "active";
+  const hasUser = !!user?.username;
+  const firstOrg = user?.organizations?.[0];
 
-  if (hasActiveSubscription && hasUsername && hasOrganization) {
-    return false;
-  }
+  if (!okSub) return "/onboarding/subscription";
+  if (okSub && !hasUser) return "/onboarding/profile";
+  if (okSub && hasUser && !firstOrg) return "/onboarding/organization";
+  return firstOrg ? `/dashboard/org/${firstOrg}` : "/";
 }

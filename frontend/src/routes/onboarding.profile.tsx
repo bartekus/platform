@@ -30,10 +30,10 @@ function ProfilePage() {
       }
 
       try {
-        const userInfo = await fetchUserInfo();
-        await qc.invalidateQueries({ queryKey: ["userInfo"] });
+        const user = await fetchUserInfo();
+        await qc.invalidateQueries({ queryKey: ["user"] });
 
-        const customData = userInfo?.custom_data as UserCustomData;
+        const customData = user?.custom_data as UserCustomData;
 
         if (!customData?.stripeCustomerId) {
           console.error("No Stripe customer ID found");
@@ -41,9 +41,9 @@ function ProfilePage() {
           return;
         }
 
-        const profileData = userInfo?.profile as UserProfile;
+        const profileData = user?.profile as UserProfile;
 
-        const hasUsername = userInfo?.username;
+        const hasUsername = user?.username;
         const hasProfileZoneinfo = profileData?.zoneinfo;
         const hasProfileLocale = profileData?.locale;
 

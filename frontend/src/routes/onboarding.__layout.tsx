@@ -18,15 +18,15 @@ function OnboardingLayout() {
   const { getAccessToken, isAuthenticated } = useLogto();
   const navigate = useNavigate();
 
-  const { data: userInfo } = useQuery({
-    queryKey: ["userInfo"],
+  const { data: user } = useQuery({
+    queryKey: ["user"],
     queryFn: () => fetchUserInfo(getAccessToken),
     refetchInterval: (q) => (needsOnboarding(q.state.data) ? 2000 : false),
   });
 
   // When backend finishes onboarding (e.g., org created/attached), bounce to dashboard
-  if (userInfo && !needsOnboarding(userInfo)) {
-    const firstOrgId = userInfo?.organization_data?.[0]?.id;
+  if (user && !needsOnboarding(user)) {
+    const firstOrgId = user?.organization_data?.[0]?.id;
 
     console.log("firstOrgId", firstOrgId);
     if (firstOrgId) {
@@ -46,8 +46,8 @@ function OnboardingLayout() {
   //
   //     try {
   //       // When backend finishes onboarding (e.g., org created/attached), bounce to dashboard
-  //       if (userInfo && !needsOnboarding(userInfo)) {
-  //         const firstOrgId = userInfo?.organization_data?.[0]?.id;
+  //       if (user && !needsOnboarding(user)) {
+  //         const firstOrgId = user?.organization_data?.[0]?.id;
   //
   //         console.log("firstOrgId", firstOrgId);
   //         if (firstOrgId) {
@@ -63,12 +63,12 @@ function OnboardingLayout() {
   //   };
   //
   //   checkUserProfile();
-  // }, [isAuthenticated, navigate, qc, userInfo]);
+  // }, [isAuthenticated, navigate, qc, user]);
 
   // Render onboarding UI; on any “continue” button, trigger server action then:
   async function onDidSomething() {
     // await fetch('/api/onboarding/step', { ... })
-    await qc.invalidateQueries({ queryKey: ["userInfo"] });
+    await qc.invalidateQueries({ queryKey: ["user"] });
   }
 
   return (

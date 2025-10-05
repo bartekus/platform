@@ -27,7 +27,7 @@ function OrganizationPage() {
     try {
       const payload = Object.fromEntries(new FormData(e.currentTarget).entries());
       const org = await createOrganization(payload as any);
-      await qc.invalidateQueries({ queryKey: ["userInfo"] });
+      await qc.invalidateQueries({ queryKey: ["user"] });
 
       setLoading(false);
 

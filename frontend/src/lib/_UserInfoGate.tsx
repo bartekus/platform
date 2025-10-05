@@ -2,32 +2,34 @@ import { useLogto } from "@logto/react";
 import { useQuery } from "@tanstack/react-query";
 import { Outlet, useNavigate } from "@tanstack/react-router";
 
-import { fetchUserInfo, needsOnboarding } from "~/api/logto";
-import type { UserInfo } from "~/types";
+import { fetchUserInfo, needsOnboarding, nextRouteFor } from "~/api/logto";
+import type { User } from "~/types";
 
 export default function UserInfoGate() {
   const { getAccessToken } = useLogto();
 
   // Poll until onboarding completes.
   const {
-    data: userInfo,
+    data: user,
     isFetching,
     status,
     refetch,
-  } = useQuery<UserInfo>({
-    queryKey: ["userInfo"],
+  } = useQuery<User>({
+    queryKey: ["user"],
     queryFn: () => fetchUserInfo(getAccessToken),
     // poll every 2s while the data is incomplete
-    refetchInterval: (q) => (needsOnboarding(q.state.data as UserInfo | undefined) ? 2000 : false),
+    refetchInterval: (q) => (needsOnboarding(q.state.data as User | undefined) ? 2000 : false),
     // if your backend pushes updates, you can also set staleTime generously
   });
 
   const navigate = useNavigate();
 
   // Route users who need to finish onboarding
-  if (status === "success" && needsOnboarding(userInfo)) {
-    // keep a dedicated onboarding route; it can also refetch ['userInfo']
-    navigate({ to: "/onboarding", replace: true });
+  if (status === "success" && needsOnboarding(user)) {
+    const nextRouteUrl = nextRouteFor(user);
+
+    navigate({ to: nextRouteUrl, replace: true });
+
     return null;
   }
 

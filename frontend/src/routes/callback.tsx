@@ -3,10 +3,10 @@ import { useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useLogto, useHandleSignInCallback } from "@logto/react";
 
-import { fallbackToRoot, onboardingProfile, onboardingSubscription, onboardingOrganization } from "~/config/constants";
-import { authConfig } from "~/config/logto";
+import { fallbackToRoot } from "~/config/constants";
 
 import { User, UserCustomData } from "~/types";
+import { nextRouteFor } from "~/api/logto";
 
 export const Route = createFileRoute("/callback")({
   component: CallbackPage,
@@ -37,44 +37,14 @@ function CallbackPage() {
         try {
           setIsResolving(true);
 
-          const accessToken = await getAccessToken(authConfig.apiResourceIndicator);
-          // console.log("Callback accessToken", accessToken);
-
-          const userInfo = (await fetchUserInfo()) as User;
-          // console.log("userInfo");
-          // console.dir(userInfo, { depth: null });
-
-          const customData = userInfo?.custom_data as UserCustomData;
-
-          // Check subscription status from custom_data
-          const hasActiveSubscription = customData?.subscription?.status === "active";
-          // Check profile status from userInfo
-          const hasUsername = !!userInfo?.username;
-          // Check profile status from userInfo
-          const hasOrganization = userInfo?.organizations && userInfo?.organizations?.length > 0;
-          const firstOrg = userInfo?.organizations?.[0];
+          const user = (await fetchUserInfo()) as User;
+          const nextRouteUrl = nextRouteFor(user);
 
           setIsResolving(false);
 
-          if (!hasActiveSubscription) {
-            await navigate({ to: onboardingSubscription, replace: true });
-            return;
-          }
+          await navigate({ to: nextRouteUrl, replace: true });
 
-          if (hasActiveSubscription && !hasUsername) {
-            await navigate({ to: onboardingProfile, replace: true });
-            return;
-          }
-
-          if (hasActiveSubscription && hasUsername && !hasOrganization) {
-            await navigate({ to: onboardingOrganization, replace: true });
-            return;
-          }
-
-          if (hasActiveSubscription && hasUsername && hasOrganization) {
-            await navigate({ to: `/dashboard/org/${firstOrg}`, replace: true });
-            return;
-          }
+          return null;
         } catch (error) {
           console.error("Failed to resolve Callback:", error);
         }

@@ -28,8 +28,8 @@ export const useOrganizationApi = () => {
       const token = await getAccessToken();
       if (!token) throw new Error("User not authenticated");
 
-      const userInfo = await fetchUserInfo();
-      const organizations = (userInfo?.organization_data || []) as OrganizationData[];
+      const user = await fetchUserInfo();
+      const organizations = (user?.organization_data || []) as OrganizationData[];
 
       // console.log("getOrganizations organizations", organizations);
 
