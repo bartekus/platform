@@ -2,7 +2,8 @@ import { useLogto } from "@logto/react";
 import { useQuery } from "@tanstack/react-query";
 import { Outlet, useNavigate } from "@tanstack/react-router";
 
-import { fetchUserInfo, needsOnboarding, type UserInfo } from "~/api/logto";
+import { fetchUserInfo, needsOnboarding } from "~/api/logto";
+import type { UserInfo } from "~/types";
 
 export default function UserInfoGate() {
   const { getAccessToken } = useLogto();
