@@ -156,7 +156,7 @@ export const getAllOrganizationsByIdList = api(
       const list = organizations ?? [];
 
       if (list.length === 0) {
-        return [];
+        return { organizations: [] };
       }
 
       const requestedOrgIds = params.orgIdsList;
