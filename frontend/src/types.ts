@@ -34,6 +34,13 @@ export class ApiRequestError extends Error {
   }
 }
 
+export class UnauthorizedError extends Error {
+  constructor(message = "Unauthorized") {
+    super(message);
+    this.name = "UnauthorizedError";
+  }
+}
+
 export interface FetchOptions extends RequestInit {
   skipContentType?: boolean;
   rawBody?: boolean;
@@ -41,21 +48,4 @@ export interface FetchOptions extends RequestInit {
 
 export interface OrganizationCreateFormProps {
   onSuccess: (orgId: string) => void;
-}
-
-export interface NavItem {
-  title: string;
-  url: string;
-  icon?: LucideIcon;
-  isActive?: boolean;
-  items?: {
-    title: string;
-    url: string;
-  }[];
-}
-
-export interface Project {
-  name: string;
-  url: string;
-  icon: LucideIcon;
 }

@@ -1,12 +1,5 @@
 import { logtoApiEndpoint } from "~/config/logto";
-import { User, UserCustomData } from "~/types";
-
-export class UnauthorizedError extends Error {
-  constructor(message = "Unauthorized") {
-    super(message);
-    this.name = "UnauthorizedError";
-  }
-}
+import { UnauthorizedError, User, UserCustomData } from "~/types";
 
 export async function fetchOidcUserInfo(getAccessToken: () => Promise<string | undefined>) {
   const token = await getAccessToken();

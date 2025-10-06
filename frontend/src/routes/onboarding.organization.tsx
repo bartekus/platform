@@ -3,7 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 
 import { onboardingOrganization } from "~/config/constants";
-import { useOrganizationApi } from "~/api/backend/organization";
+import { useLogtoApi } from "~/api/logto/logto";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
@@ -15,7 +15,7 @@ export const Route = createFileRoute(`${onboardingOrganization}`)({
 function OrganizationPage() {
   const qc = useQueryClient();
   const navigate = Route.useNavigate();
-  const { createOrganization } = useOrganizationApi();
+  const { createOrganization } = useLogtoApi();
 
   const [loading, setLoading] = useState(false);
 

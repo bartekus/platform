@@ -1,10 +1,10 @@
 import { useState } from "react";
-import { useOrganizationApi } from "~/api/backend/organization";
+import { useLogtoApi } from "~/api/logto/logto";
 
 import { OrganizationCreateFormProps } from "~/types";
 
 const CreateOrganizationForm = ({ onSuccess }: OrganizationCreateFormProps) => {
-  const { createOrganization } = useOrganizationApi();
+  const { createOrganization } = useLogtoApi();
   const [formData, setFormData] = useState({
     name: "",
     description: "",

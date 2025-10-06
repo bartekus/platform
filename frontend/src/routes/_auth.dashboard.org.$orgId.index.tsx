@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import getRequestClient from "~/lib/get-request-client";
 import { Activity, Users, FolderOpen } from "lucide-react";
 import { useLogto } from "@logto/react";
-import { useOrganizationApi } from "~/api/backend/organization";
+import { useLogtoApi } from "~/api/logto/logto";
 import { useWorkspaceApi } from "~/api/backend/workspace";
 import type { Organization, Workspace } from "~/types";
 
@@ -14,7 +14,7 @@ export const Route = createFileRoute("/_auth/dashboard/org/$orgId/")({
 function OrgHomePage() {
   const { orgId } = Route.useParams();
   const { isAuthenticated } = useLogto();
-  const { getUserOrganizationScopes, getOrganizations } = useOrganizationApi();
+  const { getUserOrganizationScopes, getUserOrganizations } = useLogtoApi();
   const { getWorkspaces, updateWorkspace, deleteWorkspace } = useWorkspaceApi();
 
   const [organizations, setOrganizations] = useState<Organization[]>([]);
@@ -37,7 +37,7 @@ function OrgHomePage() {
 
       try {
         const [usersOrganizations, scopes, workspacesData] = await Promise.all([
-          getOrganizations(),
+          getUserOrganizations(),
           getUserOrganizationScopes(orgId),
           getWorkspaces(orgId),
         ]);
@@ -53,7 +53,7 @@ function OrgHomePage() {
     };
 
     void fetchData();
-  }, [orgId, isAuthenticated, getWorkspaces, getUserOrganizationScopes, getOrganizations]);
+  }, [orgId, isAuthenticated, getWorkspaces, getUserOrganizationScopes, getUserOrganizations]);
 
   // useEffect(() => {
   //   getRequestClient()

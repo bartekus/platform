@@ -2,7 +2,7 @@ import { useLogto } from "@logto/react";
 import { createFileRoute, Link, Outlet } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 
-import { useOrganizationApi } from "~/api/backend/organization";
+import { useLogtoApi } from "~/api/logto/logto";
 import OrgSwitcher from "~/components/OrgSwitcher";
 import { useWorkspaceApi } from "~/api/backend/workspace";
 
@@ -15,7 +15,7 @@ export const Route = createFileRoute("/_auth/dashboard/org/$orgId")({
 function OrgLayout() {
   const { orgId } = Route.useParams();
   const { isAuthenticated } = useLogto();
-  const { getUserOrganizationScopes, getOrganizations } = useOrganizationApi();
+  const { getUserOrganizationScopes, getUserOrganizations } = useLogtoApi();
   const { getWorkspaces, updateWorkspace, deleteWorkspace } = useWorkspaceApi();
 
   const [organizations, setOrganizations] = useState<Organization[]>([]);
@@ -36,7 +36,7 @@ function OrgLayout() {
 
       try {
         const [usersOrganizations, scopes, workspacesData] = await Promise.all([
-          getOrganizations(),
+          getUserOrganizations(),
           getUserOrganizationScopes(orgId),
           getWorkspaces(orgId),
         ]);
@@ -56,7 +56,7 @@ function OrgLayout() {
     };
 
     void fetchData();
-  }, [orgId, isAuthenticated, getWorkspaces, getUserOrganizationScopes, getOrganizations]);
+  }, [orgId, isAuthenticated, getWorkspaces, getUserOrganizationScopes, getUserOrganizations]);
 
   if (!organizations) {
     return (

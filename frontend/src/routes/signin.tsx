@@ -5,7 +5,7 @@ import { Button } from "~/components/ui/button";
 import { createFileRoute } from "@tanstack/react-router";
 
 import { authConfig } from "~/config/logto";
-import { nextRouteFor } from "~/api/logto/onboard";
+import { nextRouteFor } from "~/api/helpers/onboard";
 import { User } from "~/types";
 
 // import { z } from "zod";
