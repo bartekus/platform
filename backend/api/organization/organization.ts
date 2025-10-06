@@ -11,6 +11,7 @@ import {
   OrganizationRole,
   OrganizationWithRoles,
   GetOrganizationsParams,
+  GetOrganizationsResponse,
 } from "./types";
 import { LogtoAPIResponse } from "../logto/types";
 
@@ -141,10 +142,10 @@ export const getAllOrganizationsByIdList = api(
     method: "GET",
     path: "/api/organizations",
   },
-  async (params: GetOrganizationsParams): Promise<OrganizationsResponse> => {
+  async (params: GetOrganizationsParams): Promise<GetOrganizationsResponse> => {
     const auth = getAuthData();
     if (!auth) throw APIError.unauthenticated("User not authenticated");
-    if (!params.orgList) throw APIError.unauthenticated("No orgList provided");
+    if (!params.orgIdsList) throw APIError.unauthenticated("No orgIdsList provided");
 
     try {
       const { data: organizations } = await logto.callApi({
@@ -155,10 +156,10 @@ export const getAllOrganizationsByIdList = api(
       const list = organizations ?? [];
 
       if (list.length === 0) {
-        return { organizations: [] };
+        return [];
       }
 
-      const requestedOrgIds = params.orgList;
+      const requestedOrgIds = params.orgIdsList;
 
       const filtered = list.filter((org: Organization) => requestedOrgIds.includes(org.id));
 

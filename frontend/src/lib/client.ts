@@ -194,11 +194,12 @@ export namespace organization {
         description?: string
     }
 
-    export interface Organization {
-        id: string
-        name: string
-        description?: string
-        role?: string
+    export interface GetOrganizationsParams {
+        orgIdsList: string[]
+    }
+
+    export interface GetOrganizationsResponse {
+        organizations: Organization[]
     }
 
     export interface Organization {
@@ -222,11 +223,6 @@ export namespace organization {
         isAdmin: boolean
     }
 
-    export interface OrganizationsResponse {
-        totalCount?: number
-        organizations: Organization[]
-    }
-
     export interface Role {
         id: string
         name: string
@@ -244,15 +240,15 @@ export namespace organization {
 
         constructor(baseClient: BaseClient) {
             this.baseClient = baseClient
-            this.createOneOrganization = this.createOneOrganization.bind(this)
-            this.getAllOrganizations = this.getAllOrganizations.bind(this)
-            this.getOneOrganization = this.getOneOrganization.bind(this)
+            this.createOrganization = this.createOrganization.bind(this)
+            this.getAllOrganizationsByIdList = this.getAllOrganizationsByIdList.bind(this)
+            this.getOrganizationById = this.getOrganizationById.bind(this)
         }
 
         /**
          * Create organization endpoint
          */
-        public async createOneOrganization(params: CreateOrganizationParams): Promise<Organization> {
+        public async createOrganization(params: CreateOrganizationParams): Promise<Organization> {
             // Now make the actual call to the API
             const resp = await this.baseClient.callTypedAPI("POST", `/api/organizations`, JSON.stringify(params))
             return await resp.json() as Organization
@@ -261,16 +257,21 @@ export namespace organization {
         /**
          * Update getOrganizations endpoint
          */
-        public async getAllOrganizations(): Promise<OrganizationsResponse> {
+        public async getAllOrganizationsByIdList(params: GetOrganizationsParams): Promise<GetOrganizationsResponse> {
+            // Convert our params into the objects we need for the request
+            const query = makeRecord<string, string | string[]>({
+                orgIdsList: params.orgIdsList.map((v) => v),
+            })
+
             // Now make the actual call to the API
-            const resp = await this.baseClient.callTypedAPI("GET", `/api/organizations`)
-            return await resp.json() as OrganizationsResponse
+            const resp = await this.baseClient.callTypedAPI("GET", `/api/organizations`, undefined, {query})
+            return await resp.json() as GetOrganizationsResponse
         }
 
         /**
          * Get a single organization by ID
          */
-        public async getOneOrganization(id: string): Promise<OrganizationWithRoles> {
+        public async getOrganizationById(id: string): Promise<OrganizationWithRoles> {
             // Now make the actual call to the API
             const resp = await this.baseClient.callTypedAPI("GET", `/api/organizations/${encodeURIComponent(id)}`)
             return await resp.json() as OrganizationWithRoles

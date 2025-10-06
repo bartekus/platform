@@ -5,7 +5,16 @@ import Organization = organization.Organization;
 import OrganizationScope = organization.OrganizationScope;
 import OrganizationData = organization.OrganizationScope;
 import CreateOrganizationParams = organization.CreateOrganizationParams;
-export type { Organization, OrganizationScope, OrganizationData, CreateOrganizationParams };
+import GetOrganizationsParams = organization.GetOrganizationsParams;
+import GetOrganizationsResponse = organization.GetOrganizationsResponse;
+export type {
+  Organization,
+  OrganizationScope,
+  OrganizationData,
+  CreateOrganizationParams,
+  GetOrganizationsParams,
+  GetOrganizationsResponse,
+};
 
 import Workspace = workspace.Workspace;
 import OrganizationWithRoles = organization.OrganizationWithRoles;

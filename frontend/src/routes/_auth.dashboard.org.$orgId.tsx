@@ -16,7 +16,7 @@ export const Route = createFileRoute("/_auth/dashboard/org/$orgId")({
 function OrgLayout() {
   const { orgId } = Route.useParams();
   const { isAuthenticated } = useLogto();
-  const {} = useOrganizationApi();
+  const { getAllOrganizations } = useOrganizationApi();
   const { getUserOrganizationScopes, getUserOrganizations } = useLogtoApi();
   const { getWorkspaces, updateWorkspace, deleteWorkspace } = useWorkspaceApi();
 
@@ -36,9 +36,17 @@ function OrgLayout() {
       setLoading(true);
       setError(null);
 
+      const userOrgs = await getUserOrganizations();
+
+      if (!userOrgs || !userOrgs.length) {
+        throw new Error("User has no organizations");
+      }
+
+      const orgIdsList = userOrgs.map((org: Organization) => org.id);
+
       try {
         const [usersOrganizations, scopes, workspacesData] = await Promise.all([
-          getUserOrganizations(),
+          getAllOrganizations({ orgIdsList }),
           getUserOrganizationScopes(orgId),
           getWorkspaces(orgId),
         ]);
@@ -47,7 +55,7 @@ function OrgLayout() {
         console.log(scopes);
         console.log(workspacesData);
 
-        setOrganizations(usersOrganizations);
+        setOrganizations(usersOrganizations.organizations);
         setUserScopes(scopes);
         setWorkspaces(workspacesData);
       } catch (error) {

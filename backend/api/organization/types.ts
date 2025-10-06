@@ -4,7 +4,7 @@ export interface CreateOrganizationParams {
 }
 
 export interface GetOrganizationsParams {
-  orgList: string[];
+  orgIdsList: string[];
 }
 
 // GET/POST /api/organizations
@@ -15,7 +15,7 @@ export interface Organization {
   description?: string;
 }
 
-export interface OrganizationsResponse {
+export interface GetOrganizationsResponse {
   organizations: Organization[];
 }
 
