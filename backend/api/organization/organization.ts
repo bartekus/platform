@@ -10,6 +10,7 @@ import {
   Role,
   OrganizationRole,
   OrganizationWithRoles,
+  GetOrganizationsParams,
 } from "./types";
 import { LogtoAPIResponse } from "../logto/types";
 
@@ -18,7 +19,7 @@ import { LogtoAPIResponse } from "../logto/types";
 async function fetchUserRolesForOrg(orgId: string, userId: string) {
   // If the user is not a member, Logto might return 404/403. Treat as "no roles".
   try {
-    const { data: userRoles } = await logto.callApi<Role[]>({
+    const { data: userRoles } = await logto.callApi({
       path: `/api/organizations/${orgId}/users/${userId}/roles`,
       method: "GET",
     });
@@ -26,7 +27,7 @@ async function fetchUserRolesForOrg(orgId: string, userId: string) {
     console.dir(userRoles);
 
     const roles = userRoles ?? [];
-    const roleNames = roles.map((r) => r.name);
+    const roleNames = roles.map((r: { name: string }) => r.name);
     const isAdmin = roleNames.includes("admin");
     return { roles, roleNames, isAdmin };
   } catch (e: any) {
@@ -133,29 +134,37 @@ export const createOrganization = api(
 );
 
 // Update getOrganizations endpoint
-export const getAllOrganizationsById = api(
+export const getAllOrganizationsByIdList = api(
   {
     expose: true,
     auth: true,
     method: "GET",
     path: "/api/organizations",
   },
-  async (params: CreateOrganizationParams): Promise<OrganizationsResponse> => {
+  async (params: GetOrganizationsParams): Promise<OrganizationsResponse> => {
     const auth = getAuthData();
     if (!auth) throw APIError.unauthenticated("User not authenticated");
+    if (!params.orgList) throw APIError.unauthenticated("No orgList provided");
 
     try {
-      const { data: organizations } = await logto.callApi<Organization[]>({
+      const { data: organizations } = await logto.callApi({
         path: `/api/organizations`,
         method: "GET",
       });
 
       const list = organizations ?? [];
-      if (list.length === 0) return { organizations: [] };
+
+      if (list.length === 0) {
+        return { organizations: [] };
+      }
+
+      const requestedOrgIds = params.orgList;
+
+      const filtered = list.filter((org: Organization) => requestedOrgIds.includes(org.id));
 
       // Resolve the current user's roles for each org in parallel
-      const enriched = await Promise.all(
-        list.map(async (org) => {
+      const requestedOrgs = await Promise.all(
+        filtered.map(async (org: Organization) => {
           const { roles, roleNames, isAdmin } = await fetchUserRolesForOrg(org.id, auth.userID);
           const withRoles: OrganizationWithRoles = {
             id: org.id,
@@ -169,13 +178,9 @@ export const getAllOrganizationsById = api(
         })
       );
 
-      console.log("enriched", enriched);
+      console.log("requestedOrgs", requestedOrgs);
 
-      // (Optional) If you only want orgs the user belongs to, filter those with roles.length > 0
-      // const filtered = enriched.filter((o) => o.roles.length > 0);
-      // return { organizations: filtered };
-
-      return { organizations: enriched };
+      return { organizations: requestedOrgs };
     } catch (error) {
       log.error("Failed to fetch organizations", {
         error: error instanceof Error ? error.message : String(error),
@@ -200,7 +205,7 @@ export const getOrganizationById = api(
     if (!auth) throw APIError.unauthenticated("User not authenticated");
 
     try {
-      const { data: organization } = await logto.callApi<Organization>({
+      const { data: organization } = await logto.callApi({
         path: `/api/organizations/${params.id}`,
         method: "GET",
       });

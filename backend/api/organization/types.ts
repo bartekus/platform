@@ -4,10 +4,11 @@ export interface CreateOrganizationParams {
 }
 
 export interface GetOrganizationsParams {
-  name: string;
-  description?: string;
+  orgList: string[];
 }
 
+// GET/POST /api/organizations
+// GET/PATCH /api/organizations/{id}
 export interface Organization {
   id: string;
   name: string;
@@ -71,27 +72,6 @@ export interface OrganizationRole {
   type: "User" | "Application";
   organizationScopes?: OrganizationScope[];
   resourceScopes?: ResourceScope[];
-}
-
-// GET /api/organization-roles
-export interface OrganizationRolesResponse {
-  totalCount: number;
-  list: OrganizationRole[];
-}
-
-// GET /api/organization-scopes
-export interface OrganizationScopesResponse {
-  totalCount: number;
-  list: OrganizationScope[];
-}
-
-// GET/POST /api/organizations
-// GET/PATCH /api/organizations/{id}
-export interface Organization {
-  id: string;
-  name: string;
-  description?: string;
-  role?: string;
 }
 
 export type OrganizationWithRoles = Organization & {
