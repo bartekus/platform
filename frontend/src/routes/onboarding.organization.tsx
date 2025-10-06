@@ -3,7 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 
 import { onboardingOrganization } from "~/config/constants";
-import { useOrganizationApi } from "~/api/organization";
+import { useOrganizationApi } from "~/api/backend/organization";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";

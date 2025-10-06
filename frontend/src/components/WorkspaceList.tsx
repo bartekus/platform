@@ -1,6 +1,6 @@
-import type { Workspace } from '~/api/workspace';
+import type { Workspace } from "~/api/backend/workspace";
 
-import { WorkspaceCard } from './WorkspaceCard';
+import { WorkspaceCard } from "./WorkspaceCard";
 
 interface WorkspaceListProps {
   workspaces: Workspace[];

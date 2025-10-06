@@ -3,7 +3,7 @@ import { useLogto } from "@logto/react";
 import { useQuery } from "@tanstack/react-query";
 import { Outlet, useNavigate } from "@tanstack/react-router";
 
-import { fetchOidcUserInfo, needsOnboarding, nextRouteFor, UnauthorizedError } from "~/api/onboard";
+import { fetchOidcUserInfo, needsOnboarding, nextRouteFor, UnauthorizedError } from "~/api/logto/onboard";
 import { authConfig } from "~/config/logto";
 import type { User } from "~/types";
 

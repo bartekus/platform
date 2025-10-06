@@ -1,6 +1,6 @@
-import { useState } from 'react';
-import type { Workspace } from '~/api/workspace';
-import { EditWorkspaceDialog } from './EditWorkspaceDialog';
+import { useState } from "react";
+import type { Workspace } from "~/api/backend/workspace";
+import { EditWorkspaceDialog } from "./EditWorkspaceDialog";
 
 interface WorkspaceCardProps {
   workspace: Workspace;
@@ -19,9 +19,9 @@ export const WorkspaceCard = ({ workspace, onClick, onEdit, onDelete, canEdit, c
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString(undefined, {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
+      year: "numeric",
+      month: "short",
+      day: "numeric",
     });
   };
 

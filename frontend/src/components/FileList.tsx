@@ -1,6 +1,6 @@
-import { useState } from 'react';
-import type { FileInfo } from '~/api/file';
-import { useFileApi } from '~/api/file';
+import { useState } from "react";
+import type { FileInfo } from "~/api/backend/file";
+import { useFileApi } from "~/api/backend/file";
 
 interface FileListProps {
   files: FileInfo[];
@@ -14,7 +14,7 @@ export const FileList = ({ files, organizationId, workspaceId, onFileDeleted }: 
   const [deletingFile, setDeletingFile] = useState<string | null>(null);
 
   const handleDelete = async (fileName: string) => {
-    if (!confirm('Are you sure you want to delete this file?')) {
+    if (!confirm("Are you sure you want to delete this file?")) {
       return;
     }
 
@@ -23,8 +23,8 @@ export const FileList = ({ files, organizationId, workspaceId, onFileDeleted }: 
       await deleteFile(fileName, organizationId, workspaceId);
       onFileDeleted();
     } catch (error) {
-      console.error('Failed to delete file:', error);
-      alert('Failed to delete file. Please try again.');
+      console.error("Failed to delete file:", error);
+      alert("Failed to delete file. Please try again.");
     } finally {
       setDeletingFile(null);
     }

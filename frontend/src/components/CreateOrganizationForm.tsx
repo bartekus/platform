@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useOrganizationApi } from "~/api/organization";
+import { useOrganizationApi } from "~/api/backend/organization";
 
 import { OrganizationCreateFormProps } from "~/types";
 

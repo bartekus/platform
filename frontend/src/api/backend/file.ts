@@ -2,7 +2,7 @@ import { useCallback } from "react";
 import { useLogto } from "@logto/react";
 
 import getRequestClient from "~/lib/get-request-client";
-import { useRawApi } from "~/api/raw";
+import { useRawApi } from "~/api/backend/raw";
 
 import type { FileMetadata } from "~/types";
 

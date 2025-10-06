@@ -3,8 +3,8 @@ import { useEffect, useState } from "react";
 import getRequestClient from "~/lib/get-request-client";
 import { Activity, Users, FolderOpen } from "lucide-react";
 import { useLogto } from "@logto/react";
-import { useOrganizationApi } from "~/api/organization";
-import { useWorkspaceApi } from "~/api/workspace";
+import { useOrganizationApi } from "~/api/backend/organization";
+import { useWorkspaceApi } from "~/api/backend/workspace";
 import type { Organization, Workspace } from "~/types";
 
 export const Route = createFileRoute("/_auth/dashboard/org/$orgId/")({

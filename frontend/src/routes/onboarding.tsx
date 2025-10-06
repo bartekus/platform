@@ -3,7 +3,7 @@ import { useLogto } from "@logto/react";
 import { Link, Outlet } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { fetchOidcUserInfo, needsOnboarding, nextRouteFor, UnauthorizedError } from "~/api/onboard";
+import { fetchOidcUserInfo, needsOnboarding, nextRouteFor, UnauthorizedError } from "~/api/logto/onboard";
 import { authConfig } from "~/config/logto";
 
 export const Route = createFileRoute("/onboarding")({

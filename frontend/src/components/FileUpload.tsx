@@ -1,8 +1,8 @@
-import { useState } from 'react';
-import { useParams } from 'react-router';
-import { useFileApi } from '~/api/file';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '~/components/ui/dialog';
-import { Button } from '~/components/ui/button';
+import { useState } from "react";
+import { useParams } from "react-router";
+import { useFileApi } from "~/api/backend/file";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "~/components/ui/dialog";
+import { Button } from "~/components/ui/button";
 
 interface FileUploadDialogProps {
   open: boolean;
@@ -45,7 +45,7 @@ export const FileUploadDialog = ({ open, onClose, onUploadComplete, workspaceId 
         <DialogHeader>
           <DialogTitle>Upload File</DialogTitle>
         </DialogHeader>
-        
+
         <div className="p-4 bg-gray-50 rounded-lg">
           <form onSubmit={handleSubmit} className="space-y-4" encType="multipart/form-data">
             <div>
@@ -73,7 +73,7 @@ export const FileUploadDialog = ({ open, onClose, onUploadComplete, workspaceId 
                 Cancel
               </Button>
               <Button type="submit" disabled={isUploading}>
-                {isUploading ? 'Uploading...' : 'Upload'}
+                {isUploading ? "Uploading..." : "Upload"}
               </Button>
             </div>
           </form>

@@ -6,7 +6,7 @@ import { useLogto, useHandleSignInCallback } from "@logto/react";
 import { fallbackToRoot } from "~/config/constants";
 
 import { User, UserCustomData } from "~/types";
-import { nextRouteFor } from "~/api/onboard";
+import { nextRouteFor } from "~/api/logto/onboard";
 
 export const Route = createFileRoute("/callback")({
   component: CallbackPage,
