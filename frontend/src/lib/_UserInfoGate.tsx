@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Outlet, useNavigate } from "@tanstack/react-router";
 
 import { fetchOidcUserInfo, needsOnboarding, nextRouteFor } from "~/api/helpers/onboard";
-import type { User, UnauthorizedError } from "~/types";
+import { type User, UnauthorizedError } from "~/types";
 import { authConfig } from "~/config/logto";
 
 export default function UserInfoGate() {
