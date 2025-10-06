@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { Workspace } from "~/api/backend/workspace";
+import type { Workspace } from "~/api/workspace";
 import { EditWorkspaceDialog } from "./EditWorkspaceDialog";
 
 interface WorkspaceCardProps {

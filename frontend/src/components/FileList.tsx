@@ -1,6 +1,6 @@
 import { useState } from "react";
-import type { FileInfo } from "~/api/backend/file";
-import { useFileApi } from "~/api/backend/file";
+import type { FileInfo } from "~/api/file";
+import { useFileApi } from "~/api/file";
 
 interface FileListProps {
   files: FileInfo[];

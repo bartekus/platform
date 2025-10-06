@@ -1,7 +1,7 @@
 import { useParams } from "react-router";
 import React, { useEffect, useState } from "react";
 
-import { useWorkspaceApi, type Workspace } from "~/api/backend/workspace";
+import { useWorkspaceApi, type Workspace } from "~/api/workspace";
 
 interface EditWorkspaceDialogProps {
   workspace: Workspace;

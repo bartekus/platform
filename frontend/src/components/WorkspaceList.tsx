@@ -1,4 +1,4 @@
-import type { Workspace } from "~/api/backend/workspace";
+import type { Workspace } from "~/api/workspace";
 
 import { WorkspaceCard } from "./WorkspaceCard";
 

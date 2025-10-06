@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 
 import getRequestClient from "~/lib/get-request-client";
-import { useSubscriptionApi } from "~/api/backend/subscription";
+import { useSubscriptionApi } from "~/api/subscription";
 import { fallbackToRoot } from "~/config/constants";
 import PlanCard from "~/components/PlanCard";
 import { authConfig } from "~/config/logto";

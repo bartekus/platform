@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useParams } from "react-router";
 
-import { useWorkspaceApi, type Workspace } from "~/api/backend/workspace";
+import { useWorkspaceApi, type Workspace } from "~/api/workspace";
 
 interface CreateWorkspaceDialogProps {
   onClose: () => void;

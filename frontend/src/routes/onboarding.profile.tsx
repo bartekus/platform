@@ -8,7 +8,7 @@ import { User, UserCustomData, UserProfile, OrganizationData } from "~/types";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
-import { useUserApi } from "~/api/backend/user";
+import { useUserApi } from "~/api/user";
 
 export const Route = createFileRoute(`${onboardingProfile}`)({
   component: ProfilePage,

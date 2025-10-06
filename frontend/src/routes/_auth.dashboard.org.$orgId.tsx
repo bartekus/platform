@@ -2,9 +2,9 @@ import { useLogto } from "@logto/react";
 import { createFileRoute, Link, Outlet } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 
-import { useLogtoApi } from "~/api/logto/logto";
+import { useLogtoApi } from "~/api/logto";
 import OrgSwitcher from "~/components/OrgSwitcher";
-import { useWorkspaceApi } from "~/api/backend/workspace";
+import { useWorkspaceApi } from "~/api/workspace";
 
 import type { Organization, Workspace } from "~/types";
 
