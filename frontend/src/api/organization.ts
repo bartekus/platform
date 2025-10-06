@@ -3,7 +3,7 @@ import { useLogto } from "@logto/react";
 
 import getRequestClient from "~/lib/get-request-client";
 
-import type { Organization, CreateOrganizationParams, OrganizationData } from "~/types";
+import { Organization, CreateOrganizationParams, OrganizationData, OrganizationWithRoles } from "~/types";
 
 export const useOrganizationApi = () => {
   const { getAccessToken, getOrganizationToken, getOrganizationTokenClaims, fetchUserInfo } = useLogto();

@@ -198,7 +198,7 @@ export namespace organization {
         id: string
         name: string
         description?: string
-        createdAt: string
+        role?: string
     }
 
     export interface Organization {
@@ -213,9 +213,30 @@ export namespace organization {
         description?: string
     }
 
+    export interface OrganizationWithRoles {
+        id: string
+        name: string
+        description?: string
+        roles: Role[]
+        roleNames: string[]
+        isAdmin: boolean
+    }
+
     export interface OrganizationsResponse {
-        totalCount: number
-        list: Organization[]
+        totalCount?: number
+        organizations: Organization[]
+    }
+
+    export interface Role {
+        id: string
+        name: string
+        description?: string
+        tenantId?: string
+        scopes?: {
+            id: string
+            name: string
+        }[]
+        resourceScopes?: any[]
     }
 
     export class ServiceClient {
@@ -249,10 +270,10 @@ export namespace organization {
         /**
          * Get a single organization by ID
          */
-        public async getOneOrganization(id: string): Promise<Organization> {
+        public async getOneOrganization(id: string): Promise<OrganizationWithRoles> {
             // Now make the actual call to the API
             const resp = await this.baseClient.callTypedAPI("GET", `/api/organizations/${encodeURIComponent(id)}`)
-            return await resp.json() as Organization
+            return await resp.json() as OrganizationWithRoles
         }
     }
 }

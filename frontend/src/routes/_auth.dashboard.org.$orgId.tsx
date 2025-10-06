@@ -41,6 +41,10 @@ function OrgLayout() {
           getWorkspaces(orgId),
         ]);
 
+        console.log(usersOrganizations);
+        console.log(scopes);
+        console.log(workspacesData);
+
         setOrganizations(usersOrganizations);
         setUserScopes(scopes);
         setWorkspaces(workspacesData);
@@ -70,12 +74,12 @@ function OrgLayout() {
   };
 
   // Convert organizations to the format expected by OrgSwitcher
-  // const orgsForSwitcher =
-  //   organizations.map((org) => ({
-  //     id: org.id,
-  //     name: org.name,
-  //     role: (org?.role || "member") as "admin" | "editor" | "member",
-  //   })) || [];
+  const orgsForSwitcher =
+    organizations.map((org) => ({
+      id: org.id,
+      name: org.name,
+      role: (org?.role || "member") as "admin" | "editor" | "member",
+    })) || [];
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -114,18 +118,18 @@ function OrgLayout() {
               >
                 Settings
               </Link>
-              {/*{currentOrg?.role === "admin" && (*/}
-              {/*  <Link*/}
-              {/*    to={`/dashboard/org/${currentOrg.id}/admin`}*/}
-              {/*    className="text-sm text-muted-foreground hover:text-foreground transition-smooth"*/}
-              {/*    activeProps={{ className: "text-foreground font-medium" }}*/}
-              {/*  >*/}
-              {/*    Admin*/}
-              {/*  </Link>*/}
-              {/*)}*/}
+              {currentOrg?.role === "admin" && (
+                <Link
+                  to={`/dashboard/org/${currentOrg.id}/admin`}
+                  className="text-sm text-muted-foreground hover:text-foreground transition-smooth"
+                  activeProps={{ className: "text-foreground font-medium" }}
+                >
+                  Admin
+                </Link>
+              )}
             </nav>
             <div className="ml-auto flex items-center gap-4">
-              {/*<OrgSwitcher orgs={orgsForSwitcher} currentId={currentOrg.id} />*/}
+              <OrgSwitcher orgs={orgsForSwitcher} currentId={currentOrg.id} />
               <Link to="/signout" className="text-sm text-muted-foreground hover:text-foreground transition-smooth">
                 Sign out
               </Link>

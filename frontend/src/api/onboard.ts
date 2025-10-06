@@ -1,6 +1,5 @@
 import { logtoApiEndpoint } from "~/config/logto";
 import { User, UserCustomData } from "~/types";
-// import { redirect } from "@tanstack/react-router";
 
 export class UnauthorizedError extends Error {
   constructor(message = "Unauthorized") {

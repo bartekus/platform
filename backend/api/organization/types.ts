@@ -86,13 +86,19 @@ export interface Organization {
   id: string;
   name: string;
   description?: string;
-  createdAt: string;
+  role?: string;
 }
+
+export type OrganizationWithRoles = Organization & {
+  roles: Role[]; // the roles THIS user has in this org
+  roleNames: string[]; // convenience
+  isAdmin: boolean; // convenience flag (role name === "admin")
+};
 
 // GET /api/organizations
 export interface OrganizationsResponse {
-  totalCount: number;
-  list: Organization[];
+  totalCount?: number;
+  organizations: Organization[];
 }
 
 // Organization User Types

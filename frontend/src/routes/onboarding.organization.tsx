@@ -7,7 +7,6 @@ import { useOrganizationApi } from "~/api/organization";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
-import { sleep } from "~/lib/utils";
 
 export const Route = createFileRoute(`${onboardingOrganization}`)({
   component: OrganizationPage,
@@ -31,11 +30,6 @@ function OrganizationPage() {
 
       setLoading(false);
 
-      // if (org.id) {
-      //   sleep(500);
-      //   await navigate({ to: `/dashboard/org/${org.id}` });
-      // }
-
       return;
     } catch (error) {
       console.error("Organization creation error:", error);
@@ -54,12 +48,12 @@ function OrganizationPage() {
         <form onSubmit={onSubmit} className="space-y-6">
           <div className="space-y-2">
             <Label htmlFor="name">Organization Name</Label>
-            <Input id="name" name="name" placeholder="Acme Corp" required />
+            <Input id="name" name="name" placeholder="My organization" required />
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="description">Description</Label>
-            <Input id="description" name="description" placeholder="Acme Corp where leadership thrives" required />
+            <Input id="description" name="description" placeholder="A brief description of the organization" required />
           </div>
 
           <Button type="submit" className="w-full" disabled={loading}>

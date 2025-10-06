@@ -2,16 +2,18 @@ import type { LucideIcon } from "lucide-react";
 import { file_upload, organization, workspace, user } from "~/lib/client";
 
 import Organization = organization.Organization;
+import OrganizationScope = organization.OrganizationScope;
 import OrganizationData = organization.OrganizationScope;
 import CreateOrganizationParams = organization.CreateOrganizationParams;
-export type { Organization, OrganizationData, CreateOrganizationParams };
+export type { Organization, OrganizationScope, OrganizationData, CreateOrganizationParams };
 
 import Workspace = workspace.Workspace;
+import OrganizationWithRoles = organization.OrganizationWithRoles;
 import CreateWorkspaceParams = workspace.CreateWorkspaceRequest;
 // import GetWorkspaceParams = workspace.GetWorkspaceRequest;
 import UpdateWorkspaceParams = workspace.UpdateWorkspaceRequest;
 
-export type { Workspace, CreateWorkspaceParams, UpdateWorkspaceParams };
+export type { Workspace, OrganizationWithRoles, CreateWorkspaceParams, UpdateWorkspaceParams };
 
 import FileMetadata = file_upload.FileMetadata;
 export type { FileMetadata };

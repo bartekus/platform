@@ -3,14 +3,56 @@ import { getAuthData } from "~encore/auth";
 import { logto } from "~encore/clients";
 import log from "encore.dev/log";
 
-import { CreateOrganizationParams, OrganizationsResponse, Organization, Role, OrganizationRole } from "./types";
+import {
+  CreateOrganizationParams,
+  OrganizationsResponse,
+  Organization,
+  Role,
+  OrganizationRole,
+  OrganizationWithRoles,
+} from "./types";
 import { LogtoAPIResponse } from "../logto/types";
 
+// HELPERS
+
+async function fetchUserRolesForOrg(orgId: string, userId: string) {
+  // If the user is not a member, Logto might return 404/403. Treat as "no roles".
+  try {
+    const { data: userRoles } = await logto.callApi<Role[]>({
+      path: `/api/organizations/${orgId}/users/${userId}/roles`,
+      method: "GET",
+    });
+
+    console.dir(userRoles);
+
+    const roles = userRoles ?? [];
+    const roleNames = roles.map((r) => r.name);
+    const isAdmin = roleNames.includes("admin");
+    return { roles, roleNames, isAdmin };
+  } catch (e: any) {
+    // Detect 403/404 without relying on exact error shape
+    const message = e instanceof Error ? e.message : String(e);
+    const notMember =
+      message.includes("403") ||
+      message.includes("404") ||
+      message.toLowerCase().includes("not found") ||
+      message.toLowerCase().includes("forbidden");
+
+    if (notMember) {
+      return { roles: [] as Role[], roleNames: [] as string[], isAdmin: false };
+    }
+    // bubble up unexpected errors
+    throw e;
+  }
+}
+
+// ENDPOINT
+
 // Create organization endpoint
-export const createOneOrganization = api(
+export const createOrganization = api(
   {
-    expose: true, // Is publicly accessible
-    auth: true, // Auth handler validation is required
+    expose: true,
+    auth: true,
     method: "POST",
     path: "/api/organizations",
   },
@@ -21,7 +63,7 @@ export const createOneOrganization = api(
     }
 
     try {
-      // Create organization using the client import
+      // Create organization using Logto API
       const { data: organization }: LogtoAPIResponse<Organization> = await logto.callApi({
         path: "/api/organizations",
         method: "POST",
@@ -71,6 +113,7 @@ export const createOneOrganization = api(
         id: organization.id,
         name: organization.name,
         description: organization.description,
+        role: adminRole.name,
       };
 
       log.debug("Organization created", returnPayload);
@@ -89,96 +132,46 @@ export const createOneOrganization = api(
   }
 );
 
-// Update getOrganizations endpoint
-export const getAllOrganizations = api(
-  {
-    expose: true, // Is publicly accessible
-    auth: true, // Auth handler validation is required
-    method: "GET",
-    path: "/api/organizations",
-  },
-  async (): Promise<OrganizationsResponse> => {
-    const auth = getAuthData();
-    if (!auth) {
-      throw APIError.unauthenticated("User not authenticated");
-    }
-
-    try {
-      const { data: organizations }: LogtoAPIResponse<Organization[]> = await logto.callApi({
-        path: `/api/organizations`,
-        method: "GET",
-      });
-
-      console.log(" ");
-      console.log(" ");
-      console.log("organizations", organizations);
-      console.log(" ");
-      console.log(" ");
-
-      if (!organizations) {
-        return { organizations: [] };
-      }
-
-      return { organizations };
-    } catch (error) {
-      log.error("Failed to fetch organizations", {
-        error: error instanceof Error ? error.message : String(error),
-        userId: auth.userID,
-      });
-      if (error instanceof APIError) {
-        throw error;
-      }
-      throw APIError.internal("Failed to fetch organizations");
-    }
-  }
-);
-
 // Get a single organization by ID
-export const getOneOrganization = api(
+export const getOrganizationById = api(
   {
-    expose: true, // Is publicly accessible
-    auth: true, // Auth handler validation is required
+    expose: true,
+    auth: true,
     method: "GET",
     path: "/api/organizations/:id",
   },
-  async (params: { id: string }): Promise<Organization> => {
+  async (params: { id: string }): Promise<OrganizationWithRoles> => {
     const auth = getAuthData();
-    if (!auth) {
-      throw APIError.unauthenticated("User not authenticated");
-    }
+    if (!auth) throw APIError.unauthenticated("User not authenticated");
 
     try {
-      // Get organization details from Logto
-      const { data: organization }: LogtoAPIResponse<Organization> = await logto.callApi({
+      const { data: organization } = await logto.callApi<Organization>({
         path: `/api/organizations/${params.id}`,
         method: "GET",
       });
 
-      if (!organization) {
-        throw APIError.notFound("Organization not found");
-      }
+      if (!organization) throw APIError.notFound("Organization not found");
 
-      // Get user's role in the organization
-      const { data: userRoles }: LogtoAPIResponse<OrganizationRole[]> = await logto.callApi({
-        path: `/api/organizations/${params.id}/users/${auth.userID}/roles`,
-        method: "GET",
-      });
+      // Get the requesting user's roles in this org
+      const { roles, roleNames, isAdmin } = await fetchUserRolesForOrg(params.id, auth.userID);
 
-      // Map to our Organization type
-      return {
+      const result: OrganizationWithRoles = {
         id: organization.id,
         name: organization.name,
         description: organization.description,
+        roles,
+        roleNames,
+        isAdmin,
       };
+
+      return result;
     } catch (error) {
       log.error("Failed to fetch organization", {
         error: error instanceof Error ? error.message : String(error),
         organizationId: params.id,
         userId: auth.userID,
       });
-      if (error instanceof APIError) {
-        throw error;
-      }
+      if (error instanceof APIError) throw error;
       throw APIError.internal("Failed to fetch organization");
     }
   }
