@@ -3,6 +3,11 @@ export interface CreateOrganizationParams {
   description?: string;
 }
 
+export interface GetOrganizationsParams {
+  name: string;
+  description?: string;
+}
+
 export interface Organization {
   id: string;
   name: string;

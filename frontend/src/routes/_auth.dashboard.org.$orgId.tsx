@@ -7,6 +7,7 @@ import OrgSwitcher from "~/components/OrgSwitcher";
 import { useWorkspaceApi } from "~/api/workspace";
 
 import type { Organization, Workspace } from "~/types";
+import { useOrganizationApi } from "~/api/organization";
 
 export const Route = createFileRoute("/_auth/dashboard/org/$orgId")({
   component: OrgLayout,
@@ -15,6 +16,7 @@ export const Route = createFileRoute("/_auth/dashboard/org/$orgId")({
 function OrgLayout() {
   const { orgId } = Route.useParams();
   const { isAuthenticated } = useLogto();
+  const {} = useOrganizationApi();
   const { getUserOrganizationScopes, getUserOrganizations } = useLogtoApi();
   const { getWorkspaces, updateWorkspace, deleteWorkspace } = useWorkspaceApi();
 

@@ -132,6 +132,61 @@ export const createOrganization = api(
   }
 );
 
+// Update getOrganizations endpoint
+export const getAllOrganizationsById = api(
+  {
+    expose: true,
+    auth: true,
+    method: "GET",
+    path: "/api/organizations",
+  },
+  async (params: CreateOrganizationParams): Promise<OrganizationsResponse> => {
+    const auth = getAuthData();
+    if (!auth) throw APIError.unauthenticated("User not authenticated");
+
+    try {
+      const { data: organizations } = await logto.callApi<Organization[]>({
+        path: `/api/organizations`,
+        method: "GET",
+      });
+
+      const list = organizations ?? [];
+      if (list.length === 0) return { organizations: [] };
+
+      // Resolve the current user's roles for each org in parallel
+      const enriched = await Promise.all(
+        list.map(async (org) => {
+          const { roles, roleNames, isAdmin } = await fetchUserRolesForOrg(org.id, auth.userID);
+          const withRoles: OrganizationWithRoles = {
+            id: org.id,
+            name: org.name,
+            description: org.description,
+            roles,
+            roleNames,
+            isAdmin,
+          };
+          return withRoles;
+        })
+      );
+
+      console.log("enriched", enriched);
+
+      // (Optional) If you only want orgs the user belongs to, filter those with roles.length > 0
+      // const filtered = enriched.filter((o) => o.roles.length > 0);
+      // return { organizations: filtered };
+
+      return { organizations: enriched };
+    } catch (error) {
+      log.error("Failed to fetch organizations", {
+        error: error instanceof Error ? error.message : String(error),
+        userId: auth.userID,
+      });
+      if (error instanceof APIError) throw error;
+      throw APIError.internal("Failed to fetch organizations");
+    }
+  }
+);
+
 // Get a single organization by ID
 export const getOrganizationById = api(
   {
