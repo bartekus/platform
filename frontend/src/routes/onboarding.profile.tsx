@@ -68,7 +68,7 @@ function ProfilePage() {
 
       setLoading(false);
       //
-      // await navigate({ to: onboardingOrganization });
+      await navigate({ to: onboardingOrganization });
     } catch (error) {
       console.error("Profile update error:", error);
       setLoading(false);

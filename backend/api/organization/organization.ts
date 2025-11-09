@@ -3,49 +3,24 @@ import { getAuthData } from "~encore/auth";
 import { logto } from "~encore/clients";
 import log from "encore.dev/log";
 
-import {
-  CreateOrganizationParams,
-  OrganizationsResponse,
-  Organization,
-  Role,
-  OrganizationRole,
-  OrganizationWithRoles,
-  GetOrganizationsParams,
-  GetOrganizationsResponse,
-} from "./types";
+import { CreateOrganizationParams, Organization, OrganizationRole, GetOrganizationsParams, GetOrganizationsResponse } from "./types";
 import { LogtoAPIResponse } from "../logto/types";
 
 // HELPERS
 
-async function fetchUserRolesForOrg(orgId: string, userId: string) {
-  // If the user is not a member, Logto might return 404/403. Treat as "no roles".
-  try {
-    const { data: userRoles } = await logto.callApi({
-      path: `/api/organizations/${orgId}/users/${userId}/roles`,
-      method: "GET",
-    });
+async function fetchUserRoleForOrg(orgId: string, userId: string) {
+  // The orgId is provided by the users by way of fetchUserInfo from useLogto
+  // This prevents having to query all organizations and searching within the returned data for the user rols
+  const { data: userRoles } = await logto.callApi({
+    path: `/api/organizations/${orgId}/users/${userId}/roles`,
+    method: "GET",
+  });
 
-    console.dir(userRoles);
+  const roles = userRoles ?? [];
 
-    const roles = userRoles ?? [];
-    const roleNames = roles.map((r: { name: string }) => r.name);
-    const isAdmin = roleNames.includes("admin");
-    return { roles, roleNames, isAdmin };
-  } catch (e: any) {
-    // Detect 403/404 without relying on exact error shape
-    const message = e instanceof Error ? e.message : String(e);
-    const notMember =
-      message.includes("403") ||
-      message.includes("404") ||
-      message.toLowerCase().includes("not found") ||
-      message.toLowerCase().includes("forbidden");
+  console.log("roles", roles);
 
-    if (notMember) {
-      return { roles: [] as Role[], roleNames: [] as string[], isAdmin: false };
-    }
-    // bubble up unexpected errors
-    throw e;
-  }
+  return roles.find((r: { name: string }) => r.name);
 }
 
 // ENDPOINT
@@ -95,7 +70,7 @@ export const createOrganization = api(
         throw APIError.failedPrecondition("Organization roles are missing");
       }
 
-      const roles: Role[] = JSON.parse(rolesData as unknown as string);
+      const roles: OrganizationRole[] = JSON.parse(rolesData as unknown as string);
 
       // Find the `Admin` role
       const adminRole = roles.find((role) => role.name === "admin");
@@ -166,14 +141,12 @@ export const getAllOrganizationsByIdList = api(
       // Resolve the current user's roles for each org in parallel
       const requestedOrgs = await Promise.all(
         filtered.map(async (org: Organization) => {
-          const { roles, roleNames, isAdmin } = await fetchUserRolesForOrg(org.id, auth.userID);
-          const withRoles: OrganizationWithRoles = {
+          const { role } = await fetchUserRoleForOrg(org.id, auth.userID);
+          const withRoles: Organization = {
             id: org.id,
             name: org.name,
             description: org.description,
-            roles,
-            roleNames,
-            isAdmin,
+            role,
           };
           return withRoles;
         })
@@ -201,7 +174,7 @@ export const getOrganizationById = api(
     method: "GET",
     path: "/api/organizations/:id",
   },
-  async (params: { id: string }): Promise<OrganizationWithRoles> => {
+  async (params: { id: string }): Promise<Organization> => {
     const auth = getAuthData();
     if (!auth) throw APIError.unauthenticated("User not authenticated");
 
@@ -214,15 +187,15 @@ export const getOrganizationById = api(
       if (!organization) throw APIError.notFound("Organization not found");
 
       // Get the requesting user's roles in this org
-      const { roles, roleNames, isAdmin } = await fetchUserRolesForOrg(params.id, auth.userID);
+      const { role } = await fetchUserRoleForOrg(params.id, auth.userID);
 
-      const result: OrganizationWithRoles = {
+      console.log("role", role);
+
+      const result: Organization = {
         id: organization.id,
         name: organization.name,
         description: organization.description,
-        roles,
-        roleNames,
-        isAdmin,
+        role: role,
       };
 
       return result;

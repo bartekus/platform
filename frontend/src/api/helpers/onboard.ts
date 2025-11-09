@@ -3,6 +3,8 @@ import { UnauthorizedError, User, UserCustomData } from "~/types";
 
 export async function fetchOidcUserInfo(getAccessToken: () => Promise<string | undefined>) {
   const token = await getAccessToken();
+  console.log("token", token);
+
   if (!token) throw new UnauthorizedError("No access token");
 
   const res = await fetch(`${logtoApiEndpoint}/oidc/me`, {

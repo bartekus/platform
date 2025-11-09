@@ -66,7 +66,7 @@ function OrgLayout() {
     };
 
     void fetchData();
-  }, [orgId, isAuthenticated, getWorkspaces, getUserOrganizationScopes, getUserOrganizations]);
+  }, [orgId, isAuthenticated, getWorkspaces, getUserOrganizationScopes, getUserOrganizations, getAllOrganizations]);
 
   if (!organizations) {
     return (
