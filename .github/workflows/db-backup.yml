@@ -7,7 +7,7 @@ on:
 
 env:
   STORE_NUMBER_OF_DAYS_BACKUP: 7  # Default value, can be overridden in repository secrets
-  POSTGRES_CONTAINER: postgres_db  # New environment variable for the container name
+  POSTGRES_CONTAINER: platform-db-1  # New environment variable for the container name
 
 jobs:
   backup:
